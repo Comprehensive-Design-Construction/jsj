@@ -1,1 +1,3 @@
-print("hello world 안녕하세요")
+import pandas as pd
+temp = pd.Series([-20, -10, 10, 20])
+print(temp)
