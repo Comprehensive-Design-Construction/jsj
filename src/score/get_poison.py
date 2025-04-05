@@ -10,7 +10,10 @@ import shutil
 url = "https://poisonmap.mfds.go.kr/main.do"
 
 
-def get_poison_data():
+def get_poison_data() -> dict:
+    """
+    :return: {XX구: 식중독지수} dictionary
+    """
     # 크롬 옵션 설정
     options = Options()
     options.add_argument("--headless")  # 창 띄우지 않음
