@@ -1,0 +1,53 @@
+{% load static %} {# static 태그 라이브러리를 로드합니다 #}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather & Wellness</title>
+    {# CSS 파일 링크 (곧 생성할 예정) #}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="navbar-left">
+            <a href="/" class="logo">Ube</a> {# 일단 간단한 텍스트 로고 사용 #}
+        </div>
+        <div class="navbar-center">
+            <input type="search" placeholder="Search items, collections...">
+        </div>
+        <div class="navbar-right">
+            <nav>
+                <a href="#">Explore</a>
+                <a href="#">Stats</a>
+                <a href="#">Resource</a>
+                <a href="#">Create</a>
+            </nav>
+            <div class="user-actions">
+                <button class="icon-button">👤</button> {# 아이콘 임시 대체 #}
+                <button class="login-button">사용자 정보 입력</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="hero-section">
+        <div class="hero-left">
+            <h1>Weather & Wellness</h1>
+            <h2>날씨기반 건강 관리</h2>
+            <p>Occaecat est ipsum reprehenderit veniam anim laborum est esse duis occaecat.</p> {# 예시 문구 #}
+            <div class="hero-buttons">
+                <button class="btn-primary">Explore</button>
+                <button class="btn-secondary">Create</button>
+            </div>
+        </div>
+        <div class="hero-right">
+            {# 여기에 큰 로고/그래픽을 배치합니다 #}
+            {# 임시로 텍스트 사용 #}
+            <div class="large-logo-placeholder">Ube</div>
+            <p>Wellness for everyone</p>
+        </div>
+    </main>
+
+</body>
+</html>
