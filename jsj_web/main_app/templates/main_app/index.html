@@ -12,7 +12,7 @@
 
     <header class="navbar">
         <div class="navbar-left">
-            <a href="/" class="logo">Ube</a> {# 일단 간단한 텍스트 로고 사용 #}
+            <a href="/" class="logo">WE</a> {# 일단 간단한 텍스트 로고 사용 #}
         </div>
         <div class="navbar-center">
             <input type="search" placeholder="Search items, collections...">
@@ -26,7 +26,7 @@
             </nav>
             <div class="user-actions">
                 <button class="icon-button">👤</button> {# 아이콘 임시 대체 #}
-                <button class="login-button">사용자 정보 입력</button>
+                <button class="login-button" id="create-customer-btn">사용자 정보 입력</button>
             </div>
         </div>
     </header>
@@ -48,6 +48,72 @@
             <p>Wellness for everyone</p>
         </div>
     </main>
+
+    <div class="modal" id="customer-modal" style="display: none;"> {# 초기에는 숨김 #}
+        <div class="modal-content">
+            <span class="close-button">&times;</span> {# 닫기 버튼 #}
+            <h2>New customer</h2>
+            <div class="form-header">
+                <span class="form-icon">📄</span> {# 아이콘 임시 대체 #}
+                <h3>사용자 정보 입력</h3>
+            </div>
+            <form method="POST" action="{% url 'create_customer' %}">
+                {% csrf_token %}
+                <label for="avatar">Avatar</label>
+                <div class="avatar-upload">
+                    <div class="avatar-placeholder">👤</div> {# 아이콘 임시 대체 #}
+                    <button type="button" class="upload-button">Upload</button>
+                </div>
+
+                <label for="full-name">사용자 이름</label>
+                <input type="text" id="full-name" name="full_name" placeholder="Your full name">
+
+                <label for="birth">생년월일</label>
+                <input type="text" id="birth" name="birth" placeholder="birth">
+
+                <label for="condition">기저 질환</label>
+                <div class="condition-input">
+                    <select id="condition-icon" name="condition_icon">
+                        <option>🧑‍⚕️</option> {# 아이콘 임시 대체 #}
+                    </select>
+                    <input type="text" id="condition-details" name="condition_details" placeholder="0123456789">
+                </div>
+
+                <label for="address">추가 사항</label>
+                <input type="text" id="address" name="address" placeholder="Address">
+
+                <button type="submit" class="btn-primary">Create</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Get the modal
+        var modal = document.getElementById("customer-modal");
+
+        // Get the button that opens the modal
+        var btn = document.getElementById("create-customer-btn");
+
+        // Get the <span> element that closes the modal
+        var span = document.getElementsByClassName("close-button")[0];
+
+        // When the user clicks the button, open the modal 
+        btn.onclick = function() {
+          modal.style.display = "block";
+        }
+
+        // When the user clicks on <span> (x), close the modal
+        span.onclick = function() {
+          modal.style.display = "none";
+        }
+
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function(event) {
+          if (event.target == modal) {
+            modal.style.display = "none";
+          }
+        }
+    </script>
 
 </body>
 </html>
