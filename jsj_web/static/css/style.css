@@ -30,7 +30,6 @@ button {
 .navbar-left .logo {
     font-weight: bold; /* 글자 굵게 */
     font-size: 1.5em; /* 글자 크기 */
-    /* 'Ube' 텍스트 로고에 대한 추가 스타일 */
 }
 
 .navbar-center input[type="search"] {
@@ -51,7 +50,7 @@ button {
     font-weight: 500;
 }
 .navbar-right nav a:hover {
-    color: #8A2BE2; /* 마우스 오버 시 색상 (예시) */
+    color: #4400ff; /* 마우스 오버 시 색상 (예시) */
 }
 
 
@@ -96,7 +95,7 @@ button {
 
 .hero-left h1 {
     font-size: 2.5em; /* 제목1 크기 */
-    color: #6a0dad; /* 보라색 계열 */
+    color: #4400ff; /* 보라색 계열 */
     margin-bottom: 5px; /* 아래 여백 */
 }
 
@@ -123,11 +122,11 @@ button {
 }
 
 .btn-primary {
-    background-color: #8A2BE2; /* 이미지와 유사한 청자색 */
+    background-color: #4400ff; /* 이미지와 유사한 청자색 */
     color: white; /* 글자 흰색 */
 }
 .btn-primary:hover {
-    background-color: #7a1cc1; /* 마우스 오버 시 색상 변경 */
+    background-color: #4400ff; /* 마우스 오버 시 색상 변경 */
 }
 
 
@@ -149,8 +148,7 @@ button {
 .large-logo-placeholder {
     /* 나중에 <img> 태그로 교체할 부분 */
     font-size: 8em; /* 예시 크기 */
-    color: #8A2BE2; /* 예시 색상 */
-    /* 큰 Ube 그래픽에 대한 특정 스타일 추가 */
+    color: #4400ff; /* 예시 색상 */
     margin-bottom: 15px; /* 아래 여백 */
     font-family: 'Brush Script MT', cursive; /* 예시 글꼴, 이미지와 맞춰보세요 */
 }
@@ -158,4 +156,155 @@ button {
 .hero-right p {
     font-size: 1.2em; /* 글자 크기 */
     color: #555; /* 글자색 */
+}
+
+/* 모달 스타일 */
+.modal {
+    display: none; /* 기본적으로 숨김 */
+    position: fixed; /* 화면에 고정 */
+    z-index: 1000; /* 다른 요소 위에 표시 */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible; /* 내용 많으면 스크롤 */
+    background-color: rgba(0,0,0,0.4); /* 반투명 검은 배경 */
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto; /* 상단 여백 및 중앙 정렬 */
+    padding: 30px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px; /* 최대 너비 */
+    border-radius: 8px;
+    position: relative; /* 닫기 버튼 위치 기준 */
+}
+
+.close-button {
+    color: #aaa;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    font-size: 1.2em;
+    color: #555;
+}
+
+.form-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.form-icon {
+    font-size: 1.5em;
+    margin-right: 10px;
+    background-color: #e6e6ff; /* 연한 보라색 배경 */
+    padding: 8px;
+    border-radius: 50%; /* 원형 */
+    color: #4400ff; /* 아이콘 색상 */
+}
+
+.form-header h3 {
+    margin: 0;
+    font-size: 1.3em;
+}
+
+/* 폼 요소 스타일 */
+form label {
+    display: block; /* 라벨을 블록 요소로 */
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 0.9em;
+    color: #555;
+}
+
+form input[type="text"],
+form select {
+    width: calc(100% - 22px); /* 패딩 고려한 너비 */
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* 패딩과 테두리를 너비에 포함 */
+}
+
+.avatar-upload {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.avatar-placeholder {
+    width: 50px;
+    height: 50px;
+    background-color: #eee;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 15px;
+    font-size: 1.8em;
+    color: #aaa;
+}
+
+.upload-button {
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    color: #4400ff;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.condition-input {
+    display: flex;
+    align-items: center;
+}
+
+.condition-input select {
+    width: auto; /* 너비 자동 */
+    margin-right: 10px;
+    padding-right: 30px; /* 화살표 공간 확보 */
+    appearance: none; /* 기본 화살표 제거 */
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.condition-input input[type="text"] {
+    flex-grow: 1; /* 남은 공간 채우기 */
+    margin-bottom: 0; /* 아래 여백 제거 */
+}
+
+form button[type="submit"] {
+    width: 100%;
+    padding: 12px 20px;
+    background-color: #4400ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1em;
+    margin-top: 10px; /* 위 여백 */
+}
+
+form button[type="submit"]:hover {
+    background-color: #3a00d6;
 }
