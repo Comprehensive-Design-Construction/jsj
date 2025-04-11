@@ -1,5 +1,6 @@
 import time
 
+
 def check_weather_and_alert(temperature):
     """
     기온을 입력받아 폭염 또는 한파 조건을 확인하고 행동 요령 알람을 출력하는 함수
@@ -10,6 +11,7 @@ def check_weather_and_alert(temperature):
         print("❄️ [한파 경보] 따뜻한 옷을 착용하고 실내에서 머무르세요!")
     else:
         print("✅ 현재 기온은 정상 범위입니다.")
+
 
 # 테스트용 실행 (나중에 기상청 API 연동 가능)
 if __name__ == "__main__":

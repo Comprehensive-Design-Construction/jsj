@@ -17,8 +17,8 @@ def get_poison_data() -> dict:
     # 크롬 옵션 설정
     options = Options()
     options.add_argument("--headless")  # 창 띄우지 않음
-    options.add_argument("--disable-gpu")  # GPU 가속 비활성화
     options.add_argument("--no-sandbox")  # 샌드박스 비활성화 (리눅스 등에서 필요)
+    options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--window-size=1920,1080")  # 화면 크기 (hover 문제 방지용)
 
     # webdriver-manager를 통해 크롬 드라이버 자동 설치 및 경로 설정
