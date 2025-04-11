@@ -140,8 +140,17 @@ try:
     on_do = float(tem1[0].text.replace("℃", ""))
     seob_do = float(wind_humi[0].text.replace("%", ""))
     pung_sock = float(wind_humi[1].text.split()[1])
-    mintem = float(min1.text.replace("℃", ""))
-    maxtem = float(max1.text.replace("℃", ""))
+    text_value = min1.text.replace("℃", "")
+    if text_value == "-":
+        mintem = None  # 또는 기본값 설정
+    else:
+        mintem = float(text_value)
+
+    text_value = max1.text.replace("℃", "")
+    if text_value == "-":
+        maxtem = None  # 기본값을 설정하거나 다른 처리 방식 사용
+    else:
+        maxtem = float(text_value)
 
 
     print(f"현재 값 온도: {on_do}")
@@ -330,9 +339,10 @@ print(f"사용자의 체감온도: {apparent_temperature}")
 print(f"사용자 위험 상태: {risk}")
 
 
+mintem = mintem if mintem is not None else -99
+maxtem = maxtem if maxtem is not None else -99
 
 #천식 폐질환 가능 지수수
-mintem = mintem # 최저기온
 drhythm = maxtem-mintem # 일교차
 lpressure = float(gi_ab.replace(",", ""))-10.4 #현지기압
 #상대습도는 위에서 정의
@@ -403,9 +413,15 @@ def check_ali_level(ALI):
     else:
         return "잘못된 값"  # 1 미만의 ALI 값 처리 (기준 외)
 
-# 함수 호출
-ALI_risk = check_ali_level(ALI)
-#print(f"ALI 지수: {ALI}")
+if mintem == -99 or maxtem == -99:
+    ALI = "오류"
+
+# mintem과 maxtem의 값 확인 후 ALI_risk 설정
+if mintem == -99 or maxtem == -99:
+    ALI_risk = "오류"
+else:
+    ALI_risk = check_ali_level(ALI)
+
 
 print("")
 print("---------천식, 폐질환 가능 지수----------")

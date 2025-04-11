@@ -3,7 +3,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
-from webdriver_manager.chrome import ChromeDriverManager
+# from webdriver_manager.chrome import ChromeDriverManager
 import time
 import shutil
 
@@ -22,7 +22,7 @@ def get_poison_data() -> dict:
     options.add_argument("--window-size=1920,1080")  # 화면 크기 (hover 문제 방지용)
 
     # webdriver-manager를 통해 크롬 드라이버 자동 설치 및 경로 설정
-    service = Service(shutil.which("chromedriver"))
+    service = Service("C:\\Users\\User\\workspace\\jsj\\chromedriver.exe")
     driver = webdriver.Chrome(service=service, options=options)
     driver.get(url)
 
