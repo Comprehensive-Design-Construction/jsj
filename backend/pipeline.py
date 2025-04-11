@@ -3,43 +3,37 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from backend.index.get_url import (
-    get_region,
-    get_observatory,
-    generate_weather_url,
-    generate_pressure_url,
-)
-from backend.index.get_at_ali import get_at_ali
+from backend.index.crawling import get_values
+from backend.index.get_index import get_at_ali, get_CI, get_TI
 
 
-def main():
-    # 테스트용 임의 좌표 (서울)
-    latitude = "37.5665"
-    longitude = "126.9780"
-
+def get_all_index(latitude, longitude, user_types=[]):
     # URL 관련 처리
-    region = get_region(latitude, longitude)
-    print("Region:", region)
-
-    observatory = get_observatory(region)
-    print("Observatory:", observatory)
-
-    weather_url = generate_weather_url(latitude, longitude)
-    print("Weather URL:", weather_url)
-
-    pressure_url = generate_pressure_url(latitude, longitude)
-    print("Pressure URL:", pressure_url)
+    pressure_value, temperature, humidity, wind_speed, min_tem, max_tem = get_values(
+        latitude, longitude
+    )
 
     # get_at_ali 결과 호출
-    apparent_temperature, risk_status, ALI, ali_level = get_at_ali()
+    apparent_temperature, risk_status, ALI, ali_level = get_at_ali(
+        pressure_value, temperature, humidity, wind_speed, min_tem, max_tem, user_types
+    )
+    CI, CI_level = get_CI(
+        pressure_value, temperature, humidity, wind_speed, min_tem, max_tem
+    )
+    TI, TI_level = get_TI(
+        pressure_value, temperature, humidity, wind_speed, min_tem, max_tem
+    )
 
     print("Apparent Temperature:", apparent_temperature)
     print("Risk Status:", risk_status)
     print("ALI:", ALI)
     print("ALI Level:", ali_level)
 
-    return apparent_temperature, risk_status, ALI, ali_level
+    return apparent_temperature, risk_status, ALI, ali_level, CI, CI_level, TI, TI_level
 
 
 if __name__ == "__main__":
-    print(main())
+    latitude = "37.5665"
+    longitude = "126.9780"
+    user_types = ["노인", "비닐하우스"]
+    print(get_all_index(latitude, longitude, user_types))
