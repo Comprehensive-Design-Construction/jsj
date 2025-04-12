@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+    
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_c59a846c98a440d8d79a8b62ce7eebbe {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+        
+</head>
+<body>
+    
+    
+            <div class="folium-map" id="map_c59a846c98a440d8d79a8b62ce7eebbe" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_c59a846c98a440d8d79a8b62ce7eebbe = L.map(
+                "map_c59a846c98a440d8d79a8b62ce7eebbe",
+                {
+                    center: [37.5665, 126.978],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 14,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_2e509417cdf1d33d7c660c4e2574ff44 = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_2e509417cdf1d33d7c660c4e2574ff44.addTo(map_c59a846c98a440d8d79a8b62ce7eebbe);
+        
+    
+            var circle_marker_6c949f334d3dc42dd9fd4ad85738ae49 = L.circleMarker(
+                [37.5665, 126.978],
+                {"bubblingMouseEvents": true, "color": "blue", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "blue", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 8, "stroke": true, "weight": 3}
+            ).addTo(map_c59a846c98a440d8d79a8b62ce7eebbe);
+        
+    
+        var popup_d09730f86f1f19de4b9fe1fecdf40716 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_1c4c404d1140ef8477674ab9f9442569 = $(`<div id="html_1c4c404d1140ef8477674ab9f9442569" style="width: 100.0%; height: 100.0%;">&lt;b&gt;현재 위치&lt;/b&gt;</div>`)[0];
+                popup_d09730f86f1f19de4b9fe1fecdf40716.setContent(html_1c4c404d1140ef8477674ab9f9442569);
+            
+        
+
+        circle_marker_6c949f334d3dc42dd9fd4ad85738ae49.bindPopup(popup_d09730f86f1f19de4b9fe1fecdf40716)
+        ;
+
+        
+    
+    
+            var marker_22e9cf806cf6f8bda0f2211ec1d90d52 = L.marker(
+                [37.545822829654334, 126.9748179280023],
+                {
+}
+            ).addTo(map_c59a846c98a440d8d79a8b62ce7eebbe);
+        
+    
+            var icon_4799dd6d36482b38aaab485193d46074 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "medkit",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_f3dbd294aa61b8e86a04bcfe74e26ef3 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_b06ba67a7678970ca65ee0f0f3828d23 = $(`<div id="html_b06ba67a7678970ca65ee0f0f3828d23" style="width: 100.0%; height: 100.0%;">&lt;div style=&#39;font-family: sans-serif;&#39;&gt;&lt;h4 style=&#39;margin-bottom: 2px;&#39;&gt;대피소&lt;/h4&gt;&lt;p style=&#39;margin:0;&#39;&gt;위도: 37.5458&lt;br&gt;경도: 126.9748&lt;/p&gt;&lt;/div&gt;</div>`)[0];
+                popup_f3dbd294aa61b8e86a04bcfe74e26ef3.setContent(html_b06ba67a7678970ca65ee0f0f3828d23);
+            
+        
+
+        marker_22e9cf806cf6f8bda0f2211ec1d90d52.bindPopup(popup_f3dbd294aa61b8e86a04bcfe74e26ef3)
+        ;
+
+        
+    
+    
+                marker_22e9cf806cf6f8bda0f2211ec1d90d52.setIcon(icon_4799dd6d36482b38aaab485193d46074);
+            
+    
+            var marker_702c12a51fd9e9b39eae5499ac29238f = L.marker(
+                [37.575413072685976, 126.95776426199792],
+                {
+}
+            ).addTo(map_c59a846c98a440d8d79a8b62ce7eebbe);
+        
+    
+            var icon_ac22ef9b9334406759da3842c7965037 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "black",
+  "iconColor": "white",
+  "icon": "star",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_28c422e8a6ca7036faa70bee22d82c85 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_648bc7285177b1bff62bd635e3f3f23f = $(`<div id="html_648bc7285177b1bff62bd635e3f3f23f" style="width: 100.0%; height: 100.0%;">&lt;div style=&#39;font-family: sans-serif;&#39;&gt;&lt;h4 style=&#39;margin-bottom: 2px;&#39;&gt;가장 가까운 대피소&lt;/h4&gt;&lt;p style=&#39;margin:0;&#39;&gt;위도: 37.5754&lt;br&gt;경도: 126.9578&lt;/p&gt;&lt;/div&gt;</div>`)[0];
+                popup_28c422e8a6ca7036faa70bee22d82c85.setContent(html_648bc7285177b1bff62bd635e3f3f23f);
+            
+        
+
+        marker_702c12a51fd9e9b39eae5499ac29238f.bindPopup(popup_28c422e8a6ca7036faa70bee22d82c85)
+        ;
+
+        
+    
+    
+                marker_702c12a51fd9e9b39eae5499ac29238f.setIcon(icon_ac22ef9b9334406759da3842c7965037);
+            
+    
+            var marker_65568901cabf5061355d28fc92ea5a74 = L.marker(
+                [37.5880542137055, 126.99828289199482],
+                {
+}
+            ).addTo(map_c59a846c98a440d8d79a8b62ce7eebbe);
+        
+    
+            var icon_d8c0865cd39a965060cc322347b6016c = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "medkit",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_a3674ddc301827c1266807780c233347 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_c3d43f724b39e7f24f586e8bbeb46d5e = $(`<div id="html_c3d43f724b39e7f24f586e8bbeb46d5e" style="width: 100.0%; height: 100.0%;">&lt;div style=&#39;font-family: sans-serif;&#39;&gt;&lt;h4 style=&#39;margin-bottom: 2px;&#39;&gt;대피소&lt;/h4&gt;&lt;p style=&#39;margin:0;&#39;&gt;위도: 37.5881&lt;br&gt;경도: 126.9983&lt;/p&gt;&lt;/div&gt;</div>`)[0];
+                popup_a3674ddc301827c1266807780c233347.setContent(html_c3d43f724b39e7f24f586e8bbeb46d5e);
+            
+        
+
+        marker_65568901cabf5061355d28fc92ea5a74.bindPopup(popup_a3674ddc301827c1266807780c233347)
+        ;
+
+        
+    
+    
+                marker_65568901cabf5061355d28fc92ea5a74.setIcon(icon_d8c0865cd39a965060cc322347b6016c);
+            
+    
+            var marker_7db037a506dc423529be659a99e121ce = L.marker(
+                [37.56447725067749, 127.00504443800304],
+                {
+}
+            ).addTo(map_c59a846c98a440d8d79a8b62ce7eebbe);
+        
+    
+            var icon_cea152fbef65aa0bf1701ac07b289a1f = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "medkit",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_f59188d9c509d07cd58d48aceb2cf7b5 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_b3d69749e616e2a052ed76bcf01d2ec4 = $(`<div id="html_b3d69749e616e2a052ed76bcf01d2ec4" style="width: 100.0%; height: 100.0%;">&lt;div style=&#39;font-family: sans-serif;&#39;&gt;&lt;h4 style=&#39;margin-bottom: 2px;&#39;&gt;대피소&lt;/h4&gt;&lt;p style=&#39;margin:0;&#39;&gt;위도: 37.5645&lt;br&gt;경도: 127.0050&lt;/p&gt;&lt;/div&gt;</div>`)[0];
+                popup_f59188d9c509d07cd58d48aceb2cf7b5.setContent(html_b3d69749e616e2a052ed76bcf01d2ec4);
+            
+        
+
+        marker_7db037a506dc423529be659a99e121ce.bindPopup(popup_f59188d9c509d07cd58d48aceb2cf7b5)
+        ;
+
+        
+    
+    
+                marker_7db037a506dc423529be659a99e121ce.setIcon(icon_cea152fbef65aa0bf1701ac07b289a1f);
+            
+    
+            var poly_line_4bb325a7c5b5edbdfae7ec1883a2147d = L.polyline(
+                [[37.5665, 126.978], [37.575413072685976, 126.95776426199792]],
+                {"bubblingMouseEvents": true, "color": "black", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "black", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1, "smoothFactor": 1.0, "stroke": true, "weight": 2.5}
+            ).addTo(map_c59a846c98a440d8d79a8b62ce7eebbe);
+        
+</script>
+</html>
