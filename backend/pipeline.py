@@ -5,6 +5,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from backend.index.crawling import get_values
 from backend.index.get_index import get_at_ali, get_CI, get_TI
+from backend.v_shelter.make_map import make_map
+
+from shapely.geometry import Point
 
 
 def get_all_index(latitude, longitude, user_types=[]):
@@ -32,8 +35,23 @@ def get_all_index(latitude, longitude, user_types=[]):
     return apparent_temperature, risk_status, ALI, ali_level, CI, CI_level, TI, TI_level
 
 
+def get_map(latitude, longitude, disaster_type):
+    assert disaster_type in [
+        "COLD_WAVE",
+        "HEAT_WAVE",
+        "FINE_DUST",
+        "FLOOD",
+        "EARTHQUAKE",
+    ]
+
+    user_location = Point(float(longitude), float(latitude))
+
+    return make_map(user_location, disaster_type, filter_radius=3)
+
+
 if __name__ == "__main__":
     latitude = "37.5665"
     longitude = "126.9780"
     user_types = ["노인", "비닐하우스"]
-    print(get_all_index(latitude, longitude, user_types))
+    # print(get_all_index(latitude, longitude, user_types))
+    get_map(latitude, longitude, "FINE_DUST")
