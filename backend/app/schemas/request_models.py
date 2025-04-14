@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Any
+from backend.config import settings
 
 
 # default 설정 ?
@@ -22,6 +23,7 @@ class UserInput(BaseModel):
 class ShelterInput(BaseModel):
     # disaster_type의 기본값은 config에서 가져오도록 수정하거나 모델 내 유지
     disaster_type: str = Field(..., description="재난 유형 (예: EARTHQUAKE, FLOOD 등)")
+    radius_km: float = Field(default=settings.DEFAULT_RADIUS_KM, gt=0)
 
     @validator("disaster_type")
     def validate_disaster_type(cls, v):

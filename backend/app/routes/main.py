@@ -9,8 +9,9 @@ from typing import Optional, List
 # 정확한 사용자 제공 모델 임포트
 from app.schemas.request_models import ApiRequest, LocationInput, UserInput
 from app.schemas.response_models import (
-    ApiResponse,
-    WeatherData,  # 날씨 API 결과용 (현재 비활성화)
+    IndicesApiResponse,
+    MapApiResponse,
+    WeatherData,  # 날씨 API 결과용
     RiskIndex,  # 사용자 위험도 평가용 (별도 정의/구현 필요)
     AlertInfo,
     IndexingData,  # 크롤링 기반 지수 결과용
@@ -227,7 +228,6 @@ async def get_info():
             )
 
         # 8.2 식중독 지수 처리
-        food_poisoning_risk_for_user = None
         if not food_poisoning_data:
             print("Food poisoning cache is empty.")
             calculated_indices["error"] = (
@@ -235,10 +235,16 @@ async def get_info():
             ) + "; 식중독 정보 없음(캐시)"
             overall_error_parts.append("Food poisoning cache empty.")
         elif gu:  # 사용자 지역(구) 정보가 있을 때만 조회
-            food_poisoning_risk_for_user = get_food_poisoning_risk_for_region(
-                food_poisoning_data, gu
-            )
-            calculated_indices["food_poisoning_risk"] = food_poisoning_risk_for_user
+            poison_info = get_food_poisoning_risk_for_region(food_poisoning_data, gu)
+            if poison_info:
+                calculated_indices["food_poisoning_index"] = poison_info.get(
+                    "poison_index"
+                )
+                calculated_indices["food_poisoning_risk"] = poison_info.get(
+                    "poison_level"
+                )
+            else:
+                print(f"Food poisoning risk not available for {gu} in cache.")
         else:
             print(
                 "User region (district) unknown, cannot get specific food poisoning risk."

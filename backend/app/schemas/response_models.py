@@ -48,7 +48,7 @@ class IndexingData(BaseModel):
     cold_index_level: Optional[int] = None  # 예: 1(매우 높음) ~ 4(낮음)
 
     # 식중독 지수 (사용자 지역구 기준)
-    food_poisoning_score: Optional[float] = None
+    food_poisoning_index: Optional[float] = None
     food_poisoning_risk: Optional[str] = None  # 예: "관심", "주의", "경고", "위험"
 
     # 계산 오류 메시지
@@ -56,13 +56,19 @@ class IndexingData(BaseModel):
 
 
 # --- API 응답 스키마 ---
-class ApiResponse(BaseModel):
+class IndicesApiResponse(BaseModel):
+    """/api/indices 엔드포인트 응답 모델"""
+
     request_info: dict
     weather: Optional[WeatherData] = None
-    shelter_map_html: Optional[str] = None
-    indexing_result: Optional[IndexingData] = None  # 상세화된 IndexingData 사용
-    risk_assessment: Optional[RiskIndex] = (
-        None  # RiskIndex는 사용자 전반적 위험도 (별도 정의 필요 시 수정)
-    )
+    indexing_result: Optional[IndexingData] = None
     alerts: List[AlertInfo] = []
-    error: Optional[str] = None
+    error: Optional[str] = None  # 지수 계산/크롤링 중 발생한 오류 요약
+
+
+class MapApiResponse(BaseModel):
+    """/api/map 엔드포인트 응답 모델"""
+
+    request_info: dict
+    shelter_map_html: Optional[str] = None
+    error: Optional[str] = None  # 지도 생성 중 발생한 오류

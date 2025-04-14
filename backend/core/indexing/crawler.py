@@ -273,8 +273,6 @@ def _fetch_food_poisoning_sync() -> Dict[str, Optional[str]]:
         print(f"Found {len(li_elements)} districts in Seoul.")
 
         scraped_data = {}
-        # ActionChains 초기화
-        # actions = ActionChains(driver) # 루프 밖에서 한 번만 생성
 
         for i, li in enumerate(li_elements):
             try:
@@ -292,15 +290,18 @@ def _fetch_food_poisoning_sync() -> Dict[str, Optional[str]]:
                 # hover 후 risk 요소가 나타날 때까지 잠시 대기
                 time.sleep(0.1)  # 매우 짧은 대기 (필요시 조정)
 
-                # 위험도 텍스트 추출 (ID 'risk' 요소 찾기)
+                data = {}
+                # 식중독 지수 추출
                 risk_element = driver.find_element(By.ID, "risk")
                 risk_text = risk_element.text
-                scraped_data[span_text] = risk_text
 
-                # 수정 필요 !!!!!!!!!!!!!!!!
+                # 식중독 위험도 추출
                 level_element = driver.find_element(By.ID, "stateText")
                 level_text = level_element.text
-                scraped_data[span_text]
+
+                data["poison_index"] = risk_text
+                data["poison_level"] = level_text
+                scraped_data[span_text] = data
 
             except NoSuchElementException:
                 # 특정 li 처리 중 오류 발생 시 경고 출력 후 계속 진행
