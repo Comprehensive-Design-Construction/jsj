@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Any
-from backend.config import settings
+from config import settings
 
 
 # default 설정 ?

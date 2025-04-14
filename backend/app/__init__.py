@@ -33,16 +33,9 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(settings)
 
-    # with app.app_context():
-    #     load_shelter_data()
-
     # --- 스케줄러 설정 및 시작 ---
-    # 예시: 매 4시간마다 실행 (cron 방식 또는 interval 방식 사용 가능)
-    # scheduler.add_job(update_poison_index_job, 'interval', hours=4)
-    scheduler.add_job(
-        update_poison_index_job, "cron", hour="0,4,8,12,16,20"
-    )  # 매 4시간 정각
-    # 앱 시작 시 즉시 한 번 실행 (선택 사항)
+    scheduler.add_job(update_poison_index_job, "interval", hours=2)
+    # 앱 시작 시 즉시 한 번 실행
     scheduler.add_job(update_poison_index_job)
     try:
         if not scheduler.running:
@@ -55,9 +48,11 @@ def create_app():
     # --------------------------
 
     # 블루프린트 등록
-    from app.routes import main as main_routes
+    from app.routes import index as index_routes
+    from app.routes import map as map_routes
 
-    app.register_blueprint(main_routes.bp)
+    app.register_blueprint(index_routes.bp)
+    app.register_blueprint(map_routes.bp)
 
     # 에러 핸들러 등록 (이전과 동일)
     @app.errorhandler(ValidationError)

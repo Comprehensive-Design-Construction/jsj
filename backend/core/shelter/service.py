@@ -354,72 +354,58 @@ async def generate_shelter_map_html(
     """
     user_location = Point(longitude, latitude)
     print(
-        f"--- Map Generation Service Started: Type={disaster_type}, Radius={radius_km}km ---"
+        f"--- Map Generation Service Started: Type={disaster_type}, Radius={radius_km}km ---",
     )
 
-    try:
-        # CPU 집약적인 작업들을 감싸는 함수
-        def _blocking_operations():
-            # 1. 재난 유형별 대피소 로드
-            shelter_data = _load_shelter_by_type(disaster_type)
-            if shelter_data.gdf is None or shelter_data.gdf.empty:
-                raise ValueError(
-                    f"'{disaster_type}' 유형의 유효 대피소 데이터를 로드하지 못했습니다."
-                )
-
-            # 2. 반경 내 대피소 필터링 (또는 전체 사용 결정)
-            #    osmnx 탐색 반경과 별개로, 지도에 표시할 대피소 목록 필터링
-            shelter_gdf_to_display = _filter_shelter_by_radius(
-                shelter_data, user_location, radius_km
-            )
-            if shelter_gdf_to_display is None:  # 필터링 중 오류 발생 시
-                shelter_gdf_to_display = shelter_data.gdf  # 원본 사용 시도
-            if shelter_gdf_to_display is None or shelter_gdf_to_display.empty:
-                print(
-                    f"경고: 반경 {radius_km}km 내 또는 원본 데이터에 유효한 대피소가 없습니다."
-                )
-                # 대피소가 없어도 사용자 위치만 표시된 지도는 생성 가능
-
-            # 3. 가장 가까운 대피소 및 네트워크 경로 탐색 (가장 시간 소요)
-            #    네트워크 탐색 반경은 입력받은 radius_km 사용
-            closest_shelter, network_graph, route_nodes, distance_km = (
-                _extract_closest_shelter_and_route(
-                    shelter_gdf_to_display,
-                    user_location,
-                    radius_km,  # 필터링된 GDF 전달
-                )
+    # CPU 집약적인 작업들을 감싸는 함수
+    def _blocking_operations():
+        # 1. 재난 유형별 대피소 로드
+        shelter_data = _load_shelter_by_type(disaster_type)
+        if shelter_data.gdf is None or shelter_data.gdf.empty:
+            raise ValueError(
+                f"'{disaster_type}' 유형의 유효 대피소 데이터를 로드하지 못했습니다."
             )
 
-            # 4. 지도 시각화
-            fmap = _visualize_shelters_on_map(
-                shelter_gdf=shelter_gdf_to_display,  # 지도에 표시할 GDF
-                closest_shelter_row=closest_shelter,
-                user_location=user_location,
-                disaster_type=disaster_type,
-                graph=network_graph,
-                route_nodes=route_nodes,
-                min_distance_km=distance_km,
-            )
-            return fmap._repr_html_()
-
-        # asyncio.to_thread를 사용하여 동기 함수를 별도 스레드에서 실행
-        print("Running blocking operations in a separate thread...")
-        loop = asyncio.get_running_loop()
-        map_html = await loop.run_in_executor(
-            None, _blocking_operations
-        )  # None은 기본 스레드 풀 사용
-        print("--- Map Generation Service Finished ---")
-        return map_html
-
-    except ValueError as ve:
-        print(f"Map Generation Error (ValueError): {ve}")
-        return f"<h2>지도 생성 오류: {ve}</h2>"
-    except ImportError as ie:
-        print(f"Map Generation Error (ImportError): {ie}")
-        return (
-            f"<h2>지도 생성 오류: 필요한 라이브러리({ie})가 설치되지 않았습니다.</h2>"
+        # 2. 반경 내 대피소 필터링 (또는 전체 사용 결정)
+        #    osmnx 탐색 반경과 별개로, 지도에 표시할 대피소 목록 필터링
+        shelter_gdf_to_display = _filter_shelter_by_radius(
+            shelter_data, user_location, radius_km
         )
-    except Exception as e:
-        print(f"Map Generation Error (Unexpected): {e}")
-        traceback.print_exc()
-        return f"<h2>지도 생성 중 예상치 못한 오류가 발생했습니다: {e}</h2>"
+        if shelter_gdf_to_display is None:  # 필터링 중 오류 발생 시
+            shelter_gdf_to_display = shelter_data.gdf  # 원본 사용 시도
+        if shelter_gdf_to_display is None or shelter_gdf_to_display.empty:
+            print(
+                f"경고: 반경 {radius_km}km 내 또는 원본 데이터에 유효한 대피소가 없습니다."
+            )
+            # 대피소가 없어도 사용자 위치만 표시된 지도는 생성 가능
+
+        # 3. 가장 가까운 대피소 및 네트워크 경로 탐색 (가장 시간 소요)
+        #    네트워크 탐색 반경은 입력받은 radius_km 사용
+        closest_shelter, network_graph, route_nodes, distance_km = (
+            _extract_closest_shelter_and_route(
+                shelter_gdf_to_display,
+                user_location,
+                radius_km,  # 필터링된 GDF 전달
+            )
+        )
+
+        # 4. 지도 시각화
+        fmap = _visualize_shelters_on_map(
+            shelter_gdf=shelter_gdf_to_display,  # 지도에 표시할 GDF
+            closest_shelter_row=closest_shelter,
+            user_location=user_location,
+            disaster_type=disaster_type,
+            graph=network_graph,
+            route_nodes=route_nodes,
+            min_distance_km=distance_km,
+        )
+        return fmap._repr_html_()
+
+    # asyncio.to_thread를 사용하여 동기 함수를 별도 스레드에서 실행
+    print("Running blocking operations in a separate thread...")
+    loop = asyncio.get_running_loop()
+    map_html = await loop.run_in_executor(
+        None, _blocking_operations
+    )  # None은 기본 스레드 풀 사용
+    print("--- Map Generation Service Finished ---")
+    return map_html

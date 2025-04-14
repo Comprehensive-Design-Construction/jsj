@@ -15,6 +15,7 @@ from config import settings
 
 bp = Blueprint("map", __name__, url_prefix="/api")
 
+
 @bp.route("/map", methods=["GET"])
 async def get_map():
     """
@@ -24,14 +25,14 @@ async def get_map():
     request_data_for_response = {}
     input_radius_km = settings.DEFAULT_RADIUS_KM
     validated_input: Optional[ApiRequest] = None
-    
+
     try:
         lat_str = request.args.get("latitude")
         lon_str = request.args.get("longitude")
         disaster_str = request.args.get(
             "disaster_type", default=settings.DEFAULT_DISASTER_TYPE
         )
-        radius_str = request.args.get("radius_km")
+        radius_str = request.args.get("radius_km", default=settings.DEFAULT_RADIUS_KM)
 
         if lat_str is None or lon_str is None:
             missing = [
@@ -43,7 +44,7 @@ async def get_map():
                 [{"loc": ["query", m], "msg": "field required"} for m in missing],
                 ApiRequest,
             )
-        
+
         try:
             lat = float(lat_str)
             lon = float(lon_str)
@@ -52,7 +53,7 @@ async def get_map():
                 [{"loc": ["query", "lat/lon"], "msg": "value is not a valid float"}],
                 ApiRequest,
             )
-        
+
         if radius_str is not None:  # radius_km 파라미터가 제공된 경우에만 변환 시도
             try:
                 input_radius_km = float(radius_str)
@@ -68,7 +69,7 @@ async def get_map():
                     ],
                     ApiRequest,
                 )
-            
+
         validated_input = ApiRequest(
             request_location=LocationInput(latitude=lat, longitude=lon),
             user_input=UserInput(),  # age=None, disease=[] 가능
@@ -83,11 +84,11 @@ async def get_map():
             jsonify({"error": "Invalid input parameters", "details": e.errors()}),
             400,
         )
-    
+
     try:
         print("Starting tasks: Shelter Map HTML...")
 
-        shelter_map_task = generate_shelter_map_html(
+        shelter_map_task = await generate_shelter_map_html(
             latitude=validated_input.request_location.latitude,
             longitude=validated_input.request_location.longitude,
             disaster_type=validated_input.disaster_type,
@@ -96,15 +97,13 @@ async def get_map():
 
         result = shelter_map_task
         print("Shelter Map HTML generation complete.")
-        
+
         final_shelter_map_html: Optional[str] = None
         overall_error_parts = []
 
         if isinstance(result, Exception):
             print(f"Error generating shelter map HTML: {result}")
-            final_shelter_map_html = (
-                f"<h2>지도 생성 중 오류 발생: {result}</h2>"
-            )
+            final_shelter_map_html = f"<h2>지도 생성 중 오류 발생: {result}</h2>"
             overall_error_parts.append(f"Shelter map generation failed.")
         elif isinstance(result, str):
             final_shelter_map_html = result
@@ -115,15 +114,15 @@ async def get_map():
             overall_error_parts.append(
                 "Shelter map generation returned unexpected result."
             )
-        
+
         response_data = MapApiResponse(
             request_info=request_data_for_response,
             shelter_map_html=final_shelter_map_html,
             error="; ".join(overall_error_parts) if overall_error_parts else None,
         )
-        
+
         return jsonify(response_data.model_dump(exclude_none=True))
-    
+
     except Exception as e:
         print(f"Error in /api/map: {e}")
         traceback.print_exc()
