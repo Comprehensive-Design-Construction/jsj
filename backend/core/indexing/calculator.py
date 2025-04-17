@@ -4,8 +4,6 @@ from typing import List, Optional, Dict, Any
 
 from config.weights_config import weights
 
-# --- Helper Functions from get_index.py ---
-
 
 def _compute_tw(ta: float, rh: float) -> float:
     """습구온도 계산 공식"""
@@ -275,7 +273,7 @@ def calculate_apparent_temp_ali(
     try:
         # 입력 데이터 추출 및 유효성 검사
         pressure = weather_data.get("pressure")
-        temp = weather_data.get("temperature")
+        temp = weather_data.get("temp")
         humidity = weather_data.get("humidity")
         wind = weather_data.get("wind_speed")
         min_temp = weather_data.get("min_temp")

@@ -1,10 +1,19 @@
 import threading
 from datetime import datetime, timezone
 
-# 식중독 지수 데이터를 저장할 딕셔너리와 마지막 업데이트 시간
 # 스레드 간의 동시 접근을 막기 위해 Lock 사용
+fine_dust_cache = {"data": {}, "last_updated": None}
 food_poisoning_cache = {"data": {}, "last_updated": None}
 cache_lock = threading.Lock()
+
+
+def update_fine_dust_cache(data: dict):
+    with cache_lock:
+        if data and not data.get("error"):
+            fine_dust_cache["data"] = data
+            print(f"Fine Dust cache updated at {fine_dust_cache['last_updated']} UTC")
+        else:
+            print("Received data with error or empty data, cache not updated.")
 
 
 def update_food_poisoning_cache(data: dict):
@@ -21,10 +30,15 @@ def update_food_poisoning_cache(data: dict):
             print("Received data with error or empty data, cache not updated.")
 
 
+def get_fine_dust_cache() -> dict:
+    """현재 캐시된 데이터를 반환하는 함수"""
+    with cache_lock:
+        # 깊은 복사를 통해 반환하여 외부에서 캐시 직접 수정을 방지 ###
+        return fine_dust_cache
+
+
 def get_food_poisoning_cache() -> dict:
     """현재 캐시된 데이터를 반환하는 함수"""
     with cache_lock:
-        # 깊은 복사를 통해 반환하여 외부에서 캐시 직접 수정을 방지 (선택 사항)
-        # import copy
-        # return copy.deepcopy(food_poisoning_cache)
-        return food_poisoning_cache  # 간단히 반환
+        # 깊은 복사를 통해 반환하여 외부에서 캐시 직접 수정을 방지 ###
+        return food_poisoning_cache

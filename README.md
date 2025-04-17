@@ -1,6 +1,9 @@
 # jsj
 hi
 
+### 중요
+calculator.py => 질병에 대한 로직 추가, 기압 정의 추가.
+
 ### 공지사항
 Chromedriver => 환경 변수 등록하고 webdriver_manager이랑 shutil로 관리합니다.
 github에 올리지 말아주세여
