@@ -7,7 +7,7 @@ import traceback
 from typing import Tuple, Any, Optional, List
 
 # 설정 파일 임포트
-import config
+import core.shelter.config as config
 
 
 async def _fetch_single_route_data(

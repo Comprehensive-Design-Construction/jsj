@@ -4,13 +4,13 @@ import geopandas as gpd
 from shapely.geometry import Point
 
 try:
-    from shelter import Shelter
+    from core.shelter.shelter import Shelter
 except ImportError:
     print(
         "경고: 'core.shelter.shelter'에서 Shelter 클래스를 임포트할 수 없습니다. 임시 클래스를 사용하거나 경로를 확인하세요."
     )
 
-import config as config
+import core.shelter.config as config
 
 warnings.filterwarnings("ignore")
 

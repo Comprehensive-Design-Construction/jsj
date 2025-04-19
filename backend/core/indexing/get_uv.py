@@ -15,7 +15,7 @@ async def _fetch_uv_sync() -> Optional[dict]:
     :return: 구: h0
     """
     path = os.path.join(
-        ".",  # os.path.dirname(__file__),
+        ".",
         "backend",
         "datasets",
         "weather",
@@ -95,4 +95,4 @@ async def _fetch_uv_sync() -> Optional[dict]:
 
 
 if __name__ == "__main__":
-    asyncio.run(_fetch_uv_sync())
+    print(asyncio.run(_fetch_uv_sync()))

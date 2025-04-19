@@ -28,7 +28,7 @@ SHELTER_FILE_MAPPING = {
 DEFAULT_LON_COL = "경도"
 DEFAULT_LAT_COL = "위도"
 
-if TMAP_APP_KEY == "YOUR_FALLBACK_TMAP_APP_KEY":
+if TMAP_API_KEY == "YOUR_FALLBACK_TMAP_API_KEY":
     print(
         "경고: TMAP_APP_KEY가 설정되지 않았습니다. config.py 또는 환경 변수를 확인하세요."
     )

@@ -72,3 +72,31 @@ class MapApiResponse(BaseModel):
     request_info: dict
     shelter_map_html: Optional[str] = None
     error: Optional[str] = None  # 지도 생성 중 발생한 오류
+
+
+class EnvMapApiResponse(BaseModel):
+    """환경 관련 지도 API 응답 모델"""
+
+    request_info: dict
+    env_map_html: Optional[str] = None
+    env_type: str  # 어떤 환경 지도인지 (fine_dust, uv)
+    last_updated: Optional[str] = None  # 데이터 최종 업데이트 시간
+    error: Optional[str] = None
+
+
+class FineDustData(BaseModel):
+    """미세먼지 데이터 모델"""
+
+    region: str  # 지역명
+    grade: Optional[str] = None  # 등급
+    pm10: Optional[float] = None  # 미세먼지 농도
+    pm25: Optional[float] = None  # 초미세먼지 농도
+    max_index: Optional[float] = None  # 통합 대기 환경 지수
+
+
+class UvData(BaseModel):
+    """자외선 지수 데이터 모델"""
+
+    region: str  # 지역명
+    uv_index: Optional[int] = None  # 자외선 지수
+    uv_grade: Optional[str] = None  # 자외선 등급

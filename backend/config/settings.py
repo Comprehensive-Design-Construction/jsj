@@ -16,9 +16,3 @@ DEFAULT_LATITUDE = 37.568512
 DEFAULT_LONGITUDE = 126.986988
 DEFAULT_RADIUS_KM = 2.0
 DEFAULT_DISASTER_TYPE = "HEAT_WAVE"
-
-# osmnx 설정 적용
-import osmnx as ox
-
-ox.settings.cache_folder = OSMNX_CACHE_FOLDER
-ox.settings.use_cache = OSMNX_USE_CACHE

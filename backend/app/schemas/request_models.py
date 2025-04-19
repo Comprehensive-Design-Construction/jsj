@@ -3,14 +3,9 @@ from typing import List, Optional, Any
 from config import settings
 
 
-# default 설정 ?
 class LocationInput(BaseModel):
-    latitude: float = Field(
-        ..., ge=-90.0, le=90.0, description="위도"
-    )  # 필수 필드로 변경, 기본값 제거
-    longitude: float = Field(
-        ..., ge=-180.0, le=180.0, description="경도"
-    )  # 필수 필드로 변경
+    latitude: float = Field(..., ge=-90.0, le=90.0, description="위도")
+    longitude: float = Field(..., ge=-180.0, le=180.0, description="경도")
 
 
 class UserInput(BaseModel):
@@ -37,12 +32,27 @@ class ShelterInput(BaseModel):
         return upper_v
 
 
+class EnvironmentInput(BaseModel):
+    env_type: str = Field(..., description="환경 유형 (fine_dust, uv)")
+
+    @validator("env_type")
+    def validate_env_type(cls, v):
+        allowed_types = ["fine_dust", "uv"]
+        lower_v = v.lower()
+        if lower_v not in allowed_types:
+            raise ValueError(
+                f"Invalid env_type. Allowed types are: {', '.join(allowed_types)}"
+            )
+        return lower_v
+
+
 class ApiRequest(BaseModel):
     # API 요청 전체 구조 정의
     request_location: LocationInput
     user_input: UserInput
     # disaster_type을 직접 포함하도록 구조 변경 (ShelterInput 중첩 제거)
     disaster_type: str
+    env_type: Optional[str] = None
 
     # ApiRequest 레벨에서 disaster_type 유효성 검사 (선택 사항)
     @validator("disaster_type")
@@ -54,3 +64,16 @@ class ApiRequest(BaseModel):
                 f"Invalid disaster_type in ApiRequest. Allowed types are: {', '.join(allowed_types)}"
             )
         return upper_v
+
+    @validator("env_type")
+    def validate_api_env_type(cls, v):
+        if v is None:
+            return v
+
+        allowed_types = ["fine_dust", "uv"]
+        lower_v = v.lower()
+        if lower_v not in allowed_types:
+            raise ValueError(
+                f"Invalid env_type in ApiRequest. Allowed types are: {', '.join(allowed_types)}"
+            )
+        return lower_v

@@ -6,9 +6,9 @@ from typing import Dict, Optional, Tuple
 
 # 모듈 임포트
 import config
-from shelter_loader import load_shelter_by_type
-from tmap_client import find_closest_shelter_with_tmap
-from map_visualizer import create_shelter_map
+from core.shelter.shelter_loader import load_shelter_by_type
+from core.shelter.tmap_client import find_closest_shelter_with_tmap
+from core.shelter.map_visualizer import create_shelter_map
 
 
 async def _generate_single_map_html(

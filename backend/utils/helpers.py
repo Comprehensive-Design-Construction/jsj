@@ -79,9 +79,10 @@ def get_region(lat: float, lon: float) -> str:
 
     api_json = requests.get(url, headers=headers)
     full_address = json.loads(api_json.text)
+    gu = full_address["documents"][1]["region_2depth_name"]
     region = full_address["documents"][1]["region_3depth_name"]
 
-    return region
+    return gu, region
 
 
 # --- 핵심 기능: 좌표 -> 관측소 변환 ---
