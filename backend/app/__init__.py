@@ -9,12 +9,26 @@ from config import settings
 # from utils.helpers import load_shelter_data  # 대피소 데이터 로딩
 
 # 캐시 업데이트 함수 및 크롤러 함수 임포트 (경로 주의)
-from app.cache import update_food_poisoning_cache, update_fine_dust_cache
+from app.cache import (
+    update_food_poisoning_cache,
+    update_fine_dust_cache,
+    update_uv_cache,
+)
 from core.indexing.get_poison import _fetch_food_poisoning_sync  # 동기 크롤러 함수
 from core.indexing.get_fine_dust import _fetch_fine_dust_sync
+from core.indexing.get_uv import _fetch_uv_sync
 
 # 전역 스케줄러 인스턴스 생성
 scheduler = BackgroundScheduler(daemon=True)
+
+
+def update_uv_job():
+    print("Scheduler: Running UV update job...")
+    try:
+        data = _fetch_uv_sync()
+        update_uv_cache(data)
+    except Exception as e:
+        print(f"Scheduler Error: Failed to update UV: {e}")
 
 
 def update_fine_dust_job():
@@ -47,6 +61,9 @@ def create_app():
     scheduler.add_job(update_fine_dust_job, "cron", minute="01")
     # 앱 시작 시 즉시 한 번 실행
     scheduler.add_job(update_fine_dust_job)
+
+    scheduler.add_job(update_uv_job, "cron", minute="01")
+    scheduler.add_job(update_uv_job)
 
     scheduler.add_job(update_poison_index_job, "cron", minute="01")
     # 앱 시작 시 즉시 한 번 실행

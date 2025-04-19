@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-TMAP_APP_KEY = os.getenv("TMAP_APP_KEY")
+TMAP_API_KEY = os.getenv("TMAP_API_KEY")
 
 SHELTER_ROOT_PATH = os.getenv("SHELTER_ROOT_PATH", "./backend/datasets/shelter")
 
