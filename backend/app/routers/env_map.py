@@ -1,9 +1,9 @@
-from flask import Blueprint, request, jsonify
+from fastapi import APIRouter, HTTPException, Query
+from typing import Optional, Dict, Any, Tuple
 import logging
 from datetime import datetime
 from pydantic import ValidationError
 import traceback
-from typing import Optional, Dict, Any, Tuple
 import asyncio
 import time
 
@@ -17,21 +17,20 @@ from app.cache import get_fine_dust_map_cache, get_uv_map_cache
 # 로깅 설정
 logger = logging.getLogger(__name__)
 
-# 블루프린트 생성
-bp = Blueprint("env_map", __name__, url_prefix="/api")
+# 라우터 생성
+router = APIRouter(prefix="/api")
 
 # 캐시 타임아웃 설정 (1시간)
 CACHE_TIMEOUT_SECONDS = 3600
 
 
-@bp.route("/env_map", methods=["GET"])
-async def get_env_map():
+@router.get("/env_map", response_model=EnvMapApiResponse)
+async def get_env_map(env_type: str, force_refresh: bool = False):
     """
     환경 관련 지도 API 엔드포인트:
 
-    요청 파라미터:
-    - env_type: 환경 지도 유형 (fine_dust, uv)
-    - force_refresh: 캐시를 무시하고 새로 데이터를 가져올지 여부 (옵션, 기본값: false)
+    - **env_type**: 환경 지도 유형 (fine_dust, uv)
+    - **force_refresh**: 캐시를 무시하고 새로 데이터를 가져올지 여부 (기본값: false)
 
     반환:
     - HTML 형식의 지도 시각화
@@ -40,31 +39,19 @@ async def get_env_map():
         # 요청 처리 시작 시간 (성능 측정용)
         start_time = time.time()
 
-        # 요청 파라미터 검증
-        env_type = request.args.get("env_type")
-        force_refresh = request.args.get("force_refresh", "false").lower() == "true"
-
         logger.info(
             f"Received request for {env_type} map (force_refresh={force_refresh})"
         )
-
-        if not env_type:
-            return (
-                jsonify(
-                    {
-                        "error": "Missing required parameter: env_type",
-                        "details": "env_type parameter is required (fine_dust or uv)",
-                    }
-                ),
-                400,
-            )
 
         # Pydantic 모델로 유효성 검사
         try:
             validated_input = EnvironmentInput(env_type=env_type)
             env_type = validated_input.env_type  # 검증 및 정규화된 값 사용
         except ValidationError as e:
-            return jsonify({"error": "Invalid env_type", "details": e.errors()}), 400
+            raise HTTPException(
+                status_code=400,
+                detail={"error": "Invalid env_type", "details": e.errors()},
+            )
 
         # 요청 정보 구성
         request_info = {"env_type": env_type, "force_refresh": force_refresh}
@@ -89,14 +76,12 @@ async def get_env_map():
                 )
             else:
                 # 이 부분은 Pydantic 검증으로 걸러져야 하지만 안전장치로 남겨둠
-                return (
-                    jsonify(
-                        {
-                            "error": "Invalid env_type",
-                            "details": "env_type must be either 'fine_dust' or 'uv'",
-                        }
-                    ),
-                    400,
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "error": "Invalid env_type",
+                        "details": "env_type must be either 'fine_dust' or 'uv'",
+                    },
                 )
 
         except asyncio.TimeoutError:
@@ -136,14 +121,18 @@ async def get_env_map():
         elapsed_time = time.time() - start_time
         logger.info(f"Request for {env_type} map processed in {elapsed_time:.2f}s")
 
-        return jsonify(response_data.model_dump(exclude_none=True))
+        return response_data.model_dump(exclude_none=True)
+
+    except HTTPException:
+        # 이미 처리된 HTTP 예외는 그대로 전달
+        raise
 
     except Exception as e:
         logger.error(f"Error in /api/env_map: {e}")
         traceback.print_exc()
-        return (
-            jsonify({"error": "서버 내부 오류가 발생했습니다", "message": str(e)}),
-            500,
+        raise HTTPException(
+            status_code=500,
+            detail={"error": "서버 내부 오류가 발생했습니다", "message": str(e)},
         )
 
 

@@ -193,7 +193,7 @@ if __name__ == "__main__":
     else:
         # 모든 테스트 실행
         # test_index_api()
-        # test_env_map_api()
-        test_map_api()
+        test_env_map_api()
+        # test_map_api()
 
     print("\nAPI 테스트 완료!")

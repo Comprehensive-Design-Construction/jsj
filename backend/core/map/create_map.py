@@ -1,6 +1,4 @@
 import folium
-import os
-import geopandas as gpd
 import pandas as pd
 from core.map.common_functions import (
     _load_geojson_and_calculate_centroids,

@@ -1,7 +1,5 @@
 import warnings
-import pandas as pd
 import geopandas as gpd
-from shapely.geometry import Point
 
 try:
     from core.shelter.shelter import Shelter

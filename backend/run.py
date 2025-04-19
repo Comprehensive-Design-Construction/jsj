@@ -7,6 +7,7 @@ Flask 애플리케이션을 초기화하고 개발 서버를 실행합니다.
 import os
 import logging
 from app import create_app
+from waitress import serve
 
 # 로깅 설정
 logging.basicConfig(
@@ -30,14 +31,7 @@ def main():
     logger.info(f"Starting application on port {port} (debug={debug})")
 
     # Flask 개발 서버 실행
-    app.run(
-        debug=debug,  # 디버그 모드: 코드 변경 시 자동 재시작, 자세한 오류 로그 (개발 중에만 사용)
-        host="0.0.0.0",  # 모든 네트워크 인터페이스에서 접속 허용
-        port=port,  # 사용할 포트 번호
-    )
-
-    # 참고: 운영 환경에서는 Gunicorn, uWSGI 같은 WSGI 서버를 사용하는 것이 권장됩니다.
-    # 예: gunicorn -w 4 -b 0.0.0.0:5000 run:app
+    serve(app, host="0.0.0.0", port=port, threads=4)
 
 
 if __name__ == "__main__":

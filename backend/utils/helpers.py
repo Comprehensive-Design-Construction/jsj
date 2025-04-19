@@ -1,15 +1,14 @@
-import requests
-import json
 import pandas as pd
 import os
 import logging
 from dotenv import load_dotenv
-
-load_dotenv()
-
+import asyncio
+import aiohttp
 from functools import (
     lru_cache,
 )  # 간단한 캐싱을 위해 사용 (모듈 로딩 시 한 번만 파일 읽기)
+
+load_dotenv()
 
 # backend 폴더 기준으로 ../datasets/ 경로 접근
 try:
@@ -72,57 +71,61 @@ def load_observatory_data() -> pd.DataFrame | None:
         return None
 
 
-def get_region(lat: float, lon: float) -> str:
+# 지역 정보 캐시
+# 키: f"{lat:.5f}_{lon:.5f}", 값: (gu, region) 튜플
+region_cache = {}
+region_cache_limit = 1000  # 캐시 크기 제한
+
+
+async def get_region(lat: float, lon: float) -> tuple:
+    """
+    위도/경도 좌표를 행정구역 정보로 변환 (구, 동)
+    결과를 캐싱하여 반복적인 API 호출 방지
+
+    Args:
+        lat: 위도
+        lon: 경도
+
+    Returns:
+        tuple: (구 이름, 동 이름)
+    """
+    # 캐시 키 생성 (소수점 5자리까지만 고려)
+    cache_key = f"{lat:.5f}_{lon:.5f}"
+
+    # 캐시에서 값을 찾으면 바로 반환
+    if cache_key in region_cache:
+        logger.debug(f"Region info for ({lat}, {lon}) found in cache")
+        return region_cache[cache_key]
+
     KAKAO_API_KEY = os.getenv("KAKAO_API_KEY")
     url = f"https://dapi.kakao.com/v2/local/geo/coord2regioncode.JSON?x={lon}&y={lat}"
     headers = {"Authorization": "KakaoAK " + KAKAO_API_KEY}
 
-    api_json = requests.get(url, headers=headers)
-    full_address = json.loads(api_json.text)
-    gu = full_address["documents"][1]["region_2depth_name"]
-    region = full_address["documents"][1]["region_3depth_name"]
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers) as response:
+                if response.status != 200:
+                    logger.error(f"Kakao API error: status code {response.status}")
+                    return None, None
 
-    return gu, region
+                full_address = await response.json()
 
+                if not full_address.get("documents"):
+                    logger.error(f"No region data found for coordinates ({lat}, {lon})")
+                    return None, None
 
-# --- 핵심 기능: 좌표 -> 관측소 변환 ---
+                gu = full_address["documents"][1]["region_2depth_name"]
+                region = full_address["documents"][1]["region_3depth_name"]
 
+                # 결과를 캐시에 저장
+                region_cache[cache_key] = (gu, region)
 
-def convert_nearest_observation(lat: float, lon: float) -> str | None:
-    """
-    주어진 위도, 경도에서 가장 가까운 기상 관측소 코드를 찾아서 반환합니다.
-    """
-    obs_df = load_observatory_data()  # 캐시된 데이터 사용
+                # 캐시 크기 제한 (FIFO 방식)
+                if len(region_cache) > region_cache_limit:
+                    oldest_key = next(iter(region_cache))
+                    region_cache.pop(oldest_key)
 
-    if obs_df is None or obs_df.empty:
-        logger.error("Observatory data is not available for coordinate conversion.")
-        return None
-
-    region = get_region(lat, lon)
-    observatory = obs_df[obs_df["dong"] == region]["nearest_observatory"].values[0]
-
-    if observatory is not None:
-        logger.info(
-            f"Nearest observatory for ({lat}, {lon}) is {observatory} at {region}"
-        )
-        return str(observatory)
-    else:
-        logger.warning(f"Could not find any nearest observatory for ({lat}, {lon}).")
-        return None
-
-
-# --- 테스트 코드 (파일 직접 실행 시) ---
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-
-    # 테스트 좌표 (예: 서울 시청 근처)
-    test_lat, test_lon = 37.5665, 126.9780
-    print(f"\nTesting coordinate conversion for: ({test_lat}, {test_lon})")
-    print(convert_nearest_observation(test_lat, test_lon))
-
-    # 캐시 키 생성 테스트
-    print(f"\nTesting cache key generation for: ({test_lat}, {test_lon})")
-
-    # 캐시 동작 확인 (두 번째 호출 시 파일 로드 로그가 없어야 함)
-    print("\nCalling coordinate conversion again to test caching...")
-    print(convert_nearest_observation(test_lat, test_lon))
+                return gu, region
+    except Exception as e:
+        logger.error(f"Error getting region info: {e}")
+        return None, None
