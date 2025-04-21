@@ -1,36 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'providers/app_data_provider.dart';
-import 'screens/home_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // ProviderScope 사용 위해 import
+import 'app.dart'; // MyApp 위젯 import
 
 void main() {
+  // Flutter 엔진과 위젯 바인딩 초기화 보장
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => AppDataProvider(),
-      child: const MyApp(),
-    ),
+    // 앱 전체를 ProviderScope로 감싸 Riverpod 상태 관리 활성화
+    const ProviderScope(child: MyApp()),
   );
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // 앱 시작 시 초기 데이터 로드 요청
-    // build 메소드 내에서 직접 호출하는 것은 권장되지 않으므로
-    // HomeScreen의 initState 등에서 호출하도록 변경
-    // Provider.of<AppDataProvider>(context, listen: false).loadInitialData();
-
-    return MaterialApp(
-      title: '안전 정보 앱', // 앱 이름 변경
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.grey[100], // 전체 배경색 설정
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-        fontFamily: 'Pretendard', // (선택) Pretendard 폰트 적용 (pubspec.yaml 설정 필요)
-      ),
-      home: const HomeScreen(),
-    );
-  }
 }

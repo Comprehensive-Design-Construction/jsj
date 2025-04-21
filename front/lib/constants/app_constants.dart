@@ -1,42 +1,32 @@
-import 'package:flutter/material.dart';
+// lib/constants/app_constants.dart
+class AppConstants {
+  // 위치 권한 거부 또는 실패 시 사용할 기본 위도/경도 (예: 강남역)
+  static const double defaultLatitude = 37.498095;
+  static const double defaultLongitude = 127.02761;
 
-// !!! 중요: 백엔드 서버가 실행 중인 PC의 로컬 IP 주소로 변경하세요 !!!
-const String backendUrl = 'http://192.168.0.106:5000'; // <-- 여기를 수정하세요!
+  // 대피소 검색 기본 반경 (km)
+  static const double defaultRadiusKm = 2.0;
 
-// --- 고정 위치 설정 ---
-const double fixedLatitude = 37.5665; // 예: 서울 시청
-const double fixedLongitude = 126.9780;
+  // 사용 가능한 질병 목록 (Profile 화면에서 사용)
+  static const List<String> availableDiseases = [
+    "천식",
+    "고혈압",
+    "당뇨",
+    "심장질환",
+    "호흡기질환",
+    "기타",
+  ];
 
-// --- 재난 유형 Enum ---
-enum ShelterType { HEAT_WAVE, COLD_WAVE, FINE_DUST, FLOOD, EARTHQUAKE }
+  // 사용 가능한 재난 유형 목록 (대피소 지도에서 사용) - API 스키마 기준
+  static const List<String> availableDisasterTypes = [
+    "COLD_WAVE",
+    "HEAT_WAVE",
+    "FINE_DUST",
+    "FLOOD",
+    "EARTHQUAKE",
+  ];
 
-// Enum을 API 파라미터 문자열 및 UI 표시 문자열로 변환하는 확장 메소드
-extension ShelterTypeExtension on ShelterType {
-  String get apiParam {
-    // enum 값의 이름을 그대로 사용 (예: ShelterType.HEAT_WAVE -> "HEAT_WAVE")
-    return name;
-  }
-
-  String get displayName {
-    switch (this) {
-      case ShelterType.HEAT_WAVE:
-        return '폭염';
-      case ShelterType.COLD_WAVE:
-        return '한파';
-      case ShelterType.FINE_DUST:
-        return '미세먼지';
-      case ShelterType.FLOOD:
-        return '홍수';
-      case ShelterType.EARTHQUAKE:
-        return '지진';
-      default:
-        return '';
-    }
-  }
+  // SharedPreferences 키 (선택 사항)
+  // static const String userAgeKey = 'user_age';
+  // static const String userDiseasesKey = 'user_diseases';
 }
-
-// UI 색상 등 기타 상수 추가 가능
-const Color primaryColor = Colors.blueAccent;
-const Color cardBackgroundColor = Colors.white;
-const Color chipSelectedColor = Colors.blueAccent;
-const Color chipUnselectedColor = Colors.grey;
