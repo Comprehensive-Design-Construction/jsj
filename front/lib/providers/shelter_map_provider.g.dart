@@ -6,7 +6,7 @@ part of 'shelter_map_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$shelterMapHash() => r'6f24673daacaa12a53b6af4b82da46cf3dbbb4af';
+String _$shelterMapHash() => r'799d71f87d2f126844eb9751e75d2a7ee5723ead';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -29,24 +29,16 @@ class _SystemHash {
   }
 }
 
-/// 재난 유형과 위치 기반으로 대피소 지도 데이터를 가져오는 프로바이더 (Family 사용)
-///
-/// Copied from [shelterMap].
+/// See also [shelterMap].
 @ProviderFor(shelterMap)
 const shelterMapProvider = ShelterMapFamily();
 
-/// 재난 유형과 위치 기반으로 대피소 지도 데이터를 가져오는 프로바이더 (Family 사용)
-///
-/// Copied from [shelterMap].
+/// See also [shelterMap].
 class ShelterMapFamily extends Family<AsyncValue<ShelterMapResponse>> {
-  /// 재난 유형과 위치 기반으로 대피소 지도 데이터를 가져오는 프로바이더 (Family 사용)
-  ///
-  /// Copied from [shelterMap].
+  /// See also [shelterMap].
   const ShelterMapFamily();
 
-  /// 재난 유형과 위치 기반으로 대피소 지도 데이터를 가져오는 프로바이더 (Family 사용)
-  ///
-  /// Copied from [shelterMap].
+  /// See also [shelterMap].
   ShelterMapProvider call(String disasterType) {
     return ShelterMapProvider(disasterType);
   }
@@ -73,13 +65,9 @@ class ShelterMapFamily extends Family<AsyncValue<ShelterMapResponse>> {
   String? get name => r'shelterMapProvider';
 }
 
-/// 재난 유형과 위치 기반으로 대피소 지도 데이터를 가져오는 프로바이더 (Family 사용)
-///
-/// Copied from [shelterMap].
-class ShelterMapProvider extends AutoDisposeFutureProvider<ShelterMapResponse> {
-  /// 재난 유형과 위치 기반으로 대피소 지도 데이터를 가져오는 프로바이더 (Family 사용)
-  ///
-  /// Copied from [shelterMap].
+/// See also [shelterMap].
+class ShelterMapProvider extends FutureProvider<ShelterMapResponse> {
+  /// See also [shelterMap].
   ShelterMapProvider(String disasterType)
     : this._internal(
         (ref) => shelterMap(ref as ShelterMapRef, disasterType),
@@ -125,7 +113,7 @@ class ShelterMapProvider extends AutoDisposeFutureProvider<ShelterMapResponse> {
   }
 
   @override
-  AutoDisposeFutureProviderElement<ShelterMapResponse> createElement() {
+  FutureProviderElement<ShelterMapResponse> createElement() {
     return _ShelterMapProviderElement(this);
   }
 
@@ -145,13 +133,13 @@ class ShelterMapProvider extends AutoDisposeFutureProvider<ShelterMapResponse> {
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin ShelterMapRef on AutoDisposeFutureProviderRef<ShelterMapResponse> {
+mixin ShelterMapRef on FutureProviderRef<ShelterMapResponse> {
   /// The parameter `disasterType` of this provider.
   String get disasterType;
 }
 
 class _ShelterMapProviderElement
-    extends AutoDisposeFutureProviderElement<ShelterMapResponse>
+    extends FutureProviderElement<ShelterMapResponse>
     with ShelterMapRef {
   _ShelterMapProviderElement(super.provider);
 

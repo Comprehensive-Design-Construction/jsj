@@ -1,50 +1,56 @@
-// lib/providers/shelter_map_provider.dart
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:geolocator/geolocator.dart'; // Position 사용 위해
+import 'package:geolocator/geolocator.dart';
 import '../models/response/shelter_map_response.dart';
+import '../models/common/request_info.dart'; // RequestInfo import
 import '../services/api_service.dart';
-import 'map_cache_provider.dart'; // 지도 캐시 프로바이더
-import 'health_index_provider.dart'; // apiService 프로바이더 가져오기 위해
-import 'location_provider.dart'; // 현재 위치 정보 가져오기 위해
+import 'map_cache_provider.dart';
+import 'health_index_provider.dart';
+import 'location_provider.dart';
 
 part 'shelter_map_provider.g.dart';
 
-/// 재난 유형과 위치 기반으로 대피소 지도 데이터를 가져오는 프로바이더 (Family 사용)
-@riverpod
+@Riverpod(keepAlive: true)
 Future<ShelterMapResponse> shelterMap(
   ShelterMapRef ref,
-  // family 파라미터: 재난 유형과 위치 정보를 담는 객체 또는 개별 전달
-  // 여기서는 개별 전달 방식 사용
   String disasterType,
-  // 위치 정보는 직접 파라미터로 받거나, 내부에서 locationProvider를 watch
-  // 여기서는 내부에서 watch하는 방식 사용 (위치가 변경되어도 자동 갱신되도록)
 ) async {
   final api = ref.watch(apiServiceProvider);
-  final cacheNotifier = ref.read(mapCacheProvider.notifier);
-  final cacheState = ref.watch(mapCacheProvider);
-  // 현재 위치 정보 가져오기 (비동기)
-  final position = await ref.watch(currentPositionProvider.future);
-
-  // 캐시 키 생성 (예: 'shelter_EARTHQUAKE')
+  final cache = ref.read(mapCacheProvider); // 캐시 읽기
+  final cacheNotifier = ref.read(mapCacheProvider.notifier); // 캐시 쓰기
+  final position = await ref.watch(currentPositionProvider.future); // 위치 정보 필요
   final cacheKey = 'shelter_$disasterType';
 
-  // 캐시 확인 (UI에서 캐시 우선 표시 로직은 별도 구현)
-  if (cacheState.containsKey(cacheKey)) {
-    print("대피소 지도 캐시 확인됨: $disasterType (데이터는 새로 가져옴)");
+  // --- 클라이언트 캐시 우선 확인 로직 추가 ---
+  final cachedHtml = cache[cacheKey];
+  if (cachedHtml != null && cachedHtml.isNotEmpty) {
+    print("대피소 지도 반환 (Client Cache Hit): $disasterType");
+    // 캐시된 HTML 사용하여 응답 객체 반환
+    final cachedRequestInfo = RequestInfo(
+      disasterType: disasterType,
+      reqLatitude: position.latitude,
+      reqLongitude: position.longitude,
+      // 다른 RequestInfo 필드는 null 또는 기본값
+    );
+    return ShelterMapResponse(
+      requestInfo: cachedRequestInfo,
+      shelterMapHtml: cachedHtml,
+      error: null,
+    );
   }
+  // -----------------------------------------
 
+  // 캐시 미스: API 호출 진행
   print(
-    "대피소 지도 API 요청: $disasterType at ${position.latitude}, ${position.longitude}",
+    "대피소 지도 API 요청 (Client Cache Miss): $disasterType at ${position.latitude}, ${position.longitude}",
   );
   try {
     final response = await api.getShelterMap(
       latitude: position.latitude,
       longitude: position.longitude,
       disasterType: disasterType,
-      // radiusKm는 필요시 파라미터로 받거나 기본값 사용
     );
 
-    // 응답 HTML 캐싱
+    // 유효한 HTML 응답 캐싱
     if (response.shelterMapHtml != null &&
         response.shelterMapHtml!.isNotEmpty) {
       cacheNotifier.addMap(cacheKey, response.shelterMapHtml!);

@@ -12,7 +12,7 @@ _$ShelterMapResponseImpl _$$ShelterMapResponseImplFromJson(
   requestInfo: RequestInfo.fromJson(
     json['request_info'] as Map<String, dynamic>,
   ),
-  shelterMapHtml: json['shelterMapHtml'] as String?,
+  shelterMapHtml: json['shelter_map_html'] as String?,
   error: json['error'] as String?,
 );
 
@@ -20,6 +20,6 @@ Map<String, dynamic> _$$ShelterMapResponseImplToJson(
   _$ShelterMapResponseImpl instance,
 ) => <String, dynamic>{
   'request_info': instance.requestInfo,
-  'shelterMapHtml': instance.shelterMapHtml,
+  'shelter_map_html': instance.shelterMapHtml,
   'error': instance.error,
 };

@@ -23,8 +23,9 @@ ShelterMapResponse _$ShelterMapResponseFromJson(Map<String, dynamic> json) {
 mixin _$ShelterMapResponse {
   @JsonKey(name: 'request_info')
   RequestInfo get requestInfo => throw _privateConstructorUsedError;
-  String? get shelterMapHtml =>
-      throw _privateConstructorUsedError; // 지도 HTML (nullable)
+  @JsonKey(name: 'shelter_map_html')
+  String? get shelterMapHtml => throw _privateConstructorUsedError; // 지도 HTML (nullable)
+  @JsonKey(name: 'error')
   String? get error => throw _privateConstructorUsedError;
 
   /// Serializes this ShelterMapResponse to a JSON map.
@@ -46,8 +47,8 @@ abstract class $ShelterMapResponseCopyWith<$Res> {
   @useResult
   $Res call({
     @JsonKey(name: 'request_info') RequestInfo requestInfo,
-    String? shelterMapHtml,
-    String? error,
+    @JsonKey(name: 'shelter_map_html') String? shelterMapHtml,
+    @JsonKey(name: 'error') String? error,
   });
 
   $RequestInfoCopyWith<$Res> get requestInfo;
@@ -116,8 +117,8 @@ abstract class _$$ShelterMapResponseImplCopyWith<$Res>
   @useResult
   $Res call({
     @JsonKey(name: 'request_info') RequestInfo requestInfo,
-    String? shelterMapHtml,
-    String? error,
+    @JsonKey(name: 'shelter_map_html') String? shelterMapHtml,
+    @JsonKey(name: 'error') String? error,
   });
 
   @override
@@ -169,8 +170,8 @@ class __$$ShelterMapResponseImplCopyWithImpl<$Res>
 class _$ShelterMapResponseImpl implements _ShelterMapResponse {
   const _$ShelterMapResponseImpl({
     @JsonKey(name: 'request_info') required this.requestInfo,
-    this.shelterMapHtml,
-    this.error,
+    @JsonKey(name: 'shelter_map_html') this.shelterMapHtml,
+    @JsonKey(name: 'error') this.error,
   });
 
   factory _$ShelterMapResponseImpl.fromJson(Map<String, dynamic> json) =>
@@ -180,9 +181,11 @@ class _$ShelterMapResponseImpl implements _ShelterMapResponse {
   @JsonKey(name: 'request_info')
   final RequestInfo requestInfo;
   @override
+  @JsonKey(name: 'shelter_map_html')
   final String? shelterMapHtml;
   // 지도 HTML (nullable)
   @override
+  @JsonKey(name: 'error')
   final String? error;
 
   @override
@@ -227,8 +230,8 @@ class _$ShelterMapResponseImpl implements _ShelterMapResponse {
 abstract class _ShelterMapResponse implements ShelterMapResponse {
   const factory _ShelterMapResponse({
     @JsonKey(name: 'request_info') required final RequestInfo requestInfo,
-    final String? shelterMapHtml,
-    final String? error,
+    @JsonKey(name: 'shelter_map_html') final String? shelterMapHtml,
+    @JsonKey(name: 'error') final String? error,
   }) = _$ShelterMapResponseImpl;
 
   factory _ShelterMapResponse.fromJson(Map<String, dynamic> json) =
@@ -238,8 +241,10 @@ abstract class _ShelterMapResponse implements ShelterMapResponse {
   @JsonKey(name: 'request_info')
   RequestInfo get requestInfo;
   @override
+  @JsonKey(name: 'shelter_map_html')
   String? get shelterMapHtml; // 지도 HTML (nullable)
   @override
+  @JsonKey(name: 'error')
   String? get error;
 
   /// Create a copy of ShelterMapResponse

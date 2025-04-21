@@ -10,20 +10,22 @@ class IndexingData with _$IndexingData {
   factory IndexingData({
     @JsonKey(name: 'apparent_temperature', fromJson: parseDouble)
     double? apparentTemperature,
-    @JsonKey(
-      name: 'risk_status',
-    ) // Note: This key was from the example response top level
-    String?
-    apparentTempRiskStatus, // Schema description: apparent_temp_risk_status
-    @JsonKey(fromJson: parseDouble) double? aliScore,
-    @JsonKey(fromJson: parseInt) int? aliLevel,
-    @JsonKey(fromJson: parseDouble) double? strokeIndexScore,
-    @JsonKey(fromJson: parseInt) int? strokeIndexLevel,
-    @JsonKey(fromJson: parseDouble) double? coldIndexScore,
-    @JsonKey(fromJson: parseInt) int? coldIndexLevel,
+    @JsonKey(name: 'risk_status') String? apparentTempRiskStatus,
+    @JsonKey(name: 'ali_score', fromJson: parseDouble) double? aliScore,
+    @JsonKey(name: 'ali_level', fromJson: parseInt) int? aliLevel,
+
+    @JsonKey(name: 'stroke_index_score', fromJson: parseDouble)
+    double? strokeIndexScore,
+    @JsonKey(name: 'stroke_index_level', fromJson: parseInt)
+    int? strokeIndexLevel,
+
+    @JsonKey(name: 'cold_index_score', fromJson: parseDouble)
+    double? coldIndexScore,
+    @JsonKey(name: 'cold_index_level', fromJson: parseInt) int? coldIndexLevel,
+
     @JsonKey(name: 'food_poisoning_index', fromJson: parseDouble)
     double? foodPoisoningIndex,
-    String? foodPoisoningRisk,
+    @JsonKey(name: 'food_poisoning_risk') String? foodPoisoningRisk,
     String? error,
   }) = _IndexingData;
 

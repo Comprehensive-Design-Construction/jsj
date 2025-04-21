@@ -24,21 +24,22 @@ mixin _$IndexingData {
   @JsonKey(name: 'apparent_temperature', fromJson: parseDouble)
   double? get apparentTemperature => throw _privateConstructorUsedError;
   @JsonKey(name: 'risk_status')
-  String? get apparentTempRiskStatus => throw _privateConstructorUsedError; // Schema description: apparent_temp_risk_status
-  @JsonKey(fromJson: parseDouble)
+  String? get apparentTempRiskStatus => throw _privateConstructorUsedError;
+  @JsonKey(name: 'ali_score', fromJson: parseDouble)
   double? get aliScore => throw _privateConstructorUsedError;
-  @JsonKey(fromJson: parseInt)
+  @JsonKey(name: 'ali_level', fromJson: parseInt)
   int? get aliLevel => throw _privateConstructorUsedError;
-  @JsonKey(fromJson: parseDouble)
+  @JsonKey(name: 'stroke_index_score', fromJson: parseDouble)
   double? get strokeIndexScore => throw _privateConstructorUsedError;
-  @JsonKey(fromJson: parseInt)
+  @JsonKey(name: 'stroke_index_level', fromJson: parseInt)
   int? get strokeIndexLevel => throw _privateConstructorUsedError;
-  @JsonKey(fromJson: parseDouble)
+  @JsonKey(name: 'cold_index_score', fromJson: parseDouble)
   double? get coldIndexScore => throw _privateConstructorUsedError;
-  @JsonKey(fromJson: parseInt)
+  @JsonKey(name: 'cold_index_level', fromJson: parseInt)
   int? get coldIndexLevel => throw _privateConstructorUsedError;
   @JsonKey(name: 'food_poisoning_index', fromJson: parseDouble)
   double? get foodPoisoningIndex => throw _privateConstructorUsedError;
+  @JsonKey(name: 'food_poisoning_risk')
   String? get foodPoisoningRisk => throw _privateConstructorUsedError;
   String? get error => throw _privateConstructorUsedError;
 
@@ -63,15 +64,18 @@ abstract class $IndexingDataCopyWith<$Res> {
     @JsonKey(name: 'apparent_temperature', fromJson: parseDouble)
     double? apparentTemperature,
     @JsonKey(name: 'risk_status') String? apparentTempRiskStatus,
-    @JsonKey(fromJson: parseDouble) double? aliScore,
-    @JsonKey(fromJson: parseInt) int? aliLevel,
-    @JsonKey(fromJson: parseDouble) double? strokeIndexScore,
-    @JsonKey(fromJson: parseInt) int? strokeIndexLevel,
-    @JsonKey(fromJson: parseDouble) double? coldIndexScore,
-    @JsonKey(fromJson: parseInt) int? coldIndexLevel,
+    @JsonKey(name: 'ali_score', fromJson: parseDouble) double? aliScore,
+    @JsonKey(name: 'ali_level', fromJson: parseInt) int? aliLevel,
+    @JsonKey(name: 'stroke_index_score', fromJson: parseDouble)
+    double? strokeIndexScore,
+    @JsonKey(name: 'stroke_index_level', fromJson: parseInt)
+    int? strokeIndexLevel,
+    @JsonKey(name: 'cold_index_score', fromJson: parseDouble)
+    double? coldIndexScore,
+    @JsonKey(name: 'cold_index_level', fromJson: parseInt) int? coldIndexLevel,
     @JsonKey(name: 'food_poisoning_index', fromJson: parseDouble)
     double? foodPoisoningIndex,
-    String? foodPoisoningRisk,
+    @JsonKey(name: 'food_poisoning_risk') String? foodPoisoningRisk,
     String? error,
   });
 }
@@ -179,15 +183,18 @@ abstract class _$$IndexingDataImplCopyWith<$Res>
     @JsonKey(name: 'apparent_temperature', fromJson: parseDouble)
     double? apparentTemperature,
     @JsonKey(name: 'risk_status') String? apparentTempRiskStatus,
-    @JsonKey(fromJson: parseDouble) double? aliScore,
-    @JsonKey(fromJson: parseInt) int? aliLevel,
-    @JsonKey(fromJson: parseDouble) double? strokeIndexScore,
-    @JsonKey(fromJson: parseInt) int? strokeIndexLevel,
-    @JsonKey(fromJson: parseDouble) double? coldIndexScore,
-    @JsonKey(fromJson: parseInt) int? coldIndexLevel,
+    @JsonKey(name: 'ali_score', fromJson: parseDouble) double? aliScore,
+    @JsonKey(name: 'ali_level', fromJson: parseInt) int? aliLevel,
+    @JsonKey(name: 'stroke_index_score', fromJson: parseDouble)
+    double? strokeIndexScore,
+    @JsonKey(name: 'stroke_index_level', fromJson: parseInt)
+    int? strokeIndexLevel,
+    @JsonKey(name: 'cold_index_score', fromJson: parseDouble)
+    double? coldIndexScore,
+    @JsonKey(name: 'cold_index_level', fromJson: parseInt) int? coldIndexLevel,
     @JsonKey(name: 'food_poisoning_index', fromJson: parseDouble)
     double? foodPoisoningIndex,
-    String? foodPoisoningRisk,
+    @JsonKey(name: 'food_poisoning_risk') String? foodPoisoningRisk,
     String? error,
   });
 }
@@ -287,15 +294,18 @@ class _$IndexingDataImpl implements _IndexingData {
     @JsonKey(name: 'apparent_temperature', fromJson: parseDouble)
     this.apparentTemperature,
     @JsonKey(name: 'risk_status') this.apparentTempRiskStatus,
-    @JsonKey(fromJson: parseDouble) this.aliScore,
-    @JsonKey(fromJson: parseInt) this.aliLevel,
-    @JsonKey(fromJson: parseDouble) this.strokeIndexScore,
-    @JsonKey(fromJson: parseInt) this.strokeIndexLevel,
-    @JsonKey(fromJson: parseDouble) this.coldIndexScore,
-    @JsonKey(fromJson: parseInt) this.coldIndexLevel,
+    @JsonKey(name: 'ali_score', fromJson: parseDouble) this.aliScore,
+    @JsonKey(name: 'ali_level', fromJson: parseInt) this.aliLevel,
+    @JsonKey(name: 'stroke_index_score', fromJson: parseDouble)
+    this.strokeIndexScore,
+    @JsonKey(name: 'stroke_index_level', fromJson: parseInt)
+    this.strokeIndexLevel,
+    @JsonKey(name: 'cold_index_score', fromJson: parseDouble)
+    this.coldIndexScore,
+    @JsonKey(name: 'cold_index_level', fromJson: parseInt) this.coldIndexLevel,
     @JsonKey(name: 'food_poisoning_index', fromJson: parseDouble)
     this.foodPoisoningIndex,
-    this.foodPoisoningRisk,
+    @JsonKey(name: 'food_poisoning_risk') this.foodPoisoningRisk,
     this.error,
   });
 
@@ -308,29 +318,29 @@ class _$IndexingDataImpl implements _IndexingData {
   @override
   @JsonKey(name: 'risk_status')
   final String? apparentTempRiskStatus;
-  // Schema description: apparent_temp_risk_status
   @override
-  @JsonKey(fromJson: parseDouble)
+  @JsonKey(name: 'ali_score', fromJson: parseDouble)
   final double? aliScore;
   @override
-  @JsonKey(fromJson: parseInt)
+  @JsonKey(name: 'ali_level', fromJson: parseInt)
   final int? aliLevel;
   @override
-  @JsonKey(fromJson: parseDouble)
+  @JsonKey(name: 'stroke_index_score', fromJson: parseDouble)
   final double? strokeIndexScore;
   @override
-  @JsonKey(fromJson: parseInt)
+  @JsonKey(name: 'stroke_index_level', fromJson: parseInt)
   final int? strokeIndexLevel;
   @override
-  @JsonKey(fromJson: parseDouble)
+  @JsonKey(name: 'cold_index_score', fromJson: parseDouble)
   final double? coldIndexScore;
   @override
-  @JsonKey(fromJson: parseInt)
+  @JsonKey(name: 'cold_index_level', fromJson: parseInt)
   final int? coldIndexLevel;
   @override
   @JsonKey(name: 'food_poisoning_index', fromJson: parseDouble)
   final double? foodPoisoningIndex;
   @override
+  @JsonKey(name: 'food_poisoning_risk')
   final String? foodPoisoningRisk;
   @override
   final String? error;
@@ -404,15 +414,19 @@ abstract class _IndexingData implements IndexingData {
     @JsonKey(name: 'apparent_temperature', fromJson: parseDouble)
     final double? apparentTemperature,
     @JsonKey(name: 'risk_status') final String? apparentTempRiskStatus,
-    @JsonKey(fromJson: parseDouble) final double? aliScore,
-    @JsonKey(fromJson: parseInt) final int? aliLevel,
-    @JsonKey(fromJson: parseDouble) final double? strokeIndexScore,
-    @JsonKey(fromJson: parseInt) final int? strokeIndexLevel,
-    @JsonKey(fromJson: parseDouble) final double? coldIndexScore,
-    @JsonKey(fromJson: parseInt) final int? coldIndexLevel,
+    @JsonKey(name: 'ali_score', fromJson: parseDouble) final double? aliScore,
+    @JsonKey(name: 'ali_level', fromJson: parseInt) final int? aliLevel,
+    @JsonKey(name: 'stroke_index_score', fromJson: parseDouble)
+    final double? strokeIndexScore,
+    @JsonKey(name: 'stroke_index_level', fromJson: parseInt)
+    final int? strokeIndexLevel,
+    @JsonKey(name: 'cold_index_score', fromJson: parseDouble)
+    final double? coldIndexScore,
+    @JsonKey(name: 'cold_index_level', fromJson: parseInt)
+    final int? coldIndexLevel,
     @JsonKey(name: 'food_poisoning_index', fromJson: parseDouble)
     final double? foodPoisoningIndex,
-    final String? foodPoisoningRisk,
+    @JsonKey(name: 'food_poisoning_risk') final String? foodPoisoningRisk,
     final String? error,
   }) = _$IndexingDataImpl;
 
@@ -424,29 +438,30 @@ abstract class _IndexingData implements IndexingData {
   double? get apparentTemperature;
   @override
   @JsonKey(name: 'risk_status')
-  String? get apparentTempRiskStatus; // Schema description: apparent_temp_risk_status
+  String? get apparentTempRiskStatus;
   @override
-  @JsonKey(fromJson: parseDouble)
+  @JsonKey(name: 'ali_score', fromJson: parseDouble)
   double? get aliScore;
   @override
-  @JsonKey(fromJson: parseInt)
+  @JsonKey(name: 'ali_level', fromJson: parseInt)
   int? get aliLevel;
   @override
-  @JsonKey(fromJson: parseDouble)
+  @JsonKey(name: 'stroke_index_score', fromJson: parseDouble)
   double? get strokeIndexScore;
   @override
-  @JsonKey(fromJson: parseInt)
+  @JsonKey(name: 'stroke_index_level', fromJson: parseInt)
   int? get strokeIndexLevel;
   @override
-  @JsonKey(fromJson: parseDouble)
+  @JsonKey(name: 'cold_index_score', fromJson: parseDouble)
   double? get coldIndexScore;
   @override
-  @JsonKey(fromJson: parseInt)
+  @JsonKey(name: 'cold_index_level', fromJson: parseInt)
   int? get coldIndexLevel;
   @override
   @JsonKey(name: 'food_poisoning_index', fromJson: parseDouble)
   double? get foodPoisoningIndex;
   @override
+  @JsonKey(name: 'food_poisoning_risk')
   String? get foodPoisoningRisk;
   @override
   String? get error;

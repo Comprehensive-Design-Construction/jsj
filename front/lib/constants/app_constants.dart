@@ -1,4 +1,3 @@
-// lib/constants/app_constants.dart
 class AppConstants {
   // 위치 권한 거부 또는 실패 시 사용할 기본 위도/경도 (예: 강남역)
   static const double defaultLatitude = 37.498095;
@@ -27,6 +26,6 @@ class AppConstants {
   ];
 
   // SharedPreferences 키 (선택 사항)
-  // static const String userAgeKey = 'user_age';
-  // static const String userDiseasesKey = 'user_diseases';
+  static const String userAgeKey = 'user_age';
+  static const String userDiseasesKey = 'user_diseases';
 }

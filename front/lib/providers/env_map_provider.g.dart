@@ -6,7 +6,7 @@ part of 'env_map_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$environmentMapHash() => r'd92d4ab7fb221dcec649baa533afdd863d275cf0';
+String _$environmentMapHash() => r'761f448ac35421fead282ecaa2e9eae712370a21';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -29,24 +29,16 @@ class _SystemHash {
   }
 }
 
-/// 환경 지도 데이터를 환경 유형(`envType`)별로 가져오는 프로바이더 (Family 사용)
-///
-/// Copied from [environmentMap].
+/// See also [environmentMap].
 @ProviderFor(environmentMap)
 const environmentMapProvider = EnvironmentMapFamily();
 
-/// 환경 지도 데이터를 환경 유형(`envType`)별로 가져오는 프로바이더 (Family 사용)
-///
-/// Copied from [environmentMap].
+/// See also [environmentMap].
 class EnvironmentMapFamily extends Family<AsyncValue<EnvMapResponse>> {
-  /// 환경 지도 데이터를 환경 유형(`envType`)별로 가져오는 프로바이더 (Family 사용)
-  ///
-  /// Copied from [environmentMap].
+  /// See also [environmentMap].
   const EnvironmentMapFamily();
 
-  /// 환경 지도 데이터를 환경 유형(`envType`)별로 가져오는 프로바이더 (Family 사용)
-  ///
-  /// Copied from [environmentMap].
+  /// See also [environmentMap].
   EnvironmentMapProvider call(String envType) {
     return EnvironmentMapProvider(envType);
   }
@@ -73,13 +65,9 @@ class EnvironmentMapFamily extends Family<AsyncValue<EnvMapResponse>> {
   String? get name => r'environmentMapProvider';
 }
 
-/// 환경 지도 데이터를 환경 유형(`envType`)별로 가져오는 프로바이더 (Family 사용)
-///
-/// Copied from [environmentMap].
-class EnvironmentMapProvider extends AutoDisposeFutureProvider<EnvMapResponse> {
-  /// 환경 지도 데이터를 환경 유형(`envType`)별로 가져오는 프로바이더 (Family 사용)
-  ///
-  /// Copied from [environmentMap].
+/// See also [environmentMap].
+class EnvironmentMapProvider extends FutureProvider<EnvMapResponse> {
+  /// See also [environmentMap].
   EnvironmentMapProvider(String envType)
     : this._internal(
         (ref) => environmentMap(ref as EnvironmentMapRef, envType),
@@ -126,7 +114,7 @@ class EnvironmentMapProvider extends AutoDisposeFutureProvider<EnvMapResponse> {
   }
 
   @override
-  AutoDisposeFutureProviderElement<EnvMapResponse> createElement() {
+  FutureProviderElement<EnvMapResponse> createElement() {
     return _EnvironmentMapProviderElement(this);
   }
 
@@ -146,13 +134,13 @@ class EnvironmentMapProvider extends AutoDisposeFutureProvider<EnvMapResponse> {
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin EnvironmentMapRef on AutoDisposeFutureProviderRef<EnvMapResponse> {
+mixin EnvironmentMapRef on FutureProviderRef<EnvMapResponse> {
   /// The parameter `envType` of this provider.
   String get envType;
 }
 
 class _EnvironmentMapProviderElement
-    extends AutoDisposeFutureProviderElement<EnvMapResponse>
+    extends FutureProviderElement<EnvMapResponse>
     with EnvironmentMapRef {
   _EnvironmentMapProviderElement(super.provider);
 

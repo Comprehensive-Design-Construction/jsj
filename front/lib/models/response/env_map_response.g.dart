@@ -11,9 +11,9 @@ _$EnvMapResponseImpl _$$EnvMapResponseImplFromJson(Map<String, dynamic> json) =>
       requestInfo: RequestInfo.fromJson(
         json['request_info'] as Map<String, dynamic>,
       ),
-      envMapHtml: json['envMapHtml'] as String?,
-      envType: json['envType'] as String,
-      lastUpdated: json['lastUpdated'] as String?,
+      envMapHtml: json['env_map_html'] as String?,
+      envType: json['env_type'] as String,
+      lastUpdated: json['last_updated'] as String?,
       error: json['error'] as String?,
     );
 
@@ -21,8 +21,8 @@ Map<String, dynamic> _$$EnvMapResponseImplToJson(
   _$EnvMapResponseImpl instance,
 ) => <String, dynamic>{
   'request_info': instance.requestInfo,
-  'envMapHtml': instance.envMapHtml,
-  'envType': instance.envType,
-  'lastUpdated': instance.lastUpdated,
+  'env_map_html': instance.envMapHtml,
+  'env_type': instance.envType,
+  'last_updated': instance.lastUpdated,
   'error': instance.error,
 };

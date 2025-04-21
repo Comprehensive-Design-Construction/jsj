@@ -36,7 +36,7 @@ class HealthIndexCard extends StatelessWidget {
         side: BorderSide(color: statusColor, width: 1), // 상태 색상 테두리
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         child: Row(
           children: [
             // 아이콘 Placeholder

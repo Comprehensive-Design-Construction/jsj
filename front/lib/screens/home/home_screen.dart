@@ -3,35 +3,48 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/health_index_provider.dart';
 import '../../providers/location_provider.dart';
-import '../../providers/env_map_provider.dart'; // 새로고침용
-import '../../providers/shelter_map_provider.dart'; // 새로고침용
-import '../../providers/map_cache_provider.dart'; // 새로고침 시 캐시 무효화용
+import '../../providers/shelter_map_provider.dart'; // ShelterMap Provider import
+import '../../providers/map_cache_provider.dart';
 import '../../screens/loading_error/loading_indicator.dart';
 import '../../screens/loading_error/error_message.dart';
 import 'widgets/health_index_card.dart';
 import 'widgets/env_map_section.dart';
-import 'widgets/weather_display.dart'; // 실제 WeatherDisplay 위젯으로 변경
+import 'widgets/weather_display.dart';
 import '../profile/profile_screen.dart';
 import '../shelter_map/shelter_map_screen.dart';
 import '../../models/response/health_indices_response.dart';
-import '../../models/common/alert_info.dart'; // AlertInfo 모델 import
+import '../../models/common/alert_info.dart';
+import '../../constants/app_constants.dart'; // AppConstants import for disaster types
+// ShelterMapSection에서 사용하던 DisasterType enum import (경로 확인 필요)
+import '../shelter_map/widgets/shelter_map_section.dart' show DisasterType;
 
-class HomeScreen extends ConsumerWidget {
+// ConsumerWidget -> ConsumerStatefulWidget으로 변경
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
-  // 상태/레벨에 따른 색상 반환 (HealthIndexCard와 로직 통일)
+  @override
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _shelterMapPreloadingInitiated = false; // 프리로딩 시작 플래그
+
+  // 상태/레벨에 따른 색상 반환 (기존 로직과 동일)
   Color _getStatusColor(
     String? status, {
     bool isLevel = false,
     int? level,
     int maxLevel = 4,
   }) {
+    // ... 기존 _getStatusColor 함수 내용 ...
     if (isLevel && level != null) {
-      if (level <= maxLevel * 0.25) return Colors.red.shade700;
-      if (level <= maxLevel * 0.5) return Colors.orange.shade700;
-      if (level <= maxLevel * 0.75) return Colors.yellow.shade800;
-      return Colors.green.shade600;
+      // 레벨 기반 색상 결정 (예시)
+      if (level <= maxLevel * 0.25) return Colors.red.shade700; // 위험
+      if (level <= maxLevel * 0.5) return Colors.orange.shade700; // 경고
+      if (level <= maxLevel * 0.75) return Colors.yellow.shade800; // 주의
+      return Colors.green.shade600; // 관심/안전
     } else {
+      // 상태 텍스트 기반 색상 결정
       switch (status?.toLowerCase()) {
         case '안전':
         case '낮음':
@@ -45,20 +58,67 @@ class HomeScreen extends ConsumerWidget {
         case '매우높음':
           return Colors.red.shade700;
         default:
-          return Colors.grey;
+          return Colors.grey; // 알 수 없거나 N/A
       }
     }
   }
 
+  // 대피소 지도 프리로딩 함수
+  void _initiateShelterMapPreloading() {
+    // 이미 시작했으면 다시 실행하지 않음
+    if (_shelterMapPreloadingInitiated) return;
+
+    // 위치 정보가 아직 로드되지 않았으면 실행하지 않음
+    final locationAsync = ref.read(currentPositionProvider);
+    if (!locationAsync.hasValue) return;
+
+    setState(() {
+      _shelterMapPreloadingInitiated = true; // 플래그 설정
+    });
+
+    print("Initiating shelter map preloading...");
+    // AppConstants 또는 DisasterType enum 사용
+    // 예시: DisasterType enum 사용
+    for (var type in DisasterType.values) {
+      final apiValue = type.apiValue;
+      print("  Preloading shelter map for: $apiValue");
+      // .future를 읽어 프로바이더 실행, 완료나 오류는 백그라운드 처리
+      ref
+          .read(shelterMapProvider(apiValue).future)
+          .then((_) {
+            print("  Successfully preloaded shelter map: $apiValue");
+          })
+          .catchError((e, s) {
+            // 프리로딩 실패는 사용자 경험에 치명적이지 않으므로 로그만 남김
+            print("  Preloading failed for shelter map $apiValue: $e");
+          });
+    }
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    // 위치 정보 상태 감시
     final locationAsync = ref.watch(currentPositionProvider);
+    // 건강 지수 상태 감시
     final healthIndexAsync = ref.watch(healthIndexDataProvider);
+
+    // 위치 정보가 성공적으로 로드되면 프리로딩 시작 시도
+    ref.listen<AsyncValue<dynamic>>(currentPositionProvider, (_, next) {
+      if (next.hasValue && !_shelterMapPreloadingInitiated) {
+        // listen 콜백 내에서 setState 호출은 안전하지 않으므로,
+        // 다음 프레임에 실행되도록 예약하거나 다른 방식 사용.
+        // 여기서는 간단히 함수 호출만 시도 (플래그는 내부에서 관리)
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _initiateShelterMapPreloading();
+        });
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('오늘의 건강 날씨'),
         actions: [
+          // ... 기존 AppBar actions ...
           IconButton(
             icon: const Icon(Icons.person_outline),
             tooltip: '건강 정보 입력',
@@ -85,10 +145,13 @@ class HomeScreen extends ConsumerWidget {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
+          // 새로고침 시 프리로딩 플래그 초기화도 고려 가능
+          // setState(() { _shelterMapPreloadingInitiated = false; });
           ref.invalidate(currentPositionProvider);
           ref.invalidate(healthIndexDataProvider);
-          // 지도 캐시도 비워서 새로고침 시 강제로 API 호출하도록 함
-          ref.invalidate(mapCacheProvider);
+          ref.invalidate(mapCacheProvider); // 지도 캐시 무효화
+          // 모든 shelterMapProvider family 멤버 무효화 (주의: 성능 영향 가능)
+          // AppConstants.availableDisasterTypes.forEach((type) => ref.invalidate(shelterMapProvider(type)));
           print("데이터 새로고침 중...");
         },
         child: locationAsync.when(
@@ -99,6 +162,9 @@ class HomeScreen extends ConsumerWidget {
                 onRetry: () => ref.invalidate(currentPositionProvider),
               ),
           data: (position) {
+            // 위치 로딩 성공 시 UI 빌드 시작
+            // _initiateShelterMapPreloading(); // build 메소드 직접 호출보다 listen 사용 권장
+
             return healthIndexAsync.when(
               loading: () => const LoadingIndicator(),
               error:
@@ -107,32 +173,29 @@ class HomeScreen extends ConsumerWidget {
                     onRetry: () => ref.invalidate(healthIndexDataProvider),
                   ),
               data: (healthData) {
+                // ... 기존 healthData 처리 및 ListView UI 구성 ...
                 final indices = healthData.indices;
                 final region = healthData.region;
-                final weather = healthData.weather; // WeatherData 사용
-                final alerts = healthData.alerts; // Alerts 사용
+                final weather = healthData.weather;
+                final alerts = healthData.alerts;
 
                 return ListView(
                   padding: const EdgeInsets.all(16.0),
                   children: [
-                    // 섹션 1: 지역 정보 & 실제 날씨 정보 표시
+                    // ... 기존 섹션 1 (지역, 날씨) ...
                     Text(
                       '${region.gu} ${region.region}',
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 10),
-                    // WeatherDisplay 위젯에 실제 WeatherData 전달
                     if (weather != null)
                       WeatherDisplay(weatherData: weather)
                     else
-                      const WeatherDisplayPlaceholder(
-                        condition: "unknown",
-                      ), // 데이터 없을 경우 Placeholder
+                      const WeatherDisplayPlaceholder(condition: "unknown"),
                     const SizedBox(height: 20),
 
-                    // 섹션 1.5: 알림 정보 표시 (있을 경우)
+                    // ... 기존 섹션 1.5 (알림) ...
                     if (alerts.isNotEmpty) ...[
-                      // ...[]: 리스트 펼침 연산자
                       Text(
                         "주의 알림",
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -184,7 +247,7 @@ class HomeScreen extends ConsumerWidget {
                       const SizedBox(height: 24),
                     ],
 
-                    // 섹션 2: 주요 지수 카드 (체감 온도)
+                    // ... 기존 섹션 2 (체감 온도) ...
                     Card(
                       color: _getStatusColor(
                         indices.apparentTempRiskStatus,
@@ -260,7 +323,7 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 24),
 
-                    // 섹션 3: 세부 건강 지수 그리드 (이전과 동일, statusColor 전달 확인)
+                    // ... 기존 섹션 3 (세부 지수) ...
                     Text(
                       "세부 건강 지수",
                       style: Theme.of(context).textTheme.titleLarge,
@@ -330,7 +393,7 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 24),
 
-                    // 섹션 4: 환경 지도 (이전과 동일)
+                    // ... 기존 섹션 4 (환경 지도) ...
                     Text(
                       "환경 지도",
                       style: Theme.of(context).textTheme.titleLarge,

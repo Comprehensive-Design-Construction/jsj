@@ -9,10 +9,11 @@ part 'env_map_response.g.dart';
 class EnvMapResponse with _$EnvMapResponse {
   const factory EnvMapResponse({
     @JsonKey(name: 'request_info') required RequestInfo requestInfo,
-    String? envMapHtml, // 지도 HTML (nullable)
-    required String envType, // 'fine_dust' or 'uv'
-    String? lastUpdated, // ISO 8601 format DateTime string
-    String? error,
+
+    @JsonKey(name: 'env_map_html') String? envMapHtml,
+    @JsonKey(name: 'env_type') required String envType,
+    @JsonKey(name: 'last_updated') String? lastUpdated,
+    @JsonKey(name: 'error') String? error,
   }) = _EnvMapResponse;
 
   factory EnvMapResponse.fromJson(Map<String, dynamic> json) =>

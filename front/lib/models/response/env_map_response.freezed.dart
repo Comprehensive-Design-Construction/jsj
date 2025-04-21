@@ -23,12 +23,13 @@ EnvMapResponse _$EnvMapResponseFromJson(Map<String, dynamic> json) {
 mixin _$EnvMapResponse {
   @JsonKey(name: 'request_info')
   RequestInfo get requestInfo => throw _privateConstructorUsedError;
-  String? get envMapHtml =>
-      throw _privateConstructorUsedError; // 지도 HTML (nullable)
-  String get envType =>
-      throw _privateConstructorUsedError; // 'fine_dust' or 'uv'
-  String? get lastUpdated =>
-      throw _privateConstructorUsedError; // ISO 8601 format DateTime string
+  @JsonKey(name: 'env_map_html')
+  String? get envMapHtml => throw _privateConstructorUsedError;
+  @JsonKey(name: 'env_type')
+  String get envType => throw _privateConstructorUsedError;
+  @JsonKey(name: 'last_updated')
+  String? get lastUpdated => throw _privateConstructorUsedError;
+  @JsonKey(name: 'error')
   String? get error => throw _privateConstructorUsedError;
 
   /// Serializes this EnvMapResponse to a JSON map.
@@ -50,10 +51,10 @@ abstract class $EnvMapResponseCopyWith<$Res> {
   @useResult
   $Res call({
     @JsonKey(name: 'request_info') RequestInfo requestInfo,
-    String? envMapHtml,
-    String envType,
-    String? lastUpdated,
-    String? error,
+    @JsonKey(name: 'env_map_html') String? envMapHtml,
+    @JsonKey(name: 'env_type') String envType,
+    @JsonKey(name: 'last_updated') String? lastUpdated,
+    @JsonKey(name: 'error') String? error,
   });
 
   $RequestInfoCopyWith<$Res> get requestInfo;
@@ -134,10 +135,10 @@ abstract class _$$EnvMapResponseImplCopyWith<$Res>
   @useResult
   $Res call({
     @JsonKey(name: 'request_info') RequestInfo requestInfo,
-    String? envMapHtml,
-    String envType,
-    String? lastUpdated,
-    String? error,
+    @JsonKey(name: 'env_map_html') String? envMapHtml,
+    @JsonKey(name: 'env_type') String envType,
+    @JsonKey(name: 'last_updated') String? lastUpdated,
+    @JsonKey(name: 'error') String? error,
   });
 
   @override
@@ -201,10 +202,10 @@ class __$$EnvMapResponseImplCopyWithImpl<$Res>
 class _$EnvMapResponseImpl implements _EnvMapResponse {
   const _$EnvMapResponseImpl({
     @JsonKey(name: 'request_info') required this.requestInfo,
-    this.envMapHtml,
-    required this.envType,
-    this.lastUpdated,
-    this.error,
+    @JsonKey(name: 'env_map_html') this.envMapHtml,
+    @JsonKey(name: 'env_type') required this.envType,
+    @JsonKey(name: 'last_updated') this.lastUpdated,
+    @JsonKey(name: 'error') this.error,
   });
 
   factory _$EnvMapResponseImpl.fromJson(Map<String, dynamic> json) =>
@@ -214,15 +215,16 @@ class _$EnvMapResponseImpl implements _EnvMapResponse {
   @JsonKey(name: 'request_info')
   final RequestInfo requestInfo;
   @override
+  @JsonKey(name: 'env_map_html')
   final String? envMapHtml;
-  // 지도 HTML (nullable)
   @override
+  @JsonKey(name: 'env_type')
   final String envType;
-  // 'fine_dust' or 'uv'
   @override
+  @JsonKey(name: 'last_updated')
   final String? lastUpdated;
-  // ISO 8601 format DateTime string
   @override
+  @JsonKey(name: 'error')
   final String? error;
 
   @override
@@ -276,10 +278,10 @@ class _$EnvMapResponseImpl implements _EnvMapResponse {
 abstract class _EnvMapResponse implements EnvMapResponse {
   const factory _EnvMapResponse({
     @JsonKey(name: 'request_info') required final RequestInfo requestInfo,
-    final String? envMapHtml,
-    required final String envType,
-    final String? lastUpdated,
-    final String? error,
+    @JsonKey(name: 'env_map_html') final String? envMapHtml,
+    @JsonKey(name: 'env_type') required final String envType,
+    @JsonKey(name: 'last_updated') final String? lastUpdated,
+    @JsonKey(name: 'error') final String? error,
   }) = _$EnvMapResponseImpl;
 
   factory _EnvMapResponse.fromJson(Map<String, dynamic> json) =
@@ -289,12 +291,16 @@ abstract class _EnvMapResponse implements EnvMapResponse {
   @JsonKey(name: 'request_info')
   RequestInfo get requestInfo;
   @override
-  String? get envMapHtml; // 지도 HTML (nullable)
+  @JsonKey(name: 'env_map_html')
+  String? get envMapHtml;
   @override
-  String get envType; // 'fine_dust' or 'uv'
+  @JsonKey(name: 'env_type')
+  String get envType;
   @override
-  String? get lastUpdated; // ISO 8601 format DateTime string
+  @JsonKey(name: 'last_updated')
+  String? get lastUpdated;
   @override
+  @JsonKey(name: 'error')
   String? get error;
 
   /// Create a copy of EnvMapResponse
