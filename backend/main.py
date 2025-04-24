@@ -17,9 +17,9 @@ from app.cache import (
 )
 
 # 데이터 수집 함수 임포트
-from core.indexing.get_poison import _fetch_food_poisoning_sync
-from core.indexing.get_fine_dust import _fetch_fine_dust_sync
-from core.indexing.get_uv import _fetch_uv_sync
+from core.indexing.get_poison import fetch_food_poisoning_data
+from core.indexing.get_fine_dust import fetch_fine_dust_data
+from core.indexing.get_uv import fetch_uv_index
 from core.map.create_map import fetch_air_quality_map, fetch_uv_map
 from core.map.flood_trace_map import _fetch_flood_trace_html
 
@@ -73,7 +73,7 @@ def update_uv_job():
     """UV 지수 데이터 및 맵 업데이트 작업"""
     logger.info("Scheduler: Running UV update job...")
     try:
-        data = asyncio.run(_fetch_uv_sync())
+        data = asyncio.run(fetch_uv_index())
         update_uv_cache(data)
 
         # UV 맵 업데이트
@@ -90,7 +90,7 @@ def update_fine_dust_job():
     """미세먼지 데이터 및 맵 업데이트 작업"""
     logger.info("Scheduler: Running Fine Dust update job...")
     try:
-        data = asyncio.run(_fetch_fine_dust_sync())
+        data = asyncio.run(fetch_fine_dust_data())
         update_fine_dust_cache(data)
 
         # 미세먼지 맵 업데이트
@@ -107,7 +107,7 @@ def update_poison_index_job():
     """식중독 지수 업데이트 작업"""
     logger.info("Scheduler: Running food poisoning index update job...")
     try:
-        data = _fetch_food_poisoning_sync()
+        data = fetch_food_poisoning_data()
         update_food_poisoning_cache(data)
     except Exception as e:
         logger.error(f"Scheduler Error: Failed to update food poisoning index: {e}")

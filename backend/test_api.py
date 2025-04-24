@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-"""
-API 테스트 스크립트
-다양한 엔드포인트에 요청을 보내고 결과를 확인합니다.
-"""
 import requests
 import json
 import time

@@ -24,8 +24,11 @@ class Settings(BaseSettings):
 
     # Paths
     # 환경 변수가 없으면 기본 경로 사용
+    DATASETS_DIR: Path = Field(
+        default=BASE_DIR / "backend" / "datasets", alias="DATASETS_DIR"
+    )
     SHELTER_ROOT_PATH: Path = Field(
-        default=BASE_DIR / "datasets/shelter", alias="SHELTER_ROOT_PATH"
+        default=BASE_DIR / "backend" / "datasets/shelter", alias="SHELTER_ROOT_PATH"
     )
 
     # Application Defaults (환경 변수 X)

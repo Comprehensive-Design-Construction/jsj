@@ -7,7 +7,7 @@ from config.settings import settings
 url = "https://api.openweathermap.org/data/2.5/weather"
 
 
-async def _fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
+async def fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
     """
     OpenWeatherMap API를 사용해 날씨 데이터를 가져옵니다.
 
@@ -79,6 +79,6 @@ if __name__ == "__main__":
     import time
 
     start_time = time.time()
-    data = asyncio.run(_fetch_weather_data(37.589026, 127.003779))
+    data = asyncio.run(fetch_weather_data(37.589026, 127.003779))
     print(data)
     print("실행시간:", time.time() - start_time)

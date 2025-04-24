@@ -6,6 +6,7 @@ import logging
 
 from pydantic import ValidationError
 
+# 사실상 스키마는 필요 없음. 혹시 모르니 import
 from app.schemas.request_models import ApiRequest, LocationInput, UserInput
 from utils.helpers import get_region
 from core.indexing.calculator import (
@@ -14,7 +15,7 @@ from core.indexing.calculator import (
     calculate_cold_index,
     get_food_poisoning_risk_for_region,
 )
-from core.indexing.get_data import _fetch_weather_data
+from core.indexing.get_data import fetch_weather_data
 from app.cache import get_food_poisoning_cache
 
 from config.settings import settings
@@ -37,7 +38,7 @@ async def fetch_weather_and_pressure_data(lat: float, lon: float) -> Dict[str, A
     """
     try:
         logger.info(f"Fetching weather data for location: {lat}, {lon}")
-        return await _fetch_weather_data(lat, lon)
+        return await fetch_weather_data(lat, lon)
     except Exception as e:
         error_message = f"Error fetching weather data: {str(e)}"
         logger.error(error_message)
