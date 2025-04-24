@@ -9,6 +9,7 @@ except ImportError:
     )
 
 import core.shelter.config as config
+from config.settings import settings
 
 warnings.filterwarnings("ignore")
 
@@ -23,7 +24,7 @@ def load_shelter_by_type(disaster_type: str) -> Shelter:
         )
 
     data_file = config.SHELTER_FILE_MAPPING[disaster_type]
-    shelter = Shelter(data_file, config.SHELTER_ROOT_PATH)
+    shelter = Shelter(data_file, settings.SHELTER_ROOT_PATH)
 
     try:
         shelter.load_data()

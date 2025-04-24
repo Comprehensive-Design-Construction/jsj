@@ -13,7 +13,7 @@ from app.schemas.response_models import MapApiResponse
 
 from core.shelter.service import _generate_single_map_html
 
-from config import settings
+from config.settings import settings
 
 # 로깅 설정
 logger = logging.getLogger(__name__)

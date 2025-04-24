@@ -2,9 +2,7 @@ import asyncio
 import os
 from typing import Optional
 import requests
-from dotenv import load_dotenv
-
-load_dotenv()
+from config.settings import settings
 
 
 async def _fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
@@ -15,7 +13,7 @@ async def _fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
     :param lon: 경도
     :return: {"weather": {날씨 정보}, "main": {온도, 기압, 습도 등}} 또는 None (실패 시)
     """
-    api_key = os.getenv("OPENWEATHERMAP_API_KEY")
+    api_key = settings.OPENWEATHERMAP_API_KEY
     if not api_key:
         print("OPENWEATHERMAP_API_KEY가 설정되지 않았습니다.")
         return None

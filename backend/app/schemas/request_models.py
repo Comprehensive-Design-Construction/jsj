@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Any
-from config import settings
+from config.settings import settings
 
 
 class LocationInput(BaseModel):

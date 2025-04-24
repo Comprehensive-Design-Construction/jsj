@@ -17,7 +17,7 @@ from core.indexing.calculator import (
 from core.indexing.get_data import _fetch_weather_data
 from app.cache import get_food_poisoning_cache
 
-from config import settings
+from config.settings import settings
 
 # 로깅 설정
 logger = logging.getLogger(__name__)

@@ -6,16 +6,14 @@ import requests
 import asyncio
 import os
 from typing import Optional
-from dotenv import load_dotenv
-
-load_dotenv()
+from config.settings import settings
 
 
 async def _fetch_fine_dust_sync() -> Optional[dict]:
     """
     :return: {gu: {미세먼지 데이터}}
     """
-    FINE_DUST_API_KEY = os.getenv("FINE_DUST_API_KEY")
+    FINE_DUST_API_KEY = settings.FINE_DUST_API_KEY
     results = {}
 
     url = f"http://openAPI.seoul.go.kr:8088/{FINE_DUST_API_KEY}/json/ListAirQualityByDistrictService/1/51"

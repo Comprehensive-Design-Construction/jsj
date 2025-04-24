@@ -5,9 +5,7 @@ import os
 import json
 import pandas as pd
 from typing import Optional
-from dotenv import load_dotenv
-
-load_dotenv()
+from config.settings import settings
 
 
 async def _fetch_uv_sync() -> Optional[dict]:
@@ -29,7 +27,7 @@ async def _fetch_uv_sync() -> Optional[dict]:
     base_url = "http://apis.data.go.kr/1360000/LivingWthrIdxServiceV4/getUVIdxV4"
     params = {
         "dataType": "JSON",
-        "ServiceKey": os.getenv("OPEN_DATA_API_KEY"),
+        "ServiceKey": settings.OPEN_DATA_API_KEY,
         "areaNo": None,
         "time": f"{now.strftime('%Y%m%d')}{hour:02d}",
     }
