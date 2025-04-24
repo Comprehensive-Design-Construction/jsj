@@ -9,16 +9,32 @@ class RegionInfo(BaseModel):
     region: Optional[str] = None  # 동
 
 
-class WeatherData(BaseModel):
-    temperature: Optional[float] = None
+class WeatherMainInfo(BaseModel):
+    temp: Optional[float] = None
+    feels_like: Optional[float] = None
+    temp_min: Optional[float] = None
+    temp_max: Optional[float] = None
     pressure: Optional[float] = None
     humidity: Optional[float] = None
     wind_speed: Optional[float] = None
-    temp_min: Optional[float] = None
-    temp_max: Optional[float] = None
-    description: Optional[str] = None
-    city: Optional[str] = None
-    error: Optional[str] = None  # API 오류 시 메시지
+    wind_deg: Optional[int] = None
+
+
+class WeatherCondition(BaseModel):
+    main: Optional[str] = None  # 예: Clouds, Rain
+    description: Optional[str] = None  # 예: broken clouds
+    icon: Optional[str] = None  # 예: 04d
+
+
+class WeatherDetailResponse(BaseModel):
+    """/api/weather 응답 모델"""
+
+    request_location: Dict[str, float]  # 요청 좌표, RegionInfo 스키마 재활용 고려
+    weather_condition: Optional[WeatherCondition] = None
+    measurements: Optional[WeatherMainInfo] = None
+    timestamp: Optional[int] = None  # 데이터 시간 (Unix timestamp)
+    timezone: Optional[int] = None  # 타임존 오프셋 (초)
+    error: Optional[str] = None  # 오류 메시지
 
 
 class IndexCalculationResult(BaseModel):
@@ -57,4 +73,39 @@ class EnvMapApiResponse(BaseModel):
     env_map_html: Optional[str] = None
     env_type: str
     last_updated: Optional[str] = None
+    error: Optional[str] = None
+
+
+class RegionFineDustData(BaseModel):
+    """자치구별 미세먼지 상세 정보"""
+
+    GRADE: Optional[str] = None  # 예: "좋음"
+    PM10: Optional[int] = None
+    PM25: Optional[int] = None
+    MAXINDEX: Optional[str] = None  # 예: 통합대기환경지수 등급
+
+
+class RegionUvData(BaseModel):
+    """자치구별 UV 지수 정보"""
+
+    uv_index: Optional[int] = None  # h0 값
+
+
+class SingleRegionFineDustResponse(BaseModel):
+    """/api/environment/fine_dust 응답 모델 (단일 지역)"""
+
+    request_location: Dict[str, float]  # 요청 좌표
+    region_info: RegionInfo  # 조회된 지역 정보
+    fine_dust_data: Optional[RegionFineDustData] = None  # 해당 지역의 미세먼지 데이터
+    last_updated: Optional[str] = None  # 데이터 최종 업데이트 시간 (ISO 형식)
+    error: Optional[str] = None
+
+
+class SingleRegionUvResponse(BaseModel):
+    """/api/environment/uv 응답 모델 (단일 지역)"""
+
+    request_location: Dict[str, float]  # 요청 좌표
+    region_info: RegionInfo  # 조회된 지역 정보
+    uv_data: Optional[RegionUvData] = None  # 해당 지역의 UV 데이터
+    last_updated: Optional[str] = None  # 데이터 최종 업데이트 시간 (ISO 형식)
     error: Optional[str] = None
