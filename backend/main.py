@@ -13,6 +13,7 @@ from app.cache import (
     update_uv_cache,
     update_fine_dust_map_cache,
     update_uv_map_cache,
+    update_flood_trace_cache,
 )
 
 # 데이터 수집 함수 임포트
@@ -20,6 +21,7 @@ from core.indexing.get_poison import _fetch_food_poisoning_sync
 from core.indexing.get_fine_dust import _fetch_fine_dust_sync
 from core.indexing.get_uv import _fetch_uv_sync
 from core.map.create_map import fetch_air_quality_map, fetch_uv_map
+from core.map.flood_trace_map import _fetch_flood_trace_html
 
 # 로깅 설정
 logging.basicConfig(
@@ -56,6 +58,15 @@ def _schedule_job(job_func, cron_config=None, run_immediately=True):
 
     if run_immediately:
         scheduler.add_job(job_func)
+
+
+def update_flood_trace_job():
+    logger.info("Scheduler: Running UV update job...")
+    try:
+        data = _fetch_flood_trace_html()
+        update_flood_trace_cache(data)
+    except Exception as e:
+        logger.info(f"Scheduler Error: Failed to update flood trace: {e}")
 
 
 def update_uv_job():
@@ -113,6 +124,7 @@ async def startup_event():
     _schedule_job(update_fine_dust_job, cron_config, run_immediately=True)
     _schedule_job(update_uv_job, cron_config, run_immediately=True)
     _schedule_job(update_poison_index_job, cron_config, run_immediately=True)
+    _schedule_job(update_flood_trace_job, run_immediately=True)
 
     # 스케줄러 시작
     try:

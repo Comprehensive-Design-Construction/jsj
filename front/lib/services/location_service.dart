@@ -1,5 +1,5 @@
 import 'package:geolocator/geolocator.dart'; // 위치 정보 패키지
-import 'package:permission_handler/permission_handler.dart'; // 권한 요청 패키지
+// 권한 요청 패키지
 import '../constants/app_constants.dart'; // 기본 위치 정보 상수
 
 class LocationService {

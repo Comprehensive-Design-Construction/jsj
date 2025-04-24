@@ -1,7 +1,7 @@
 // lib/screens/shelter_map/widgets/shelter_map_section.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../constants/app_constants.dart'; // availableDisasterTypes 사용
+// availableDisasterTypes 사용
 import '../../../providers/shelter_map_provider.dart'; // 대피소 지도 데이터 프로바이더
 import '../../../providers/map_cache_provider.dart'; // 지도 캐시 프로바이더
 import '../../../widgets/map_webview.dart'; // WebView 위젯

@@ -12,9 +12,7 @@ import 'widgets/env_map_section.dart';
 import 'widgets/weather_display.dart';
 import '../profile/profile_screen.dart';
 import '../shelter_map/shelter_map_screen.dart';
-import '../../models/response/health_indices_response.dart';
-import '../../models/common/alert_info.dart';
-import '../../constants/app_constants.dart'; // AppConstants import for disaster types
+// AppConstants import for disaster types
 // ShelterMapSection에서 사용하던 DisasterType enum import (경로 확인 필요)
 import '../shelter_map/widgets/shelter_map_section.dart' show DisasterType;
 

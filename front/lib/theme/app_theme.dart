@@ -56,20 +56,20 @@ class AppTheme {
     segmentedButtonTheme: SegmentedButtonThemeData(
       // 세그먼트 버튼 (지도/대피소 선택) 스타일
       style: ButtonStyle(
-        backgroundColor: MaterialStateProperty.resolveWith<Color?>((
-          Set<MaterialState> states,
+        backgroundColor: WidgetStateProperty.resolveWith<Color?>((
+          Set<WidgetState> states,
         ) {
-          if (states.contains(MaterialState.selected)) {
+          if (states.contains(WidgetState.selected)) {
             // 선택된 버튼 배경색 (연보라)
             return primaryPurple.withOpacity(0.15);
           }
           // 선택되지 않은 버튼 배경색 (회색)
           return Colors.grey[200];
         }),
-        foregroundColor: MaterialStateProperty.resolveWith<Color?>((
-          Set<MaterialState> states,
+        foregroundColor: WidgetStateProperty.resolveWith<Color?>((
+          Set<WidgetState> states,
         ) {
-          if (states.contains(MaterialState.selected)) {
+          if (states.contains(WidgetState.selected)) {
             // 선택된 버튼 텍스트/아이콘 색상 (진보라)
             return primaryPurple;
           }
@@ -77,9 +77,9 @@ class AppTheme {
           return Colors.black54;
         }),
         // 버튼 테두리 제거
-        side: MaterialStateProperty.all(BorderSide.none),
+        side: WidgetStateProperty.all(BorderSide.none),
         // 버튼 모양 (기본값 사용 또는 shape 지정 가능)
-        shape: MaterialStateProperty.all(
+        shape: WidgetStateProperty.all(
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),

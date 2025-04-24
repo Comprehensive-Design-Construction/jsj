@@ -60,7 +60,7 @@ def test_env_map_api():
     print("\n=== 환경 지도 API 테스트 ===")
 
     # 테스트할 환경 유형
-    env_types = ["fine_dust", "uv"]
+    env_types = ["fine_dust", "uv", "flood_trace"]
 
     for env_type in env_types:
         params = {"env_type": env_type, "force_refresh": "false"}

@@ -15,8 +15,8 @@ async def _fetch_uv_sync() -> Optional[dict]:
     :return: 구: h0
     """
     path = os.path.join(
-        # ".",
         ".",
+        "backend",
         "datasets",
         "weather",
         "observatory_UV.csv",

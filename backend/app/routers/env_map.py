@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import Optional, Dict, Any, Tuple
 import logging
 from datetime import datetime
+from tzlocal import get_localzone
 from pydantic import ValidationError
 import traceback
 import asyncio
@@ -12,7 +13,11 @@ from app.schemas.request_models import EnvironmentInput
 from app.schemas.response_models import EnvMapApiResponse
 
 # 캐시 및 데이터 로드 함수 임포트
-from app.cache import get_fine_dust_map_cache, get_uv_map_cache
+from app.cache import (
+    get_fine_dust_map_cache,
+    get_uv_map_cache,
+    get_flood_trace_map_cache,
+)
 
 # 로깅 설정
 logger = logging.getLogger(__name__)
@@ -74,13 +79,17 @@ async def get_env_map(env_type: str, force_refresh: bool = False):
                 result, last_updated = await asyncio.wait_for(
                     get_uv_map(force_refresh), timeout=timeout_seconds
                 )
+            elif env_type == "flood_trace":
+                result, last_updated = await asyncio.wait_for(
+                    get_flood_trace_map(force_refresh), timeout=timeout_seconds
+                )
             else:
                 # 이 부분은 Pydantic 검증으로 걸러져야 하지만 안전장치로 남겨둠
                 raise HTTPException(
                     status_code=400,
                     detail={
                         "error": "Invalid env_type",
-                        "details": "env_type must be either 'fine_dust' or 'uv'",
+                        "details": "env_type must be either 'fine_dust' or 'uv' or 'flood_trace'",
                     },
                 )
 
@@ -97,12 +106,18 @@ async def get_env_map(env_type: str, force_refresh: bool = False):
                     result = cache_data["data"]
                     last_updated = cache_data["last_updated"].isoformat()
                     logger.info(f"Returning cached fine dust map after timeout")
-            else:  # uv
+            elif env_type == "uv":
                 cache_data = get_uv_map_cache()
                 if cache_data["data"] and cache_data["last_updated"]:
                     result = cache_data["data"]
                     last_updated = cache_data["last_updated"].isoformat()
                     logger.info(f"Returning cached UV map after timeout")
+            elif env_type == "flood_trace":
+                cache_data = get_flood_trace_map_cache()
+                if cache_data["data"] and cache_data["last_updated"]:
+                    result = cache_data["data"]
+                    last_updated = cache_data["last_updated"].isoformat()
+                    logger.info(f"Returning cached flood trace map after timeout")
 
         # 응답 생성
         response_data = EnvMapApiResponse(
@@ -121,7 +136,7 @@ async def get_env_map(env_type: str, force_refresh: bool = False):
         elapsed_time = time.time() - start_time
         logger.info(f"Request for {env_type} map processed in {elapsed_time:.2f}s")
 
-        return response_data.model_dump(exclude_none=True)
+        return response_data.model_dump()
 
     except HTTPException:
         # 이미 처리된 HTTP 예외는 그대로 전달
@@ -151,20 +166,24 @@ async def get_fine_dust_map(
         # 캐시 확인
         if not force_refresh:
             cache_data = get_fine_dust_map_cache()
+            last_updated_cache = cache_data.get("last_updated")
 
-            # 캐시 유효성 검사
-            if (
-                cache_data["data"]
-                and cache_data["last_updated"]
-                and (datetime.now() - cache_data["last_updated"]).total_seconds()
-                < CACHE_TIMEOUT_SECONDS
-            ):
-                logger.info("Returning fine dust map from valid cache")
-                return cache_data["data"], cache_data["last_updated"].isoformat()
+            if isinstance(last_updated_cache, datetime):
+                local_tz = get_localzone()
+                now_aware = datetime.now(tz=local_tz)
 
-        now = datetime.now()
+                # 캐시 유효성 검사
+                if (
+                    cache_data["data"]
+                    and (now_aware - last_updated_cache).total_seconds()
+                    < CACHE_TIMEOUT_SECONDS
+                ):
+                    logger.info("Returning fine dust map from valid cache")
+                    return cache_data["data"], last_updated_cache.isoformat()
 
-        return cache_data["data"], now.isoformat()
+            now = datetime.now()
+
+            return cache_data["data"], now.isoformat()
 
     except Exception as e:
         logger.error(f"Error generating fine dust map: {e}")
@@ -191,16 +210,20 @@ async def get_uv_map(
         # 캐시 확인
         if not force_refresh:
             cache_data = get_uv_map_cache()
+            last_update_cache = cache_data.get("last_updated")
 
-            # 캐시 유효성 검사
-            if (
-                cache_data["data"]
-                and cache_data["last_updated"]
-                and (datetime.now() - cache_data["last_updated"]).total_seconds()
-                < CACHE_TIMEOUT_SECONDS
-            ):
-                logger.info("Returning UV map from valid cache")
-                return cache_data["data"], cache_data["last_updated"].isoformat()
+            if isinstance(last_update_cache, datetime):
+                local_tz = get_localzone()
+                now_aware = datetime.now(tz=local_tz)
+
+                # 캐시 유효성 검사
+                if (
+                    cache_data["data"]
+                    and (now_aware - last_update_cache).total_seconds()
+                    < CACHE_TIMEOUT_SECONDS
+                ):
+                    logger.info("Returning UV map from valid cache")
+                    return cache_data["data"], last_update_cache.isoformat()
 
         now = datetime.now()
 
@@ -212,5 +235,49 @@ async def get_uv_map(
         cache_data = get_uv_map_cache()
         if cache_data["data"] and cache_data["last_updated"]:
             logger.info("Falling back to cached UV map data after exception")
+            return cache_data["data"], cache_data["last_updated"].isoformat()
+        return None, None
+
+
+async def get_flood_trace_map(
+    force_refresh: bool = False,
+) -> Tuple[Optional[str], Optional[str]]:
+    """침수 흔적도를 가져오는 함수
+
+    Args:
+        force_refresh: 캐시 무시하고 새로 가져올지 여부
+
+    Returns:
+        tuple: (지도 HTML, 마지막 업데이트 시간)
+    """
+    try:
+        # 캐시 확인
+        if not force_refresh:
+            cache_data = get_flood_trace_map_cache()
+            last_update_cache = cache_data.get("last_updated")
+
+            if isinstance(last_update_cache, datetime):
+                local_tz = get_localzone()
+                now_aware = datetime.now(tz=local_tz)
+
+                # 캐시 유효성 검사
+                if (
+                    cache_data["data"]
+                    and (now_aware - last_update_cache).total_seconds()
+                    < CACHE_TIMEOUT_SECONDS
+                ):
+                    logger.info("Returning flood trace map from valid cache")
+                    return cache_data["data"], last_update_cache.isoformat()
+
+        now = datetime.now()
+
+        return cache_data["data"], now.isoformat()
+
+    except Exception as e:
+        logger.error(f"Error generating flood trace map: {e}")
+        # 오류 발생 시 캐시 확인
+        cache_data = get_flood_trace_map_cache()
+        if cache_data["data"] and cache_data["last_updated"]:
+            logger.info("Falling back to cached flood trace map data after exception")
             return cache_data["data"], cache_data["last_updated"].isoformat()
         return None, None

@@ -33,11 +33,11 @@ class ShelterInput(BaseModel):
 
 
 class EnvironmentInput(BaseModel):
-    env_type: str = Field(..., description="환경 유형 (fine_dust, uv)")
+    env_type: str = Field(..., description="환경 유형 (fine_dust, uv, flood trace)")
 
     @validator("env_type")
     def validate_env_type(cls, v):
-        allowed_types = ["fine_dust", "uv"]
+        allowed_types = ["fine_dust", "uv", "flood_trace"]
         lower_v = v.lower()
         if lower_v not in allowed_types:
             raise ValueError(
@@ -70,7 +70,7 @@ class ApiRequest(BaseModel):
         if v is None:
             return v
 
-        allowed_types = ["fine_dust", "uv"]
+        allowed_types = ["fine_dust", "uv", "flood_trace"]
         lower_v = v.lower()
         if lower_v not in allowed_types:
             raise ValueError(
