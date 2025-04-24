@@ -1,12 +1,9 @@
-"""
-모든 미세먼지 데이터를 가져옴.
-"""
-
 import requests
 import asyncio
-import os
 from typing import Optional
 from config.settings import settings
+
+url = "http://openAPI.seoul.go.kr:8088/{api_key}/json/ListAirQualityByDistrictService/1/51"
 
 
 async def _fetch_fine_dust_sync() -> Optional[dict]:
@@ -16,7 +13,7 @@ async def _fetch_fine_dust_sync() -> Optional[dict]:
     FINE_DUST_API_KEY = settings.FINE_DUST_API_KEY
     results = {}
 
-    url = f"http://openAPI.seoul.go.kr:8088/{FINE_DUST_API_KEY}/json/ListAirQualityByDistrictService/1/51"
+    url = url.format(api_key=FINE_DUST_API_KEY)
 
     try:
         loop = asyncio.get_running_loop()

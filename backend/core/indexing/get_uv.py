@@ -10,7 +10,7 @@ from config.settings import settings
 
 async def _fetch_uv_sync() -> Optional[dict]:
     """
-    :return: 구: h0
+    :return: {gu: h0}
     """
     path = os.path.join(
         ".",
@@ -39,10 +39,8 @@ async def _fetch_uv_sync() -> Optional[dict]:
         print(f"Fetching UV index for {gu} (Code: {code})...")
 
         try:
-            response = requests.get(
-                base_url, params=params, timeout=10
-            )  # 타임아웃 설정
-            response.raise_for_status()  # HTTP 오류 발생 시 예외 발생 (4xx, 5xx)
+            response = requests.get(base_url, params=params, timeout=10)
+            response.raise_for_status()
 
             data = response.json()
 

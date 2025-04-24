@@ -1,8 +1,10 @@
 import asyncio
-import os
 from typing import Optional
 import requests
 from config.settings import settings
+
+
+url = "https://api.openweathermap.org/data/2.5/weather"
 
 
 async def _fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
@@ -18,7 +20,6 @@ async def _fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
         print("OPENWEATHERMAP_API_KEY가 설정되지 않았습니다.")
         return None
 
-    url = "https://api.openweathermap.org/data/2.5/weather"
     params = {
         "lat": lat,
         "lon": lon,

@@ -33,8 +33,11 @@ def _setup_selenium_driver() -> webdriver.Chrome:
     raise
 
 
-def _fetch_food_poisoning_sync() -> Dict[str, Optional[str]]:
-    """Selenium을 사용하여 식중독 지수 스크래핑 (동기 함수, 서울 데이터만)"""
+def _fetch_food_poisoning_sync() -> Dict[Dict[int, str], Optional[str]]:
+    """
+    Selenium을 사용하여 식중독 지수 스크래핑 (동기 함수, 서울 데이터만)
+    :return: {gu: {poison_index: int, poison_level: str}}
+    """
     url = "https://poisonmap.mfds.go.kr/main.do"
     driver = None
     poison_data = {"error": None}
@@ -47,8 +50,6 @@ def _fetch_food_poisoning_sync() -> Dict[str, Optional[str]]:
 
         # 서울 버튼 클릭 대기 및 클릭
         seoul_button = wait.until(EC.element_to_be_clickable((By.ID, "pointArea-11")))
-        # JavaScript 클릭 시도 (일반 클릭이 안될 경우)
-        # driver.execute_script("arguments[0].click();", seoul_button)
         seoul_button.click()
         print("Clicked '서울'.")
 
