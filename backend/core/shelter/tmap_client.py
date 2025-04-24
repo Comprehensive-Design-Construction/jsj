@@ -8,6 +8,7 @@ from typing import Tuple, Any, Optional, List
 
 # 설정 파일 임포트
 from config.settings import settings
+from core.shelter import config
 
 
 async def _fetch_single_route_data(
@@ -44,7 +45,7 @@ async def _fetch_single_route_data(
 
     try:
         async with session.post(
-            settings.TMAP_PEDESTRIAN_ROUTE_URL,
+            config.TMAP_PEDESTRIAN_ROUTE_URL,
             json=payload,
             headers=headers,
             timeout=15,
