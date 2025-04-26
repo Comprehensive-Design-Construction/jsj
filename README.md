@@ -23,3 +23,5 @@ github에 올리지 말아주세여
    driver = webdriver.Chrome(service=service) {options 파라미터 가능}
 
 잘 모르겠으면 편하게 물어봐주세요 ~~
+
+### 네 확인이요~
