@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/response/env_map_response.dart';
 import '../models/common/request_info.dart'; // RequestInfo import 추가
-import '../services/api_service.dart';
 import 'map_cache_provider.dart';
 import 'health_index_provider.dart';
 

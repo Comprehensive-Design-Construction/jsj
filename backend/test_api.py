@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-"""
-API 테스트 스크립트
-다양한 엔드포인트에 요청을 보내고 결과를 확인합니다.
-"""
 import requests
 import json
 import time
@@ -13,6 +7,139 @@ import sys
 BASE_URL = "http://localhost:5000/api"
 # 요청 타임아웃 설정 (초)
 REQUEST_TIMEOUT = 15
+
+
+def test_weather_api():
+    """상세 날씨 API (/api/weather) 테스트"""
+    print("\n=== 상세 날씨 API 테스트 ===")
+
+    # 테스트 좌표 (서울 시청 근처)
+    params = {"latitude": 37.5665, "longitude": 126.9780}
+
+    url = f"{BASE_URL}/weather"  # 엔드포인트 경로 확인
+    print(f"요청 URL: {url}")
+    print(f"파라미터: {params}")
+
+    try:
+        start_time = time.time()
+        response = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
+        elapsed = time.time() - start_time
+
+        print(f"응답 시간: {elapsed:.2f}초")
+        print(f"상태 코드: {response.status_code}")
+
+        if response.status_code == 200:
+            data = response.json()
+            print(f"응답 데이터:")
+            # 주요 응답 필드만 출력하거나, 전체 출력 후 주요 필드 확인
+            print(json.dumps(data, indent=2, ensure_ascii=False))
+            # 예시: 특정 필드 확인
+            if data.get("measurements"):
+                print(f"  - 현재 온도: {data['measurements'].get('temp')} °C")
+            if data.get("weather_condition"):
+                print(f"  - 날씨 설명: {data['weather_condition'].get('description')}")
+        elif response.status_code == 422:  # 입력값 오류 (예: 좌표 범위 벗어남)
+            print(f"입력값 오류 응답: {response.text}")
+        else:
+            print(f"오류 응답: {response.text}")
+    except requests.exceptions.Timeout:
+        print(f"요청 타임아웃 (>{REQUEST_TIMEOUT}초)")
+    except requests.exceptions.ConnectionError:
+        print(f"연결 오류: API 서버가 실행 중인지 확인하세요 (URL: {url})")
+    except Exception as e:
+        print(f"요청 실패: {e}")
+
+
+def test_environment_uv_api():
+    """지역별 UV 지수 API (/api/environment/uv) 테스트"""
+    print("\n=== 지역별 UV 지수 API 테스트 ===")
+
+    # 테스트 좌표 (서울 시청 근처)
+    params = {"latitude": 37.5665, "longitude": 126.9780}
+
+    url = f"{BASE_URL}/environment/uv"  # 엔드포인트 경로 확인
+    print(f"요청 URL: {url}")
+    print(f"파라미터: {params}")
+
+    try:
+        start_time = time.time()
+        response = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
+        elapsed = time.time() - start_time
+
+        print(f"응답 시간: {elapsed:.2f}초")
+        print(f"상태 코드: {response.status_code}")
+
+        if response.status_code == 200:
+            data = response.json()
+            print(f"응답 데이터:")
+            print(json.dumps(data, indent=2, ensure_ascii=False))
+            # 예시: 특정 필드 확인
+            if data.get("region_info"):
+                print(f"  - 조회 지역: {data['region_info'].get('gu')}")
+            if data.get("uv_data"):
+                print(f"  - UV 지수: {data['uv_data'].get('uv_index')}")
+            print(f"  - 데이터 업데이트 시각: {data.get('last_updated')}")
+        elif response.status_code == 422:  # 입력값 오류
+            print(f"입력값 오류 응답: {response.text}")
+        else:
+            print(f"오류 응답: {response.text}")
+            if response.status_code == 500 and "캐시에 없습니다" in response.text:
+                print("  (참고: UV 데이터 캐시가 아직 생성되지 않았을 수 있습니다.)")
+
+    except requests.exceptions.Timeout:
+        print(f"요청 타임아웃 (>{REQUEST_TIMEOUT}초)")
+    except requests.exceptions.ConnectionError:
+        print(f"연결 오류: API 서버가 실행 중인지 확인하세요 (URL: {url})")
+    except Exception as e:
+        print(f"요청 실패: {e}")
+
+
+def test_environment_fine_dust_api():
+    """지역별 미세먼지 API (/api/environment/fine_dust) 테스트"""
+    print("\n=== 지역별 미세먼지 API 테스트 ===")
+
+    # 테스트 좌표 (서울 시청 근처)
+    params = {"latitude": 37.5665, "longitude": 126.9780}
+
+    url = f"{BASE_URL}/environment/fine_dust"  # 엔드포인트 경로 확인
+    print(f"요청 URL: {url}")
+    print(f"파라미터: {params}")
+
+    try:
+        start_time = time.time()
+        response = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
+        elapsed = time.time() - start_time
+
+        print(f"응답 시간: {elapsed:.2f}초")
+        print(f"상태 코드: {response.status_code}")
+
+        if response.status_code == 200:
+            data = response.json()
+            print(f"응답 데이터:")
+            print(json.dumps(data, indent=2, ensure_ascii=False))
+            # 예시: 특정 필드 확인
+            if data.get("region_info"):
+                print(f"  - 조회 지역: {data['region_info'].get('gu')}")
+            if data.get("fine_dust_data"):
+                print(f"  - 미세먼지(PM10): {data['fine_dust_data'].get('PM10')}")
+                print(f"  - 초미세먼지(PM2.5): {data['fine_dust_data'].get('PM25')}")
+                print(f"  - 등급: {data['fine_dust_data'].get('GRADE')}")
+            print(f"  - 데이터 업데이트 시각: {data.get('last_updated')}")
+        elif response.status_code == 422:  # 입력값 오류
+            print(f"입력값 오류 응답: {response.text}")
+        else:
+            print(f"오류 응답: {response.text}")
+            if response.status_code == 500 and "캐시에 없습니다" in response.text:
+                print(
+                    "  (참고: 미세먼지 데이터 캐시가 아직 생성되지 않았을 수 있습니다.)"
+                )
+
+    except requests.exceptions.Timeout:
+        print(f"요청 타임아웃 (>{REQUEST_TIMEOUT}초)")
+    except requests.exceptions.ConnectionError:
+        print(f"연결 오류: API 서버가 실행 중인지 확인하세요 (URL: {url})")
+    except Exception as e:
+        print(f"요청 실패: {e}")
 
 
 def test_index_api():
@@ -60,7 +187,7 @@ def test_env_map_api():
     print("\n=== 환경 지도 API 테스트 ===")
 
     # 테스트할 환경 유형
-    env_types = ["fine_dust", "uv"]
+    env_types = ["fine_dust", "uv", "flood_trace"]
 
     for env_type in env_types:
         params = {"env_type": env_type, "force_refresh": "false"}
@@ -175,25 +302,40 @@ def summarize_indices(indices):
     return summary
 
 
+# test_api.py 의 if __name__ == "__main__": 블록 수정 예시
+
 if __name__ == "__main__":
     print("API 테스트 시작...")
 
-    # 명령줄 인수로 특정 테스트만 실행할 수 있음
+    # 실행할 테스트 목록
+    available_tests = {
+        "index": test_index_api,
+        "env_map": test_env_map_api,  # 기존 환경 지도 테스트
+        "map": test_map_api,
+        "weather": test_weather_api,  # 신규 상세 날씨 테스트
+        "uv": test_environment_uv_api,  # 신규 UV 테스트
+        "dust": test_environment_fine_dust_api,  # 신규 미세먼지 테스트
+    }
+
+    tests_to_run = []
+
+    # 명령줄 인수로 특정 테스트만 실행
     if len(sys.argv) > 1:
-        test_name = sys.argv[1].lower()
-        if test_name == "index":
-            test_index_api()
-        elif test_name == "env":
-            test_env_map_api()
-        elif test_name == "map":
-            test_map_api()
-        else:
-            print(f"알 수 없는 테스트: {test_name}")
-            print("사용 가능한 테스트: index, env, map")
+        for arg in sys.argv[1:]:
+            test_name = arg.lower()
+            if test_name in available_tests:
+                tests_to_run.append(available_tests[test_name])
+            else:
+                print(f"알 수 없는 테스트: {test_name}")
     else:
-        # 모든 테스트 실행
-        test_index_api()
-        test_env_map_api()
-        test_map_api()
+        # 인수가 없으면 모든 테스트 실행
+        tests_to_run = list(available_tests.values())
+
+    if not tests_to_run and len(sys.argv) > 1:
+        print("실행할 유효한 테스트가 지정되지 않았습니다.")
+        print(f"사용 가능한 테스트: {', '.join(available_tests.keys())}")
+    else:
+        for test_func in tests_to_run:
+            test_func()  # 선택된 테스트 함수 실행
 
     print("\nAPI 테스트 완료!")

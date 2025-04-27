@@ -1,13 +1,13 @@
 import asyncio
-import os
 from typing import Optional
 import requests
-from dotenv import load_dotenv
-
-load_dotenv()
+from config.settings import settings
 
 
-async def _fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
+url = "https://api.openweathermap.org/data/2.5/weather"
+
+
+async def fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
     """
     OpenWeatherMap API를 사용해 날씨 데이터를 가져옵니다.
 
@@ -15,12 +15,11 @@ async def _fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
     :param lon: 경도
     :return: {"weather": {날씨 정보}, "main": {온도, 기압, 습도 등}} 또는 None (실패 시)
     """
-    api_key = os.getenv("OPENWEATHERMAP_API_KEY")
+    api_key = settings.OPENWEATHERMAP_API_KEY
     if not api_key:
         print("OPENWEATHERMAP_API_KEY가 설정되지 않았습니다.")
         return None
 
-    url = "https://api.openweathermap.org/data/2.5/weather"
     params = {
         "lat": lat,
         "lon": lon,
@@ -80,6 +79,6 @@ if __name__ == "__main__":
     import time
 
     start_time = time.time()
-    data = asyncio.run(_fetch_weather_data(37.589026, 127.003779))
+    data = asyncio.run(fetch_weather_data(37.589026, 127.003779))
     print(data)
     print("실행시간:", time.time() - start_time)

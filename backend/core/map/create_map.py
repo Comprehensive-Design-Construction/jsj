@@ -166,6 +166,7 @@ def fetch_uv_map(uv_data: dict, geojson_path: str = None) -> str | None:
     m = _create_base_map()
 
     # 4. Choropleth 추가
+    # 값 변경 필요.
     uv_bins = [
         0,
         3,

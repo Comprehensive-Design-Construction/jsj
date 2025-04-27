@@ -47,26 +47,29 @@ class _MapWebViewState extends State<MapWebView> {
                 },
                 onPageStarted: (String url) {
                   // 페이지 로딩 시작 시 로딩 상태 업데이트
-                  if (mounted)
+                  if (mounted) {
                     setState(() {
                       _isLoading = true;
                       _hasError = false;
                     });
+                  }
                 },
                 onPageFinished: (String url) {
                   // 페이지 로딩 완료 시 로딩 상태 업데이트
-                  if (mounted)
+                  if (mounted) {
                     setState(() {
                       _isLoading = false;
                     });
+                  }
                 },
                 onWebResourceError: (WebResourceError error) {
                   // 웹 리소스 로딩 오류 발생 시 (네트워크, HTML 오류 등)
-                  if (mounted)
+                  if (mounted) {
                     setState(() {
                       _isLoading = false;
                       _hasError = true;
                     });
+                  }
                   print("WebView 오류 (${widget.mapKey}): ${error.description}");
                   // 사용자에게 오류 메시지 표시 고려
                 },
@@ -96,28 +99,30 @@ class _MapWebViewState extends State<MapWebView> {
       print("WebView 리로드: ${widget.mapKey}");
       // 컨트롤러가 초기화된 경우에만 로드 시도
       // initState에서 _hasError가 true가 된 경우 controller가 없을 수 있음
-      if (this.mounted &&
+      if (mounted &&
           !_hasError &&
-          this.widget.htmlContent != null &&
-          this.widget.htmlContent!.isNotEmpty) {
+          widget.htmlContent != null &&
+          widget.htmlContent!.isNotEmpty) {
         // 컨트롤러 초기화 시도
         try {
           _controller.loadHtmlString(widget.htmlContent!, baseUrl: null);
         } catch (e) {
           print("WebView 리로드 오류 (${widget.mapKey}): $e");
-          if (mounted)
+          if (mounted) {
             setState(() {
               _isLoading = false;
               _hasError = true;
             });
+          }
         }
       } else if (widget.htmlContent == null || widget.htmlContent!.isEmpty) {
         // 업데이트된 HTML이 유효하지 않은 경우
-        if (mounted)
+        if (mounted) {
           setState(() {
             _isLoading = false;
             _hasError = true;
           });
+        }
         print("WebView 오류 (${widget.mapKey}): 업데이트된 HTML 컨텐츠 없음.");
         // 필요시 빈 페이지 또는 에러 페이지 로드
         // _controller.loadHtmlString('<html><body>지도 로딩 실패</body></html>');

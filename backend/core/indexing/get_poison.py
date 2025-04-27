@@ -1,18 +1,29 @@
 import shutil
 import time
-from typing import Optional, Dict
+import logging
+from typing import Optional, Dict, Any
 
 from selenium import webdriver
 from selenium.common import NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
+logger = logging.getLogger(__name__)
+
+
+class PoisonDataError(Exception):
+    """Custom exception for food poisoning data scraping errors."""
+
+    pass
 
 
 def _setup_selenium_driver() -> webdriver.Chrome:
     """Selenium WebDriver 설정 및 생성"""
+    logger.info("Setting up Selenium WebDriver...")
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
@@ -22,52 +33,69 @@ def _setup_selenium_driver() -> webdriver.Chrome:
     options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36"
     )
-
     try:
         service = Service(shutil.which("chromedriver"))
         driver = webdriver.Chrome(service=service, options=options)
         driver.implicitly_wait(5)
+        logger.info("Selenium WebDriver setup successful.")
         return driver
-    except Exception as e2:
-        print(f"Error setting up Selenium driver (fallback failed): {e2}")
-    raise
+    except Exception as e:
+        logger.exception("Error setting up Selenium driver.")
+        raise PoisonDataError(f"Failed to setup Selenium driver: {e}")
 
 
-def _fetch_food_poisoning_sync() -> Dict[str, Optional[str]]:
+def fetch_food_poisoning_data() -> Dict[str, Dict[str, str]]:
     """Selenium을 사용하여 식중독 지수 스크래핑 (동기 함수, 서울 데이터만)"""
     url = "https://poisonmap.mfds.go.kr/main.do"
     driver = None
-    poison_data = {"error": None}
+    scraped_data: Dict[str, Dict[str, str]] = {}
 
     try:
         driver = _setup_selenium_driver()
-        print(f"Fetching food poisoning data from: {url}")
+        logger.info(f"Fetching food poisoning data from: {url}")
         driver.get(url)
-        wait = WebDriverWait(driver, 10)  # 명시적 대기
+        wait = WebDriverWait(driver, 15)
 
-        # 서울 버튼 클릭 대기 및 클릭
-        seoul_button = wait.until(EC.element_to_be_clickable((By.ID, "pointArea-11")))
-        # JavaScript 클릭 시도 (일반 클릭이 안될 경우)
-        # driver.execute_script("arguments[0].click();", seoul_button)
-        seoul_button.click()
-        print("Clicked '서울'.")
+        try:
+            seoul_button = wait.until(
+                EC.element_to_be_clickable((By.ID, "pointArea-11"))
+            )
+            driver.execute_script("arguments[0].click();", seoul_button)
+            logger.info("Clicked '서울' button.")
+        except TimeoutException:
+            logger.error("Timed out waiting for '서울' button.")
+            raise PoisonDataError("Timed out waiting for '서울' button.")
 
-        # 잠시 대기 후 자치구 목록 로딩 확인
-        time.sleep(0.5)  # JS 실행 및 요소 로딩 대기 시간
-        point_area = wait.until(
-            EC.presence_of_element_located((By.CLASS_NAME, "pointArea"))
-        )
-        li_elements = point_area.find_elements(By.TAG_NAME, "li")
-        print(f"Found {len(li_elements)} districts in Seoul.")
+        # 자치구 목록 로딩 확인
+        try:
+            point_area = wait.until(
+                EC.presence_of_element_located((By.CLASS_NAME, "pointArea"))
+            )
+            li_elements = wait.until(
+                EC.presence_of_all_elements_located(
+                    (By.CSS_SELECTOR, ".pointArea li span")
+                )
+            )
+            li_tags = [
+                span.find_element(By.XPATH, "./..") for span in li_elements if span.text
+            ]
 
-        scraped_data = {}
+            logger.info(f"Found {len(li_tags)} districts in Seoul.")
+            if not li_tags:
+                raise PoisonDataError("No district list items found.")
+        except TimeoutException:
+            logger.error("Timed out waiting for district list.")
+            raise PoisonDataError("Timed out waiting for district list.")
 
-        for i, li in enumerate(li_elements):
+        for i, li in enumerate(li_tags):
+            district_name = ""
             try:
-                # span 요소 찾기 및 텍스트 추출 시도
                 span = li.find_element(By.TAG_NAME, "span")
-                span_text = span.text
-                if not span_text:  # 텍스트 없는 li 스킵
+                district_name = span.text
+                if not district_name:
+                    logger.warning(
+                        f"District name is empty for list item index {i}. Skipping."
+                    )
                     continue
 
                 driver.execute_script(
@@ -75,45 +103,48 @@ def _fetch_food_poisoning_sync() -> Dict[str, Optional[str]]:
                     li,
                 )
 
-                # hover 후 risk 요소가 나타날 때까지 잠시 대기
-                time.sleep(0.1)  # 매우 짧은 대기 (필요시 조정)
+                risk_element = wait.until(
+                    EC.visibility_of_element_located((By.ID, "risk"))
+                )
+                level_element = wait.until(
+                    EC.visibility_of_element_located((By.ID, "stateText"))
+                )
 
-                data = {}
-                # 식중독 지수 추출
-                risk_element = driver.find_element(By.ID, "risk")
                 risk_text = risk_element.text
-
-                # 식중독 위험도 추출
-                level_element = driver.find_element(By.ID, "stateText")
                 level_text = level_element.text
 
-                data["poison_index"] = risk_text
-                data["poison_level"] = level_text
-                scraped_data[span_text] = data
+                scraped_data[district_name] = {
+                    "poison_index": risk_text,
+                    "poison_level": level_text,
+                }
+                logger.debug(
+                    f"Scraped data for {district_name}: Index={risk_text}, Level={level_text}"
+                )
 
-            except NoSuchElementException:
-                # 특정 li 처리 중 오류 발생 시 경고 출력 후 계속 진행
-                print(
-                    f"Warning: Could not find span or risk element for list item index {i}. Skipping."
+            except (NoSuchElementException, TimeoutException) as e:
+                logger.warning(
+                    f"Could not process district '{district_name}' (index {i}): {e}. Skipping."
                 )
                 continue
             except Exception as e:
-                print(f"Warning: Error processing list item index {i}: {e}. Skipping.")
+                logger.exception(
+                    f"Unexpected error processing district '{district_name}' (index {i}): {e}. Skipping."
+                )
                 continue
 
-        poison_data.update(scraped_data)
-        print("Finished scraping food poisoning data.")
+        if not scraped_data:
+            raise PoisonDataError("Failed to scrape any food poisoning data.")
 
-    except TimeoutException:
-        error_msg = "Error: Timed out waiting for food poisoning page elements."
-        print(error_msg)
-        poison_data["error"] = error_msg
+        logger.info("Finished scraping food poisoning data successfully.")
+        return scraped_data
+
+    except PoisonDataError as pe:
+        logger.error(f"Food poisoning scraping failed: {pe}")
+        raise
     except Exception as e:
-        error_msg = f"Error during food poisoning scraping: {e}"
-        print(error_msg)
-        poison_data["error"] = error_msg
+        logger.exception(f"Critical error during food poisoning scraping: {e}")
+        raise PoisonDataError(f"Critical error during food poisoning scraping: {e}")
     finally:
         if driver:
             driver.quit()
-
-    return poison_data
+            logger.info("Selenium WebDriver closed.")

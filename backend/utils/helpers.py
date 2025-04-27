@@ -1,26 +1,21 @@
 import pandas as pd
 import os
 import logging
-from dotenv import load_dotenv
 import asyncio
 import aiohttp
 from functools import (
     lru_cache,
-)  # 간단한 캐싱을 위해 사용 (모듈 로딩 시 한 번만 파일 읽기)
+)
 
-load_dotenv()
-
-# backend 폴더 기준으로 ../datasets/ 경로 접근
 try:
-    from backend.core.config import DATASETS_DIR
+    from config.settings import settings
 except ImportError:
     PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     DATASETS_DIR = os.path.join(PROJECT_ROOT, "datasets")
 
 
 logger = logging.getLogger(__name__)
-
-# --- 데이터 로딩 및 전처리 ---
+KAKAO_URL = "https://dapi.kakao.com/v2/local/geo/coord2regioncode.JSON"
 
 
 @lru_cache(maxsize=1)  # 함수 결과를 캐시하여 파일 I/O 최소화 (최초 호출 시 1회만 실행)
@@ -29,11 +24,11 @@ def load_observatory_data() -> pd.DataFrame | None:
     datasets/weather/observatory.csv 파일을 로드하고 전처리합니다.
     결과를 캐시하여 반복적인 파일 읽기를 방지합니다.
     """
-    obs_file_path = os.path.join(DATASETS_DIR, "weather", "observatory.csv")
-    logger.info(f"Attempting to load observatory data from: {obs_file_path}")
+    file_path = settings.DATASETS_DIR / "weather" / "observatory.csv"
+    logger.info(f"Attempting to load observatory data from: {file_path}")
 
-    if not os.path.exists(obs_file_path):
-        logger.error(f"Observatory file not found at: {obs_file_path}")
+    if not os.path.exists(file_path):
+        logger.error(f"Observatory file not found at: {file_path}")
         return None
 
     try:
@@ -45,10 +40,10 @@ def load_observatory_data() -> pd.DataFrame | None:
         }
 
         try:
-            df = pd.read_csv(obs_file_path, encoding="utf-8")
+            df = pd.read_csv(file_path, encoding="utf-8")
         except UnicodeDecodeError:
             logger.warning("UTF-8 decoding failed, trying cp949...")
-            df = pd.read_csv(obs_file_path, encoding="cp949")
+            df = pd.read_csv(file_path, encoding="cp949")
 
         # 필요한 컬럼만 선택 및 이름 변경
         df.rename(columns=expected_cols, inplace=True)
@@ -75,6 +70,7 @@ def load_observatory_data() -> pd.DataFrame | None:
 # 키: f"{lat:.5f}_{lon:.5f}", 값: (gu, region) 튜플
 region_cache = {}
 region_cache_limit = 1000  # 캐시 크기 제한
+_region_cache_lock = asyncio.Lock()
 
 
 async def get_region(lat: float, lon: float) -> tuple:
@@ -93,13 +89,13 @@ async def get_region(lat: float, lon: float) -> tuple:
     cache_key = f"{lat:.5f}_{lon:.5f}"
 
     # 캐시에서 값을 찾으면 바로 반환
-    if cache_key in region_cache:
-        logger.debug(f"Region info for ({lat}, {lon}) found in cache")
-        return region_cache[cache_key]
+    async with _region_cache_lock:
+        if cache_key in region_cache:
+            logger.debug(f"Region info for ({lat}, {lon}) found in cache")
+            return region_cache[cache_key]
 
-    KAKAO_API_KEY = os.getenv("KAKAO_API_KEY")
-    url = f"https://dapi.kakao.com/v2/local/geo/coord2regioncode.JSON?x={lon}&y={lat}"
-    headers = {"Authorization": "KakaoAK " + KAKAO_API_KEY}
+    url = f"{KAKAO_URL}?x={lon}&y={lat}"
+    headers = {"Authorization": f"KakaoAK {settings.KAKAO_API_KEY}"}
 
     try:
         async with aiohttp.ClientSession() as session:
@@ -117,13 +113,18 @@ async def get_region(lat: float, lon: float) -> tuple:
                 gu = full_address["documents"][1]["region_2depth_name"]
                 region = full_address["documents"][1]["region_3depth_name"]
 
-                # 결과를 캐시에 저장
-                region_cache[cache_key] = (gu, region)
+                if gu and region:
+                    async with _region_cache_lock:
 
-                # 캐시 크기 제한 (FIFO 방식)
-                if len(region_cache) > region_cache_limit:
-                    oldest_key = next(iter(region_cache))
-                    region_cache.pop(oldest_key)
+                        region_cache[cache_key] = (gu, region)
+
+                        # 캐시 크기 제한 (FIFO 방식)
+                        if len(region_cache) > region_cache_limit:
+                            try:
+                                oldest_key = next(iter(region_cache))
+                                region_cache.pop(oldest_key)
+                            except StopIteration:
+                                pass
 
                 return gu, region
     except Exception as e:

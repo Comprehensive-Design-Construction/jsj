@@ -6,6 +6,7 @@ from typing import Dict, Optional, Tuple
 
 # 모듈 임포트
 import config
+from config.settings import settings
 from core.shelter.shelter_loader import load_shelter_by_type
 from core.shelter.tmap_client import find_closest_shelter_with_tmap
 from core.shelter.map_visualizer import create_shelter_map
@@ -148,42 +149,3 @@ async def generate_maps_for_all_disasters(
     )
 
     return maps_html_dict
-
-
-# --- 로컬 테스트용 실행 코드 (선택 사항) ---
-async def main_local_test():
-    # 테스트용 좌표 (예: 서울 시청 근처)
-    test_lat = 37.5665
-    test_lon = 126.9780
-    test_radius = 2  # 1.5km 반경
-
-    # 환경 변수 설정 확인 (TMAP_APP_KEY 등)
-    if not config.TMAP_APP_KEY or config.TMAP_APP_KEY == "YOUR_FALLBACK_TMAP_APP_KEY":
-        print("오류: TMAP API 키가 설정되지 않았습니다. 테스트를 진행할 수 없습니다.")
-        return
-
-    print("로컬 테스트 시작...")
-    all_maps = await generate_maps_for_all_disasters(test_lat, test_lon, test_radius)
-
-    # 생성된 지도 HTML 저장 또는 출력 (예시)
-    output_dir = "test_maps"
-    import os
-
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    for disaster_type, html_content in all_maps.items():
-        if html_content:
-            file_path = os.path.join(output_dir, f"{disaster_type}_map.html")
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.write(html_content)
-            print(f"  지도 저장됨: {file_path}")
-        else:
-            print(f"  {disaster_type}: 지도 생성 실패 또는 데이터 없음.")
-
-    print("로컬 테스트 종료.")
-
-
-if __name__ == "__main__":
-    # 이 파일을 직접 실행할 경우 로컬 테스트 실행
-    asyncio.run(main_local_test())

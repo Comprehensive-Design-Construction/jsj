@@ -7,7 +7,8 @@ import traceback
 from typing import Tuple, Any, Optional, List
 
 # 설정 파일 임포트
-import core.shelter.config as config
+from config.settings import settings
+from core.shelter import config
 
 
 async def _fetch_single_route_data(
@@ -36,7 +37,7 @@ async def _fetch_single_route_data(
     }
     headers = {
         "accept": "application/json",
-        "appKey": config.TMAP_API_KEY,
+        "appKey": settings.TMAP_API_KEY,
         "content-type": "application/json",
     }
 
@@ -44,7 +45,10 @@ async def _fetch_single_route_data(
 
     try:
         async with session.post(
-            config.TMAP_PEDESTRIAN_ROUTE_URL, json=payload, headers=headers, timeout=15
+            config.TMAP_PEDESTRIAN_ROUTE_URL,
+            json=payload,
+            headers=headers,
+            timeout=15,
         ) as response:  # 타임아웃 약간 증가
             if response.status != 200:
                 print(

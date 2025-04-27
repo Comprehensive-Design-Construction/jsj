@@ -17,6 +17,7 @@ cache_data = {
     "uv": {"data": {}, "last_updated": None},
     "fine_dust_map": {"data": None, "last_updated": None},
     "uv_map": {"data": None, "last_updated": None},
+    "flood_trace_map": {"data": None, "last_updated": None},
 }
 
 
@@ -111,6 +112,10 @@ def update_food_poisoning_cache(data: Dict[str, Any]) -> bool:
     return _update_cache("food_poisoning", data)
 
 
+def update_flood_trace_cache(data: Any) -> bool:
+    return _update_cache("flood_trace_map", data)
+
+
 # 캐시 조회 함수
 def get_uv_cache() -> Dict[str, Any]:
     return _get_cache("uv")
@@ -130,6 +135,10 @@ def get_uv_map_cache() -> Dict[str, Any]:
 
 def get_fine_dust_map_cache() -> Dict[str, Any]:
     return _get_cache("fine_dust_map")
+
+
+def get_flood_trace_map_cache() -> Dict[str, Any]:
+    return _get_cache("flood_trace_map")
 
 
 def clear_cache(cache_type: Optional[str] = None) -> None:

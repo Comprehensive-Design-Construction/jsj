@@ -13,13 +13,15 @@ from app.cache import (
     update_uv_cache,
     update_fine_dust_map_cache,
     update_uv_map_cache,
+    update_flood_trace_cache,
 )
 
 # 데이터 수집 함수 임포트
-from core.indexing.get_poison import _fetch_food_poisoning_sync
-from core.indexing.get_fine_dust import _fetch_fine_dust_sync
-from core.indexing.get_uv import _fetch_uv_sync
+from core.indexing.get_poison import fetch_food_poisoning_data
+from core.indexing.get_fine_dust import fetch_fine_dust_data
+from core.indexing.get_uv import fetch_uv_index
 from core.map.create_map import fetch_air_quality_map, fetch_uv_map
+from core.map.flood_trace_map import _fetch_flood_trace_html
 
 # 로깅 설정
 logging.basicConfig(
@@ -58,11 +60,20 @@ def _schedule_job(job_func, cron_config=None, run_immediately=True):
         scheduler.add_job(job_func)
 
 
+def update_flood_trace_job():
+    logger.info("Scheduler: Running UV update job...")
+    try:
+        data = _fetch_flood_trace_html()
+        update_flood_trace_cache(data)
+    except Exception as e:
+        logger.info(f"Scheduler Error: Failed to update flood trace: {e}")
+
+
 def update_uv_job():
     """UV 지수 데이터 및 맵 업데이트 작업"""
     logger.info("Scheduler: Running UV update job...")
     try:
-        data = asyncio.run(_fetch_uv_sync())
+        data = asyncio.run(fetch_uv_index())
         update_uv_cache(data)
 
         # UV 맵 업데이트
@@ -79,7 +90,7 @@ def update_fine_dust_job():
     """미세먼지 데이터 및 맵 업데이트 작업"""
     logger.info("Scheduler: Running Fine Dust update job...")
     try:
-        data = asyncio.run(_fetch_fine_dust_sync())
+        data = asyncio.run(fetch_fine_dust_data())
         update_fine_dust_cache(data)
 
         # 미세먼지 맵 업데이트
@@ -96,7 +107,7 @@ def update_poison_index_job():
     """식중독 지수 업데이트 작업"""
     logger.info("Scheduler: Running food poisoning index update job...")
     try:
-        data = _fetch_food_poisoning_sync()
+        data = fetch_food_poisoning_data()
         update_food_poisoning_cache(data)
     except Exception as e:
         logger.error(f"Scheduler Error: Failed to update food poisoning index: {e}")
@@ -113,6 +124,7 @@ async def startup_event():
     _schedule_job(update_fine_dust_job, cron_config, run_immediately=True)
     _schedule_job(update_uv_job, cron_config, run_immediately=True)
     _schedule_job(update_poison_index_job, cron_config, run_immediately=True)
+    _schedule_job(update_flood_trace_job, run_immediately=True)
 
     # 스케줄러 시작
     try:
@@ -132,11 +144,13 @@ async def shutdown_event():
 
 
 # 라우터 등록
-from app.routers import index, map, env_map
+from app.routers import index, map, env_map, weather, environment
 
 app.include_router(index.router)
 app.include_router(map.router)
 app.include_router(env_map.router)
+app.include_router(weather.router)
+app.include_router(environment.router)
 
 
 @app.get("/")

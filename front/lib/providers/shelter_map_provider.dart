@@ -1,8 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:geolocator/geolocator.dart';
 import '../models/response/shelter_map_response.dart';
 import '../models/common/request_info.dart'; // RequestInfo import
-import '../services/api_service.dart';
 import 'map_cache_provider.dart';
 import 'health_index_provider.dart';
 import 'location_provider.dart';
