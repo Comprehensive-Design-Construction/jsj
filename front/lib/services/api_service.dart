@@ -1,202 +1,186 @@
-// lib/services/api_service.dart
-import 'dart:convert';
+import 'dart:convert'; // jsonDecode 사용
+import 'dart:io'; // SocketException 등 처리
+import 'dart:async'; // TimeoutException 처리
 import 'package:http/http.dart' as http;
-import '../constants/api_constants.dart';
-import '../constants/app_constants.dart'; // defaultRadiusKm 사용
-// 모델 import
-import '../models/response/health_indices_response.dart';
-import '../models/response/env_map_response.dart';
-import '../models/response/shelter_map_response.dart';
+import '../models/weather_data.dart';
+import '../models/health_indices.dart';
+import '../models/environment_data.dart';
+import '../models/map_data.dart';
 
 class ApiService {
-  final http.Client _client;
-  final String _baseUrl = ApiConstants.baseUrl;
+  // 백엔드 기본 URL (환경에 따라 설정 파일에서 로드하는 것이 좋음)
+  static const String _baseUrl = "http://10.0.0.2:5000/api"; // 로컬 개발 환경 예시
 
-  ApiService({http.Client? client}) : _client = client ?? http.Client();
+  // 공통 HTTP 요청 헤더 (필요시)
+  // final Map<String, String> _headers = {'Content-Type': 'application/json'};
 
-  /// 수동으로 URI 생성 (List 파라미터 처리용)
-  Uri _buildUriWithListParams(String path, Map<String, dynamic> params) {
-    final queryParams = <String, dynamic>{};
-    final listParams = <String, List<String>>{};
+  // 공통 요청 타임아웃
+  static const Duration _timeout = Duration(seconds: 15);
 
-    // 파라미터를 일반 파라미터와 리스트 파라미터로 분리
-    params.forEach((key, value) {
-      if (value is List<String>) {
-        listParams[key] = value;
-      } else if (value != null) {
-        queryParams[key] = value.toString();
-      }
-    });
+  // --- API 호출 메소드 ---
 
-    // 기본 URI 생성
-    var uri = Uri.parse(
-      '$_baseUrl$path',
-    ).replace(queryParameters: queryParams.isEmpty ? null : queryParams);
-
-    // 리스트 파라미터 추가 (key=value1&key=value2 형태)
-    listParams.forEach((key, values) {
-      if (values.isNotEmpty) {
-        // 기존 쿼리 파라미터와 연결
-        String queryString = uri.query;
-        for (var value in values) {
-          final encodedValue = Uri.encodeQueryComponent(value);
-          if (queryString.isEmpty) {
-            queryString += '$key=$encodedValue';
-          } else {
-            queryString += '&$key=$encodedValue';
-          }
-        }
-        uri = uri.replace(query: queryString);
-      }
-    });
-    return uri;
-  }
-
-  /// 건강 지수 API 호출
-  Future<HealthIndicesResponse> getHealthIndices({
-    required double latitude,
-    required double longitude,
-    int? age,
-    List<String>? disease,
-  }) async {
-    // 요청 파라미터 구성 (disease는 List 타입 그대로 전달)
-    final params = <String, dynamic>{
-      'latitude': latitude.toString(),
-      'longitude': longitude.toString(),
-      if (age != null) 'age': age.toString(),
-      if (disease != null && disease.isNotEmpty) 'disease': disease, // List 전달
-    };
-
-    // URI 생성 (리스트 파라미터 처리 함수 사용)
-    final uri = _buildUriWithListParams(
-      ApiConstants.healthIndexEndpoint,
-      params,
+  /// 상세 날씨 정보 가져오기
+  Future<WeatherDetailResponse> getWeather(
+    double latitude,
+    double longitude,
+  ) async {
+    final uri = Uri.parse('$_baseUrl/weather').replace(
+      queryParameters: {
+        'latitude': latitude.toString(),
+        'longitude': longitude.toString(),
+      },
     );
-
-    print('Requesting Health Indices: $uri');
-
-    try {
-      final response = await _client.get(
-        uri,
-        headers: {'Accept': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        final decodedBody = utf8.decode(response.bodyBytes);
-        try {
-          return HealthIndicesResponse.fromJson(jsonDecode(decodedBody));
-        } catch (e) {
-          print("JSON Parsing Error (Health Indices): $e");
-          print("Received Data: $decodedBody");
-          throw Exception("API 응답 데이터 형식이 잘못되었습니다.");
-        }
-      } else {
-        print(
-          'Error Response (Health Indices): ${response.statusCode} ${response.body}',
-        );
-        throw Exception('건강 지수 로딩 실패: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error fetching health indices: $e');
-      if (e is Exception && e.toString().contains('Failed host lookup')) {
-        throw Exception('네트워크 연결을 확인해주세요.');
-      } else if (e is Exception &&
-          e.toString().contains('Connection refused')) {
-        throw Exception('서버에 연결할 수 없습니다. 서버 상태를 확인해주세요.');
-      }
-      throw Exception('건강 지수 정보를 가져오는데 실패했습니다.');
-    }
+    return _handleApiCall(uri, WeatherDetailResponse.fromJson);
   }
 
-  /// 환경 지도 API 호출 (변경 없음)
-  Future<EnvMapResponse> getEnvMap({
-    required String envType,
-    bool forceRefresh = false,
-  }) async {
-    final params = {
-      'env_type': envType,
-      'force_refresh': forceRefresh.toString(),
-    };
-    final uri = Uri.parse(
-      '$_baseUrl${ApiConstants.envMapEndpoint}',
-    ).replace(queryParameters: params);
-
-    print('Requesting Env Map: $uri');
-
-    try {
-      final response = await _client.get(uri);
-      if (response.statusCode == 200) {
-        final decodedBody = utf8.decode(response.bodyBytes);
-        try {
-          return EnvMapResponse.fromJson(jsonDecode(decodedBody));
-        } catch (e) {
-          print("JSON Parsing Error (Env Map): $e");
-          print("Received Data: $decodedBody");
-          throw Exception("API 응답 데이터 형식이 잘못되었습니다.");
-        }
-      } else {
-        print(
-          'Error Response (Env Map): ${response.statusCode} ${response.body}',
-        );
-        throw Exception('환경 지도 로딩 실패: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error fetching env map: $e');
-      if (e is Exception && e.toString().contains('Failed host lookup')) {
-        throw Exception('네트워크 연결을 확인해주세요.');
-      } else if (e is Exception &&
-          e.toString().contains('Connection refused')) {
-        throw Exception('서버에 연결할 수 없습니다. 서버 상태를 확인해주세요.');
-      }
-      throw Exception('환경 지도 정보를 가져오는데 실패했습니다.');
-    }
-  }
-
-  /// 대피소 지도 API 호출 (변경 없음)
-  Future<ShelterMapResponse> getShelterMap({
-    required double latitude,
-    required double longitude,
-    required String disasterType,
-    double radiusKm = AppConstants.defaultRadiusKm, // 기본 반경 사용
-  }) async {
-    final params = {
+  /// 건강 지수 정보 가져오기
+  Future<HealthIndexResponse> getHealthIndices(
+    double latitude,
+    double longitude,
+    int? age,
+    List<String> diseases,
+  ) async {
+    final Map<String, String> params = {
       'latitude': latitude.toString(),
       'longitude': longitude.toString(),
-      'disaster_type': disasterType,
-      'radius_km': radiusKm.toString(),
     };
-    final uri = Uri.parse(
-      '$_baseUrl${ApiConstants.shelterMapEndpoint}',
-    ).replace(queryParameters: params);
+    if (age != null) params['age'] = age.toString();
+    // List<String>을 쿼리 파라미터로 보내는 방식 확인 필요 (http 패키지는 기본 지원 안 할 수 있음)
+    // FastAPI는 ?disease=a&disease=b 형태로 받음
+    // 직접 URL 구성 또는 dio 패키지 사용 고려
+    String diseaseQuery = diseases
+        .map((d) => 'disease=${Uri.encodeComponent(d)}')
+        .join('&');
+    final url =
+        '$_baseUrl/index?${Uri(queryParameters: params).query}&$diseaseQuery';
+    final uri = Uri.parse(url);
 
-    print('Requesting Shelter Map: $uri');
+    return _handleApiCall(uri, HealthIndexResponse.fromJson);
+  }
 
+  /// 지역별 UV 지수 가져오기
+  Future<SingleRegionUvResponse> getRegionalUv(
+    double latitude,
+    double longitude,
+  ) async {
+    final uri = Uri.parse('$_baseUrl/environment/uv').replace(
+      queryParameters: {
+        'latitude': latitude.toString(),
+        'longitude': longitude.toString(),
+      },
+    );
+    return _handleApiCall(uri, SingleRegionUvResponse.fromJson);
+  }
+
+  /// 지역별 미세먼지 데이터 가져오기
+  Future<SingleRegionFineDustResponse> getRegionalFineDust(
+    double latitude,
+    double longitude,
+  ) async {
+    final uri = Uri.parse('$_baseUrl/environment/fine_dust').replace(
+      queryParameters: {
+        'latitude': latitude.toString(),
+        'longitude': longitude.toString(),
+      },
+    );
+    return _handleApiCall(uri, SingleRegionFineDustResponse.fromJson);
+  }
+
+  /// 대피소 지도 HTML 가져오기
+  Future<MapApiResponse> getShelterMapHtml(
+    double latitude,
+    double longitude,
+    String disasterType,
+    double radiusKm,
+    bool forceRefresh,
+  ) async {
+    final uri = Uri.parse('$_baseUrl/map').replace(
+      queryParameters: {
+        'latitude': latitude.toString(),
+        'longitude': longitude.toString(),
+        'disaster_type': disasterType,
+        'radius_km': radiusKm.toString(),
+        'force_refresh': forceRefresh.toString(),
+      },
+    );
+    // MapApiResponse가 models 폴더에 정의되어 있다고 가정
+    return _handleApiCall(uri, MapApiResponse.fromJson);
+  }
+
+  /// 환경 지도 HTML 가져오기
+  Future<EnvMapApiResponse> getEnvMapHtml(
+    String envType,
+    bool forceRefresh,
+  ) async {
+    final uri = Uri.parse('$_baseUrl/env_map').replace(
+      queryParameters: {
+        'env_type': envType,
+        'force_refresh': forceRefresh.toString(),
+      },
+    );
+    // EnvMapApiResponse가 models 폴더에 정의되어 있다고 가정
+    return _handleApiCall(uri, EnvMapApiResponse.fromJson);
+  }
+
+  // --- 공통 API 호출 및 오류 처리 로직 ---
+  Future<T> _handleApiCall<T>(
+    Uri uri,
+    T Function(Map<String, dynamic>) fromJson,
+  ) async {
     try {
-      final response = await _client.get(uri);
+      print('API Request: ${uri.toString()}'); // 요청 로깅 (디버깅용)
+      final response = await http.get(uri).timeout(_timeout);
+
+      print('API Response Status: ${response.statusCode}'); // 응답 상태 로깅
+      // print('API Response Body: ${response.body}'); // 필요시 응답 바디 로깅 (길 수 있음)
+
       if (response.statusCode == 200) {
-        final decodedBody = utf8.decode(response.bodyBytes);
         try {
-          return ShelterMapResponse.fromJson(jsonDecode(decodedBody));
+          // UTF-8 디코딩 명시 (한글 깨짐 방지)
+          final decodedBody = utf8.decode(response.bodyBytes);
+          final jsonData = jsonDecode(decodedBody) as Map<String, dynamic>;
+          return fromJson(jsonData); // JSON -> Dart 모델 변환
         } catch (e) {
-          print("JSON Parsing Error (Shelter Map): $e");
-          print("Received Data: $decodedBody");
-          throw Exception("API 응답 데이터 형식이 잘못되었습니다.");
+          print('JSON Parsing Error: $e');
+          print('Response Body: ${response.body}'); // 파싱 실패 시 원본 출력
+          throw ApiException('API 응답 데이터를 파싱하는 중 오류가 발생했습니다.');
         }
+      } else if (response.statusCode == 422) {
+        // FastAPI 유효성 검사 오류 처리
+        final decodedBody = utf8.decode(response.bodyBytes);
+        final errorData = jsonDecode(decodedBody);
+        final detail = errorData['detail'] ?? '입력값 오류';
+        print('API Validation Error (${response.statusCode}): $detail');
+        throw ApiException('입력값 오류: ${detail.toString()}');
       } else {
-        print(
-          'Error Response (Shelter Map): ${response.statusCode} ${response.body}',
-        );
-        throw Exception('대피소 지도 로딩 실패: ${response.statusCode}');
+        // 기타 HTTP 오류 처리
+        print('API HTTP Error (${response.statusCode}): ${response.body}');
+        throw ApiException('API 요청 실패 (코드: ${response.statusCode})');
       }
+    } on SocketException {
+      // 네트워크 연결 오류
+      print('Network Error');
+      throw ApiException('네트워크 연결을 확인해주세요.');
+    } on TimeoutException {
+      // 타임아웃 오류
+      print('Request Timeout');
+      throw ApiException('요청 시간이 초과되었습니다.');
+    } on ApiException {
+      // 직접 발생시킨 API 예외는 그대로 전달
+      rethrow;
     } catch (e) {
-      print('Error fetching shelter map: $e');
-      if (e is Exception && e.toString().contains('Failed host lookup')) {
-        throw Exception('네트워크 연결을 확인해주세요.');
-      } else if (e is Exception &&
-          e.toString().contains('Connection refused')) {
-        throw Exception('서버에 연결할 수 없습니다. 서버 상태를 확인해주세요.');
-      }
-      throw Exception('대피소 지도 정보를 가져오는데 실패했습니다.');
+      // 예상치 못한 기타 오류
+      print('Unexpected API Error: $e');
+      throw ApiException('알 수 없는 오류가 발생했습니다.');
     }
   }
+}
+
+// 커스텀 API 예외
+class ApiException implements Exception {
+  final String message;
+  ApiException(this.message);
+
+  @override
+  String toString() => message;
 }
