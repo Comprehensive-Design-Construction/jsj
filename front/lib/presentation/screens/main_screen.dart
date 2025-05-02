@@ -23,6 +23,7 @@ import '../widgets/main_screen/weather_info_card.dart';
 import '../widgets/main_screen/feels_like_card.dart';
 import '../widgets/main_screen/health_index_card.dart';
 import '../widgets/main_screen/health_index_info_dialog.dart';
+import 'menu/menu_screen.dart';
 // import '../widgets/common/loading_indicator.dart'; // 필요 시 공통 로딩 위젯
 // import '../widgets/common/error_display.dart'; // 필요 시 공통 에러 위젯
 
@@ -93,6 +94,20 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _loadInitialData(); // 초기 데이터 로드 함수 호출
+    _loadVisibleIndicesFromPrefs();
+  }
+
+  Set<String> _savedVisibleIndices =
+      availableHealthIndices.toSet(); // 보이는 지수 상태 변수 추가
+
+  Future<void> _loadVisibleIndicesFromPrefs() async {
+    final savedIndices = await _prefsService.getVisibleIndices();
+    if (savedIndices != null && mounted) {
+      setState(() {
+        _savedVisibleIndices = savedIndices;
+      });
+    }
+    print("Initial visible indices loaded: $_savedVisibleIndices");
   }
 
   // --- 데이터 로드 함수 (실제 API 호출) ---
@@ -225,9 +240,23 @@ class _MainScreenState extends State<MainScreen> {
       } else if (index == 2) {
         /* 다른 지도 또는 메뉴? */
       } else if (index == 3) {
-        /* 메뉴 탭? */
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MenuScreen()),
+        ).then((_) {
+          print("Returned from MenuScreen, reloading visible indices...");
+          _loadVisibleIndicesAndUpdate();
+        });
       }
     });
+  }
+
+  Future<void> _loadVisibleIndicesAndUpdate() async {
+    final savedIndices = await _prefsService.getVisibleIndices();
+    setState(() {
+      _savedVisibleIndices = savedIndices ?? availableHealthIndices.toSet();
+    });
+    print("Visible indices reloaded: $_savedVisibleIndices");
   }
 
   @override
@@ -586,21 +615,19 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   // 전체 건강 지수 리스트 위젯 빌더 (매핑된 데이터 받도록 수정)
-  Widget _buildAllHealthIndexList(List<HealthIndex> indices) {
-    // TODO: 사용자가 표시할 지수를 선택하는 기능 구현 시 이 필터링 로직 변경 필요
-    // 현재는 매핑된 모든 지수를 표시하도록 수정 (필터링 제거 또는 전체 선택)
-    // final List<String> desiredDisplayNames = [ ... ]; // 필터링 필요 시 사용
-    // final List<HealthIndex> filteredHealthIndices = indices.where((indexData) {
-    //   return desiredDisplayNames.contains(indexData.name);
-    // }).toList();
-    final List<HealthIndex> filteredHealthIndices = indices; // 모든 지수 표시
+  Widget _buildAllHealthIndexList(List<HealthIndex> allMappedIndices) {
+    // 1. 저장된 설정(_savedVisibleIndices) 기준으로 필터링
+    final List<HealthIndex> filteredHealthIndices =
+        allMappedIndices
+            .where((index) => _savedVisibleIndices.contains(index.name))
+            .toList();
 
     if (filteredHealthIndices.isEmpty) {
       return _buildDataErrorPlaceholder('표시할 건강 지수가 없습니다.');
     }
 
+    // 2. 필터링된 리스트로 ListView 생성
     return ListView.separated(
-      /* ... 이전 코드와 동일 ... */
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
       itemCount: filteredHealthIndices.length,
@@ -608,9 +635,9 @@ class _MainScreenState extends State<MainScreen> {
         return HealthIndexCard(
           healthIndex: filteredHealthIndices[index],
           showProgressBar: false,
-        ); // 프로그레스 바 숨김
+        );
       },
-      separatorBuilder: (context, index) => SizedBox(height: 12),
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
     );
   }
 

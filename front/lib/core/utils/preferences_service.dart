@@ -5,6 +5,7 @@ class PreferencesService {
   static const String _onboardingCompleteKey = 'onboarding_complete';
   static const String _userAgeKey = 'user_age';
   static const String _userTypesKey = 'user_types'; // 사용자 특성 (disease 파라미터용)
+  static const String _visibleIndicesKey = 'visible_health_indices';
 
   // SharedPreferences 인스턴스 가져오기
   Future<SharedPreferences> _getPrefs() async {
@@ -57,4 +58,25 @@ class PreferencesService {
     await prefs.clear();
     print("All preferences cleared.");
   }
+
+  // 보이는 건강 지수 목록 저장/로드
+  Future<void> saveVisibleIndices(Set<String> visibleIndices) async {
+    final prefs = await _getPrefs();
+    await prefs.setStringList(_visibleIndicesKey, visibleIndices.toList());
+    print("저장된 보이는 지수: ${visibleIndices.toList()}");
+  }
+
+  /// 저장된 보이는 건강 지수 이름 목록(Set)을 불러옵니다.
+  /// 저장된 값이 없으면 null을 반환합니다.
+  Future<Set<String>?> getVisibleIndices() async {
+    final prefs = await _getPrefs();
+    final List<String>? list = prefs.getStringList(_visibleIndicesKey);
+    if (list != null) {
+      // List를 Set으로 변환하여 반환
+      return list.toSet();
+    }
+    return null; // 저장된 값 없음
+  }
+
+  // ---------------------------------------------
 }
