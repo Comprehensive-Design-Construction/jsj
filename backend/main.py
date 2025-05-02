@@ -144,13 +144,14 @@ async def shutdown_event():
 
 
 # 라우터 등록
-from app.routers import index, map, env_map, weather, environment
+from app.routers import index, map, env_map, weather, environment, coord
 
 app.include_router(index.router)
 app.include_router(map.router)
 app.include_router(env_map.router)
 app.include_router(weather.router)
 app.include_router(environment.router)
+app.include_router(coord.router)
 
 
 @app.get("/")
@@ -160,4 +161,4 @@ async def root():
 
 if __name__ == "__main__":
     # python -m uvicorn main:app --host 0.0.0.0 --port 5000 --reload
-    uvicorn.run("main:app", host="0.0.0.0", port=5020, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=5000, reload=True)
