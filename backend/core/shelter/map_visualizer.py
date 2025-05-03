@@ -18,9 +18,9 @@ DISASTER_ICON_STYLES: Dict[str, Dict[str, str]] = {
 def _get_shelter_popup_html(
     row: pd.Series,
     disaster_type: str,
-    # is_closest: bool,
-    # distance_m: Optional[int],
-    # time_sec: Optional[int],
+    is_closest: bool,
+    distance_m: Optional[int],
+    time_sec: Optional[int],
 ) -> str:
     """대피소 정보 팝업 HTML을 생성합니다."""
     name = row.get("시설명", row.get("명칭", "이름 없음"))  # 데이터 컬럼명 확인 필요
@@ -75,8 +75,8 @@ def create_shelter_map(
     user_location: Point,
     disaster_type: str,
     min_distance_m: Optional[int] = None,
-    # min_time_sec: Optional[int] = None,
-    # route_coordinates: Optional[List[List[float]]] = None,  # 경로 좌표 인자 추가
+    min_time_sec: Optional[int] = None,
+    route_coordinates: Optional[List[List[float]]] = None,  # 경로 좌표 인자 추가
 ) -> folium.Map:
     """
     Folium 지도를 생성하여 반환합니다.
@@ -242,8 +242,20 @@ def create_shelter_map(
     #         fmap.fit_bounds(bounds=bounds_points, padding=(0.005, 0.005))  # 패딩값 조절
     # except Exception as e:
     #     print(f"지도 범위 자동 조절(fit_bounds) 중 오류 발생: {e}")
-
     
+    try:
+        bounds_points = [(user_location.y, user_location.x)]
+        if display_gdf is not None:
+            valid_points = display_gdf[display_gdf.geometry.is_valid & (display_gdf.geometry.geom_type == 'Point')]
+            if not valid_points.empty:
+                shelter_points = valid_points.geometry.apply(lambda geom: (geom.y, geom.x)).tolist()
+                bounds_points.extend(shelter_points)
+
+        if len(bounds_points) >= 2:
+            fmap.fit_bounds(bounds=bounds_points, padding=(0.005, 0.005))
+
+    except Exception as e:
+        print(f"지도 범위 자동 조절(fit_bounds) 중 오류 발생: {e}")
 
     print(f"지도 생성 완료: {disaster_type}")
     return fmap
