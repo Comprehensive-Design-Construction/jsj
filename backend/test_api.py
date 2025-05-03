@@ -401,15 +401,15 @@ if __name__ == "__main__":
 
     # 실행할 테스트 목록
     available_tests = {
-        # "index": test_index_api,
+        "index": test_index_api,
         # "env_map": test_env_map_api,  # 기존 환경 지도 테스트
         # "map": test_map_api,
         # "weather": test_weather_api,  # 신규 상세 날씨 테스트
         # "uv": test_environment_uv_api,  # 신규 UV 테스트
         # "dust": test_environment_fine_dust_api,  # 신규 미세먼지 테스트
-        "district": test_districts_api,
-        "dong": test_dong_api,
-        "coord": test_coords_api,
+        # "district": test_districts_api,
+        # "dong": test_dong_api,
+        # "coord": test_coords_api,
     }
 
     tests_to_run = []

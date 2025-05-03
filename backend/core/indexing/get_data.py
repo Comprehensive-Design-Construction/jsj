@@ -1,15 +1,19 @@
+# core/indexing/get_data.py
 import asyncio
+import aiohttp  # 변경: aiohttp 임포트
 from typing import Optional
-import requests
+
+# import requests # 제거: requests 대신 aiohttp 사용
 from config.settings import settings
+import logging  # 로깅 추가
 
-
+logger = logging.getLogger(__name__)  # 로거 추가
 url = "https://api.openweathermap.org/data/2.5/weather"
 
 
 async def fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
     """
-    OpenWeatherMap API를 사용해 날씨 데이터를 가져옵니다.
+    OpenWeatherMap API를 사용해 날씨 데이터를 비동기로 가져옵니다. (aiohttp 사용)
 
     :param lat: 위도
     :param lon: 경도
@@ -17,7 +21,9 @@ async def fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
     """
     api_key = settings.OPENWEATHERMAP_API_KEY
     if not api_key:
-        print("OPENWEATHERMAP_API_KEY가 설정되지 않았습니다.")
+        logger.error(
+            "OPENWEATHERMAP_API_KEY가 설정되지 않았습니다."
+        )  # print 대신 logger 사용
         return None
 
     params = {
@@ -25,60 +31,90 @@ async def fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
         "lon": lon,
         "appid": api_key,
         "units": "metric",
+        "lang": "kr",  # 결과 한국어 설명 추가 (선택 사항)
     }
 
-    try:
-        loop = asyncio.get_running_loop()
-        response = await loop.run_in_executor(
-            None, lambda: requests.get(url, params=params, timeout=5)
-        )
-        response.raise_for_status()
-        data = response.json()
+    # 변경: aiohttp 사용
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(
+                url, params=params, timeout=aiohttp.ClientTimeout(total=5)
+            ) as response:
+                response.raise_for_status()  # HTTP 오류 발생 시 예외 발생
+                data = await response.json()
 
-        # weather 정보 추출
-        weather_list = data.get("weather", [])
-        if weather_list:
-            weather_info = weather_list[0]
-            main_weather = weather_info.get("main", "error")
-            description = weather_info.get("description", "error")
-        else:
-            main_weather, description = "error", "error"
+                # weather 정보 추출
+                weather_list = data.get("weather", [])
+                weather_info = weather_list[0] if weather_list else {}
+                main_weather = weather_info.get("main")
+                description = weather_info.get("description")
 
-        # main 데이터 추출
-        main_data = data.get("main", {})
-        results = {
-            "weather": {
-                "main": main_weather,
-                "description": description,
-            },
-            "main": {
-                "temp": main_data.get("temp", 0),
-                "feels_like": main_data.get("feels_like", 0),
-                "min_temp": main_data.get("temp_min", 0),
-                "max_temp": main_data.get("temp_max", 0),
-                "pressure": main_data.get("pressure", 0),
-                "humidity": main_data.get("humidity", 0),
-            },
-        }
+                # main 데이터 추출
+                main_data = data.get("main", {})
+                # wind 정보 추출
+                wind = data.get("wind", {})
 
-        # wind 정보 추가
-        wind = data.get("wind", {})
-        results["main"]["wind_speed"] = wind.get("speed", 0)
+                results = {
+                    # 참고: 원본 코드와 동일한 구조 유지. 필요시 response_models.py 스키마 활용 가능
+                    "weather": {
+                        "main": main_weather,
+                        "description": description,
+                        "icon": weather_info.get(
+                            "icon"
+                        ),  # 아이콘 정보 추가 (선택 사항)
+                    },
+                    "main": {
+                        "temp": main_data.get("temp"),
+                        "feels_like": main_data.get("feels_like"),
+                        "min_temp": main_data.get(
+                            "temp_min"
+                        ),  # API 필드명 확인: temp_min
+                        "max_temp": main_data.get(
+                            "temp_max"
+                        ),  # API 필드명 확인: temp_max
+                        "pressure": main_data.get("pressure"),
+                        "humidity": main_data.get("humidity"),
+                        "wind_speed": wind.get("speed"),
+                        "wind_deg": wind.get("deg"),  # 풍향 정보 추가 (선택 사항)
+                    },
+                    "timestamp": data.get("dt"),  # 데이터 시간 추가 (선택 사항)
+                    "timezone": data.get("timezone"),  # 타임존 추가 (선택 사항)
+                }
 
-        return results
+                # 필수 값 존재 여부 확인 (예시)
+                if (
+                    results["main"]["temp"] is None
+                    or results["main"]["humidity"] is None
+                ):
+                    logger.warning(f"Weather data missing essential fields: {results}")
+                    # 필수 값 없으면 None 반환 또는 기본값 처리 등 결정 필요
+                    # return None # 여기서는 일단 데이터 반환
 
-    except requests.exceptions.RequestException as err:
-        print(f"OpenWeatherMap API request failed: {err}")
-        return None
-    except Exception as err:
-        print(f"Unexpected error occurred: {err}")
-        return None
+                return results
+
+        except aiohttp.ClientResponseError as err:
+            logger.error(
+                f"OpenWeatherMap API request failed (aiohttp): {err.status} {err.message}"
+            )
+            return None
+        except asyncio.TimeoutError:
+            logger.error("OpenWeatherMap API request timed out (aiohttp).")
+            return None
+        except Exception as err:
+            logger.exception(
+                f"Unexpected error occurred fetching weather data (aiohttp): {err}"
+            )  # 상세 로깅
+            return None
 
 
 if __name__ == "__main__":
     import time
 
-    start_time = time.time()
-    data = asyncio.run(fetch_weather_data(37.589026, 127.003779))
-    print(data)
-    print("실행시간:", time.time() - start_time)
+    async def main():
+        start_time = time.time()
+        # data = await fetch_weather_data(37.589026, 127.003779) # 종로구청 좌표 예시
+        data = await fetch_weather_data(35.198362, 126.851430)  # 광주광역시청 좌표 예시
+        print(data)
+        print("실행시간:", time.time() - start_time)
+
+    asyncio.run(main())
