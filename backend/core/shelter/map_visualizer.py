@@ -49,7 +49,7 @@ def _get_shelter_popup_html(
         except (ValueError, TypeError):
             content.append(f"<p style='margin:0;'><b>수용인원:</b> {capacity}</p>")
 
-    #최단 거리 / 시간 정보 표시 로직 제거
+    # 최단 거리 / 시간 정보 표시 로직 제거
     # if is_closest:
     #     if distance_m is not None:
     #         content.append(
@@ -142,7 +142,7 @@ def create_shelter_map(
                 color=icon_style["color"],
                 icon=icon_style["icon"],
                 prefix=icon_style["prefix"],
-            ) 
+            )
 
             # 팝업 HTML 생성
             # popup_html = _get_shelter_popup_html(
@@ -163,7 +163,7 @@ def create_shelter_map(
             #     )
             #     tooltip_text = f"⭐ 최단 거리{distance_km_str}: {name}"
 
-            #기본 툴팁으로 변경
+            # 기본 툴팁으로 변경
             name = row.get("시설명", row.get("명칭", "이름 없음"))
             tooltip_text = f"{disaster_type}: {name}"
 
@@ -242,13 +242,18 @@ def create_shelter_map(
     #         fmap.fit_bounds(bounds=bounds_points, padding=(0.005, 0.005))  # 패딩값 조절
     # except Exception as e:
     #     print(f"지도 범위 자동 조절(fit_bounds) 중 오류 발생: {e}")
-    
+
     try:
         bounds_points = [(user_location.y, user_location.x)]
         if display_gdf is not None:
-            valid_points = display_gdf[display_gdf.geometry.is_valid & (display_gdf.geometry.geom_type == 'Point')]
+            valid_points = display_gdf[
+                display_gdf.geometry.is_valid
+                & (display_gdf.geometry.geom_type == "Point")
+            ]
             if not valid_points.empty:
-                shelter_points = valid_points.geometry.apply(lambda geom: (geom.y, geom.x)).tolist()
+                shelter_points = valid_points.geometry.apply(
+                    lambda geom: (geom.y, geom.x)
+                ).tolist()
                 bounds_points.extend(shelter_points)
 
         if len(bounds_points) >= 2:
