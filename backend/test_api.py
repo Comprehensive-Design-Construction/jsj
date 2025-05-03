@@ -275,6 +275,98 @@ def test_map_api():
         print(f"요청 실패: {e}")
 
 
+def test_districts_api():
+    """구 API"""
+    print("\n=== 구 API 테스트 ===")
+
+    url = f"{BASE_URL}/districts"
+    print(f"요청 URL: {url}")
+
+    try:
+        start_time = time.time()
+        response = requests.get(url, timeout=REQUEST_TIMEOUT)
+        elapsed = time.time() - start_time
+
+        print(f"응답 시간: {elapsed:.2f}초")
+        print(f"상태 코드: {response.status_code}")
+
+        if response.status_code == 200:
+            data = response.json()
+
+            print(f"응답 데이터:")
+            print(json.dumps(data, indent=2, ensure_ascii=False))
+        else:
+            print(f"오류 응답: {response.text}")
+    except requests.exceptions.Timeout:
+        print(f"요청 타임아웃 (>{REQUEST_TIMEOUT}초)")
+    except requests.exceptions.ConnectionError:
+        print(f"연결 오류: API 서버가 실행 중인지 확인하세요 (URL: {url})")
+    except Exception as e:
+        print(f"요청 실패: {e}")
+
+
+def test_dong_api():
+    """동 API"""
+    print("\n=== 동 API 테스트 ===")
+
+    url = f"{BASE_URL}/dongs"
+    params = {"gu": "중구"}
+    print(f"요청 URL: {url}")
+
+    try:
+        start_time = time.time()
+        response = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
+        elapsed = time.time() - start_time
+
+        print(f"응답 시간: {elapsed:.2f}초")
+        print(f"상태 코드: {response.status_code}")
+
+        if response.status_code == 200:
+            data = response.json()
+
+            print(f"응답 데이터:")
+            print(json.dumps(data, indent=2, ensure_ascii=False))
+        else:
+            print(f"오류 응답: {response.text}")
+    except requests.exceptions.Timeout:
+        print(f"요청 타임아웃 (>{REQUEST_TIMEOUT}초)")
+    except requests.exceptions.ConnectionError:
+        print(f"연결 오류: API 서버가 실행 중인지 확인하세요 (URL: {url})")
+    except Exception as e:
+        print(f"요청 실패: {e}")
+
+
+def test_coords_api():
+    """위경도 API"""
+    print("\n=== 위경도 API 테스트 ===")
+
+    url = f"{BASE_URL}/coordinates"
+    params = {"gu": "중구", "dong": "명동"}
+    print(f"요청 URL: {url}")
+
+    try:
+        start_time = time.time()
+        response = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
+        elapsed = time.time() - start_time
+
+        print(f"응답 시간: {elapsed:.2f}초")
+        print(f"상태 코드: {response.status_code}")
+
+        if response.status_code == 200:
+            data = response.json()
+
+            print(f"응답 데이터:")
+            print(json.dumps(data, indent=2, ensure_ascii=False))
+        else:
+            print(f"오류 응답: {response.text}")
+    except requests.exceptions.Timeout:
+        print(f"요청 타임아웃 (>{REQUEST_TIMEOUT}초)")
+    except requests.exceptions.ConnectionError:
+        print(f"연결 오류: API 서버가 실행 중인지 확인하세요 (URL: {url})")
+    except Exception as e:
+        print(f"요청 실패: {e}")
+
+
 def summarize_indices(indices):
     """건강 지수 데이터를 요약하는 함수"""
     if not indices:
@@ -309,12 +401,15 @@ if __name__ == "__main__":
 
     # 실행할 테스트 목록
     available_tests = {
-        "index": test_index_api,
-        "env_map": test_env_map_api,  # 기존 환경 지도 테스트
-        "map": test_map_api,
-        "weather": test_weather_api,  # 신규 상세 날씨 테스트
-        "uv": test_environment_uv_api,  # 신규 UV 테스트
-        "dust": test_environment_fine_dust_api,  # 신규 미세먼지 테스트
+        # "index": test_index_api,
+        # "env_map": test_env_map_api,  # 기존 환경 지도 테스트
+        # "map": test_map_api,
+        # "weather": test_weather_api,  # 신규 상세 날씨 테스트
+        # "uv": test_environment_uv_api,  # 신규 UV 테스트
+        # "dust": test_environment_fine_dust_api,  # 신규 미세먼지 테스트
+        "district": test_districts_api,
+        "dong": test_dong_api,
+        "coord": test_coords_api,
     }
 
     tests_to_run = []

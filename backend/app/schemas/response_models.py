@@ -109,3 +109,27 @@ class SingleRegionUvResponse(BaseModel):
     uv_data: Optional[RegionUvData] = None  # 해당 지역의 UV 데이터
     last_updated: Optional[str] = None  # 데이터 최종 업데이트 시간 (ISO 형식)
     error: Optional[str] = None
+
+
+class DistrictsResponse(BaseModel):
+    """
+    /api/districts 응답 모델
+    """
+
+    districts: List[str]
+    error: Optional[str] = None
+
+
+class DongsResponse(BaseModel):
+    """
+    /api/dongs 응답 모델
+    """
+
+    dongs: List[str]
+    error: Optional[str] = None
+
+
+class CoordinatesReponse(BaseModel):
+    latitude: float
+    longitude: float
+    error: Optional[str] = None
