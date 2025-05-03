@@ -117,7 +117,7 @@ class DistrictsResponse(BaseModel):
     """
 
     districts: List[str]
-    error: Optional[str] = None
+    # error: Optional[str] = None
 
 
 class DongsResponse(BaseModel):
@@ -126,10 +126,10 @@ class DongsResponse(BaseModel):
     """
 
     dongs: List[str]
-    error: Optional[str] = None
+    # error: Optional[str] = None
 
 
 class CoordinatesReponse(BaseModel):
     latitude: float
     longitude: float
-    error: Optional[str] = None
+    # error: Optional[str] = None

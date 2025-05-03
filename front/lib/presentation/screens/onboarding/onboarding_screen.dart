@@ -4,7 +4,7 @@ import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart'
 import 'package:intl/intl.dart'; // 날짜 포매팅
 
 import '../../../core/utils/preferences_service.dart'; // Preferences 서비스
-import '../main_screen.dart'; // 메인 화면
+import '../main/main_screen.dart'; // 메인 화면
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});

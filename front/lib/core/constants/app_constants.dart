@@ -5,7 +5,7 @@ const double defaultLatitude = 37.5665;
 const double defaultLongitude = 126.9780;
 
 // 기본 API URL - 실제 IP로 변경 필수!
-const String baseUrl = 'http://192.168.0.106:5000/api'; // <<<--- 여기를 수정하세요!
+const String baseUrl = 'http://192.168.45.115:5000/api'; // <<<--- 여기를 수정하세요!
 
 // 색상 상수 (앱 전체에서 사용될 수 있는 색상)
 const Color primaryColor = Colors.blueAccent;
@@ -23,4 +23,12 @@ const List<String> availableHealthIndices = [
   '미세먼지 지수',
   '꽃가루농도 지수(소나무)', // API 연동 안된 지수 포함 여부 결정 필요
   '대기정체 지수', // API 연동 안된 지수 포함 여부 결정 필요
+];
+
+// 기본적으로 '주요 건강 지수'에 표시될 지수 목록 (MainScreen에서 사용)
+// TODO: 사용자가 직접 설정하는 기능 추가 시 이 부분 변경/제거 필요
+const List<String> defaultMajorIndices = [
+  '심뇌혈관질환 지수',
+  '자외선 지수',
+  '미세먼지 지수', // 예시
 ];

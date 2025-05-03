@@ -43,6 +43,8 @@ dependencies:
   webview_flutter: ^4.7.0   # 지도 HTML 표시용
   intl: ^0.18.0             # 날짜 포맷팅 등
   flutter_datetime_picker_plus: ^2.1.0
+  uuid: ^4.5.1
+  flutter_riverpod: ^2.6.1
 
   cupertino_icons: ^1.0.6
 

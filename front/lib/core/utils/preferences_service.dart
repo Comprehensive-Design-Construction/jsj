@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../data/models/added_person.dart';
 
 class PreferencesService {
   // SharedPreferences 키 정의
@@ -6,6 +8,7 @@ class PreferencesService {
   static const String _userAgeKey = 'user_age';
   static const String _userTypesKey = 'user_types'; // 사용자 특성 (disease 파라미터용)
   static const String _visibleIndicesKey = 'visible_health_indices';
+  static const String _addedPeopleKey = 'added_people_list'; // 추가된 사람 목록 키
 
   // SharedPreferences 인스턴스 가져오기
   Future<SharedPreferences> _getPrefs() async {
@@ -78,5 +81,73 @@ class PreferencesService {
     return null; // 저장된 값 없음
   }
 
-  // ---------------------------------------------
+  /// 추가된 사람 목록 전체를 불러옵니다.
+  Future<List<AddedPerson>> getAddedPeople() async {
+    final prefs = await _getPrefs();
+    final List<String>? jsonStringList = prefs.getStringList(_addedPeopleKey);
+
+    if (jsonStringList == null) {
+      return []; // 저장된 목록 없으면 빈 리스트 반환
+    }
+
+    try {
+      // JSON 문자열 리스트를 AddedPerson 객체 리스트로 변환
+      return jsonStringList
+          .map((jsonString) => AddedPerson.fromJson(jsonDecode(jsonString)))
+          .toList();
+    } catch (e) {
+      print("Error decoding added people list: $e");
+      return []; // 디코딩 오류 시 빈 리스트 반환
+    }
+  }
+
+  /// 추가된 사람 목록 전체를 저장합니다. (기존 목록 덮어쓰기)
+  Future<void> saveAddedPeople(List<AddedPerson> people) async {
+    final prefs = await _getPrefs();
+    // AddedPerson 객체 리스트를 JSON 문자열 리스트로 변환
+    final List<String> jsonStringList =
+        people.map((person) => jsonEncode(person.toJson())).toList();
+    await prefs.setStringList(_addedPeopleKey, jsonStringList);
+    print("Saved Added People: ${people.length} items");
+  }
+
+  /// 새 사람을 목록에 추가합니다.
+  Future<void> addPerson(AddedPerson person) async {
+    final List<AddedPerson> currentList = await getAddedPeople();
+    // ID 중복 체크 (선택 사항)
+    if (currentList.any((p) => p.id == person.id)) {
+      print("Person with ID ${person.id} already exists. Not adding.");
+      return; // 또는 업데이트 로직
+    }
+    currentList.add(person);
+    await saveAddedPeople(currentList);
+  }
+
+  /// 특정 사람 정보를 업데이트합니다. (ID 기준)
+  Future<void> updatePerson(AddedPerson updatedPerson) async {
+    final List<AddedPerson> currentList = await getAddedPeople();
+    final index = currentList.indexWhere((p) => p.id == updatedPerson.id);
+    if (index != -1) {
+      currentList[index] = updatedPerson;
+      await saveAddedPeople(currentList);
+      print("Updated person: ${updatedPerson.name}");
+    } else {
+      print("Person with ID ${updatedPerson.id} not found for update.");
+    }
+  }
+
+  /// 특정 사람을 목록에서 삭제합니다. (ID 기준)
+  Future<void> deletePerson(String personId) async {
+    final List<AddedPerson> currentList = await getAddedPeople();
+    final initialLength = currentList.length;
+    currentList.removeWhere((p) => p.id == personId);
+    if (currentList.length < initialLength) {
+      await saveAddedPeople(currentList);
+      print("Deleted person with ID: $personId");
+    } else {
+      print("Person with ID $personId not found for deletion.");
+    }
+  }
+
+  // --------------------------------------
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:front/presentation/screens/onboarding/onboarding_screen.dart';
-import 'presentation/screens/main_screen.dart'; // 경로 수정
+import 'presentation/screens/main/main_screen.dart'; // 경로 수정
 import 'core/theme/app_theme.dart'; // 테마 import
 
 class MyApp extends StatelessWidget {
