@@ -1,83 +1,47 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_constants.dart'; // 정의된 상수 사용
-import '../../../core/utils/preferences_service.dart'; // Preferences 서비스
-import '../profile/edit_profile_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod import
 
-class MenuScreen extends StatefulWidget {
+import '../../../core/constants/app_constants.dart';
+// import '../../../core/utils/preferences_service.dart'; // Notifier에서 사용
+import '../profile/edit_profile_screen.dart';
+import 'menu_notifier.dart'; // Notifier import
+// import 'menu_state.dart'; // State import는 Notifier 파일에서 처리
+
+// ConsumerWidget으로 변경
+class MenuScreen extends ConsumerWidget {
   const MenuScreen({super.key});
 
-  @override
-  State<MenuScreen> createState() => _MenuScreenState();
-}
-
-class _MenuScreenState extends State<MenuScreen> {
-  final PreferencesService _prefsService = PreferencesService();
-
-  // 상태 변수: 보이는 지수 이름들의 Set
-  Set<String> _visibleIndices = {}; // 초기 빈 Set
-  bool _isLoading = true; // 로딩 상태
+  // 상태 변수 및 함수 제거 -> Notifier/Riverpod으로 이동
+  // Set<String> _visibleIndices = {};
+  // bool _isLoading = true;
+  // final PreferencesService _prefsService = PreferencesService();
+  // initState, _loadVisibleIndices, _toggleIndexVisibility 함수 제거
 
   @override
-  void initState() {
-    super.initState();
-    _loadVisibleIndices(); // 저장된 설정 불러오기
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    // WidgetRef 추가
+    // 상태 구독
+    final state = ref.watch(menuNotifierProvider);
+    final notifier = ref.read(menuNotifierProvider.notifier);
 
-  // 저장된 보이는 지수 목록 불러오기
-  Future<void> _loadVisibleIndices() async {
-    setState(() => _isLoading = true); // 로딩 시작
-
-    Set<String>? savedIndices = await _prefsService.getVisibleIndices();
-
-    if (savedIndices == null) {
-      // 저장된 값이 없으면 (첫 실행 등), 모든 지수를 기본값으로 선택
-      _visibleIndices = availableHealthIndices.toSet();
-      // 기본값을 저장소에도 저장 (선택 사항)
-      // await _prefsService.saveVisibleIndices(_visibleIndices);
-    } else {
-      _visibleIndices = savedIndices;
-    }
-
-    if (mounted) {
-      setState(() => _isLoading = false); // 로딩 완료
-    }
-  }
-
-  // 지수 보이기/숨기기 토글 및 저장
-  Future<void> _toggleIndexVisibility(String indexName) async {
-    setState(() {
-      if (_visibleIndices.contains(indexName)) {
-        _visibleIndices.remove(indexName); // 있으면 제거
-      } else {
-        _visibleIndices.add(indexName); // 없으면 추가
-      }
-    });
-    // 변경된 상태를 즉시 저장
-    await _prefsService.saveVisibleIndices(_visibleIndices);
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF9F9F9), // 배경색 (깡통 UI 참고)
+      backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 1,
-        // title을 왼쪽 정렬하고 싶으면 leading 사용 또는 centerTitle 조정
         leading: IconButton(
-          // 뒤로가기 버튼 추가 (일반적인 메뉴 화면)
-          icon: Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(), // 이전 화면으로 돌아가기
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(
+        title: const Text(
           '메뉴',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
-        // actions: [ IconButton( icon: Icon(Icons.settings, color: Colors.black), onPressed: () {}, ), ], // 설정 아이콘 등으로 변경 가능
       ),
       body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator()) // 로딩 중 표시
+          state
+                  .isLoading // 로딩 상태 확인
+              ? const Center(child: CircularProgressIndicator())
               : Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16.0,
@@ -88,22 +52,22 @@ class _MenuScreenState extends State<MenuScreen> {
                   children: [
                     const SizedBox(height: 16),
                     Text(
-                      '사용자 정보 변경', // TODO: 해당 기능 구현 시 네비게이션 추가
+                      '사용자 정보 변경',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     ListTile(
-                      // 예시: 탭 가능한 ListTile
                       title: Text(
                         '내 정보 수정하기',
                         style: Theme.of(context).textTheme.bodyLarge,
                       ),
-                      trailing: Icon(Icons.chevron_right),
+                      trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const EditProfileScreen(),
                           ),
+                          // TODO: EditProfileScreen에서 정보 변경 시 MenuScreen 또는 MainScreen 상태 갱신 로직 필요할 수 있음
                         );
                       },
                       contentPadding: EdgeInsets.zero,
@@ -117,29 +81,26 @@ class _MenuScreenState extends State<MenuScreen> {
                     const SizedBox(height: 16),
                     Expanded(
                       child: ListView.builder(
-                        itemCount:
-                            availableHealthIndices.length, // 정의된 전체 지수 목록 사용
+                        itemCount: availableHealthIndices.length,
                         itemBuilder: (context, index) {
                           final String indexName =
-                              availableHealthIndices[index]; // 현재 지수 이름
-                          final bool isVisible = _visibleIndices.contains(
+                              availableHealthIndices[index];
+                          // 상태에서 보이는지 여부 확인
+                          final bool isVisible = state.visibleIndices.contains(
                             indexName,
-                          ); // 보이는지 여부 확인
+                          );
 
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 6.0),
                             child: Container(
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(
-                                  12,
-                                ), // 모서리 둥글기 조정
+                                borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
-                                  // 약간의 그림자 효과 (선택 사항)
                                   BoxShadow(
                                     color: Colors.black.withOpacity(0.05),
                                     blurRadius: 4,
-                                    offset: Offset(0, 2),
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
@@ -150,16 +111,15 @@ class _MenuScreenState extends State<MenuScreen> {
                                 ),
                                 trailing: IconButton(
                                   icon: Icon(
-                                    // isVisible 값에 따라 아이콘 변경
                                     isVisible
                                         ? Icons.star_rounded
                                         : Icons.star_border_rounded,
-                                    color: Colors.orangeAccent, // 색상 통일
-                                    size: 28, // 아이콘 크기 살짝 키움
+                                    color: Colors.orangeAccent,
+                                    size: 28,
                                   ),
                                   onPressed: () {
-                                    // 아이콘 탭 시 상태 변경 및 저장 함수 호출
-                                    _toggleIndexVisibility(indexName);
+                                    // Notifier 함수 호출
+                                    notifier.toggleIndexVisibility(indexName);
                                   },
                                   tooltip:
                                       isVisible

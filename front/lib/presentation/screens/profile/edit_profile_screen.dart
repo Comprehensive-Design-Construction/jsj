@@ -1,34 +1,79 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod import
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart'
     as picker;
 import 'package:intl/intl.dart';
 
-import '../../../core/constants/app_constants.dart'; // availableHealthIndices 사용 위해 필요 (특성 목록)
-import '../../../core/utils/preferences_service.dart';
+// import '../../../core/constants/app_constants.dart'; // Notifier에서 사용
+// import '../../../core/utils/preferences_service.dart'; // Notifier에서 사용
+import 'edit_profile_notifier.dart'; // Notifier import
+import 'edit_profile_state.dart'; // State import
 
-class EditProfileScreen extends StatefulWidget {
+// ConsumerStatefulWidget으로 변경
+class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
 
   @override
-  State<EditProfileScreen> createState() => _EditProfileScreenState();
+  ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _EditProfileScreenState extends State<EditProfileScreen> {
-  final PreferencesService _prefsService = PreferencesService();
-  final _nameController = TextEditingController();
+// ConsumerState로 변경
+class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
+  // PreferencesService 인스턴스 제거 -> Notifier에서 관리
+  final _nameController = TextEditingController(); // 이름은 로컬 상태로 유지
+
+  // 로컬 상태: 사용자가 화면에서 수정하는 값들
   DateTime? _selectedBirthDate;
-  final Map<String, bool> _userTypeSelection = {
-    // Onboarding과 동일하게 초기화
+  Map<String, bool> _userTypeSelection = {
+    // 초기값은 Notifier에서 로드 후 설정
     '농촌': false,
     '비닐하우스': false,
     '실외작업자': false,
   };
-  bool _isLoading = true; // 데이터 로딩 상태
+
+  // 로딩/저장 상태는 Riverpod State에서 관리 (_isLoading 제거)
 
   @override
   void initState() {
     super.initState();
-    _loadUserData(); // 저장된 사용자 데이터 불러오기
+    // initState에서 데이터 로딩 로직 제거 -> Notifier 생성 시 처리
+
+    // Notifier의 초기 데이터 로드가 완료되면 로컬 상태 업데이트
+    // 또는 build 메서드에서 초기값을 설정하거나, listener 사용
+    // 여기서는 listener를 사용하여 초기값 설정
+    ref.listenManual<EditProfileState>(editProfileNotifierProvider, (
+      previous,
+      next,
+    ) {
+      // 초기 데이터 로드 완료 시 로컬 상태 업데이트 (한 번만 실행되도록 조건 추가 가능)
+      if (previous?.isLoading == true && next.isLoading == false) {
+        if (next.initialBirthDate != null) {
+          setState(() {
+            _selectedBirthDate = next.initialBirthDate;
+          });
+        }
+        setState(() {
+          _userTypeSelection = Map.from(next.initialUserTypeSelection);
+        });
+      }
+
+      // 에러 메시지 표시
+      if (next.errorMessage != null &&
+          next.errorMessage != previous?.errorMessage) {
+        _showErrorSnackBar(next.errorMessage!);
+      }
+
+      // 저장 성공 시 이전 화면으로 돌아가기
+      if (next.savedSuccessfully && previous?.savedSuccessfully == false) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('정보가 저장되었습니다.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        Navigator.of(context).pop(); // 이전 화면으로 돌아가기
+      }
+    }, fireImmediately: true); // 초기 상태도 listener가 받을 수 있도록 설정
   }
 
   @override
@@ -37,36 +82,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  // 저장된 사용자 데이터 불러오기
-  Future<void> _loadUserData() async {
-    setState(() => _isLoading = true);
+  // _loadUserData, _calculateAge, _saveProfile 함수 제거 -> Notifier로 이동
 
-    // 이름은 현재 저장 기능이 없으므로 비워둠 (필요시 PreferencesService에 추가)
-    _nameController.text = ""; // 예: await _prefsService.getUserName() ?? "";
-
-    // 나이 -> 생년월일 변환 (정확한 생년월일 저장이 더 좋으나, 현재는 나이만 저장)
-    final int? savedAge = await _prefsService.getUserAge();
-    if (savedAge != null) {
-      // 나이로부터 대략적인 생년월일 역산 (정확하지 않음)
-      // TODO: 생년월일을 직접 저장하고 불러오는 방식으로 개선 권장
-      _selectedBirthDate = DateTime(DateTime.now().year - savedAge);
-    } else {
-      _selectedBirthDate = null;
-    }
-
-    // 사용자 특성/질병 목록 불러오기
-    final List<String>? savedTypes = await _prefsService.getUserTypes();
-    // 불러온 목록을 바탕으로 체크박스 상태 업데이트
-    _userTypeSelection.forEach((key, value) {
-      _userTypeSelection[key] = savedTypes?.contains(key) ?? false;
-    });
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  // 생년월일 선택 DatePicker 표시 (Onboarding과 동일)
+  // 생년월일 선택 DatePicker 표시 (로컬 상태 업데이트)
   void _presentDatePicker() {
     picker.DatePicker.showDatePicker(
       context,
@@ -75,112 +93,77 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       maxTime: DateTime.now(),
       onConfirm: (date) {
         setState(() {
+          // 로컬 상태(_selectedBirthDate) 업데이트
           _selectedBirthDate = date;
         });
         print('Selected birth date: $date');
       },
-      // 현재 선택된 날짜 또는 이전에 저장된 날짜로 초기화
       currentTime:
           _selectedBirthDate ??
-          DateTime.now().subtract(const Duration(days: 365 * 30)), // 30세 기준 초기화
+          DateTime.now().subtract(const Duration(days: 365 * 30)),
       locale: picker.LocaleType.ko,
-      theme: const picker.DatePickerTheme(/* ... (테마 설정) ... */),
+      theme: const picker.DatePickerTheme(/* 테마 설정 */),
     );
   }
 
-  // 나이 계산 함수 (Onboarding과 동일)
-  int? _calculateAge(DateTime? birthDate) {
-    if (birthDate == null) return null;
-    final today = DateTime.now();
-    int age = today.year - birthDate.year;
-    if (today.month < birthDate.month ||
-        (today.month == birthDate.month && today.day < birthDate.day)) {
-      age--;
-    }
-    return age > 0 ? age : 0;
-  }
-
-  // "저장" 버튼 로직
-  Future<void> _saveProfile() async {
-    // 생년월일 검증
-    if (_selectedBirthDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('생년월일을 선택해주세요.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    final age = _calculateAge(_selectedBirthDate);
-    final selectedTypes =
-        _userTypeSelection.entries
-            .where((entry) => entry.value)
-            .map((entry) => entry.key)
-            .toList();
-    // TODO: 기저질환 정보 가져오기
-
-    final List<String> diseaseParam = [...selectedTypes /*, ...diseases*/];
-
-    // 로컬 저장소에 수정된 정보 저장
-    await _prefsService.saveUserInfo(age: age, userTypes: diseaseParam);
-    // TODO: 이름 저장 로직 추가 시 여기에 포함
-
-    // 저장 완료 메시지 표시 및 이전 화면으로 돌아가기
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('정보가 저장되었습니다.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      Navigator.of(context).pop(); // MenuScreen으로 돌아가기
-    }
+  // 에러 메시지 SnackBar 표시 헬퍼
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    // 상태 구독
+    final state = ref.watch(editProfileNotifierProvider);
+    final notifier = ref.read(editProfileNotifierProvider.notifier);
+
     return Scaffold(
       appBar: AppBar(
-        // AppBar 추가
         title: const Text('내 정보 수정'),
         leading: IconButton(
-          // 뒤로가기 버튼
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: SafeArea(
         child:
-            _isLoading
-                ? const Center(child: CircularProgressIndicator()) // 데이터 로딩 중
+            state
+                    .isLoading // 초기 로딩 상태 확인
+                ? const Center(child: CircularProgressIndicator())
                 : SingleChildScrollView(
                   padding: const EdgeInsets.all(24.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // 로고는 보통 수정 화면에서 제거
-                      // Padding( ... 로고 Image ...),
-
-                      // 이름 입력 (Onboarding과 동일)
+                      // 이름 입력 (로컬 컨트롤러 사용)
                       TextField(
-                        /* ... (controller, decoration 등) ... */
                         controller: _nameController,
-                        decoration: InputDecoration(labelText: '이름' /* ... */),
+                        decoration: InputDecoration(
+                          labelText: '이름', // 필수 여부 등 표시 필요 시 추가
+                          hintText: '이름을 입력하세요 (선택)',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                        ),
                         textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 16),
 
-                      // 생년월일 선택 (Onboarding과 동일)
-                      TextButton(
-                        /* ... (style, onPressed 등) ... */
-                        style: TextButton.styleFrom(/* ... */),
-                        onPressed: _presentDatePicker,
-                        child: Text(
-                          /* ... (_selectedBirthDate 표시) ... */
+                      // 생년월일 선택 (로컬 상태 _selectedBirthDate 사용)
+                      TextButton.icon(
+                        icon: Icon(
+                          Icons.calendar_today,
+                          size: 18,
+                          color: Colors.grey[700],
+                        ),
+                        label: Text(
                           _selectedBirthDate == null
-                              ? '생년월일 선택 (예: 1999.01.01)'
+                              ? '생년월일 선택 *'
                               : '생년월일: ${DateFormat('yyyy.MM.dd').format(_selectedBirthDate!)}',
                           style: TextStyle(
                             color:
@@ -190,10 +173,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             fontSize: 16,
                           ),
                         ),
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.grey[100],
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          alignment: Alignment.centerLeft,
+                          foregroundColor: Colors.black87,
+                        ),
+                        onPressed: _presentDatePicker,
                       ),
                       const SizedBox(height: 24),
 
-                      // 사용자 특성 선택 (Onboarding과 동일)
+                      // 사용자 특성 선택 (로컬 상태 _userTypeSelection 사용)
                       Text(
                         '사용자 특성 (중복 선택 가능)',
                         style: Theme.of(context).textTheme.titleSmall,
@@ -201,11 +197,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       const SizedBox(height: 8),
                       ..._userTypeSelection.keys.map((String key) {
                         return CheckboxListTile(
-                          /* ... (title, value, onChanged 등) ... */
                           title: Text(key),
                           value: _userTypeSelection[key],
                           onChanged: (bool? value) {
                             setState(() {
+                              // 로컬 상태 업데이트
                               _userTypeSelection[key] = value!;
                             });
                           },
@@ -216,14 +212,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       }).toList(),
                       const SizedBox(height: 24),
 
-                      // 기저질환 Placeholder (Onboarding과 동일)
+                      // 기저질환 Placeholder (기존과 동일)
                       Text(
                         '기저질환 (선택)',
                         style: Theme.of(context).textTheme.titleSmall,
                       ),
                       const SizedBox(height: 8),
                       Container(
-                        /* ... (Placeholder 내용) ... */
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.grey[100],
@@ -236,11 +231,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                       const SizedBox(height: 40),
 
-                      // "저장" 버튼 (텍스트 변경)
+                      // "저장" 버튼 (Notifier 함수 호출)
                       ElevatedButton(
-                        onPressed: _saveProfile, // 저장 함수 호출
+                        // isSaving 상태 확인
+                        onPressed:
+                            state.isSaving
+                                ? null
+                                : () {
+                                  // Notifier의 saveProfile 함수 호출 시 로컬 상태 전달
+                                  notifier.saveProfile(
+                                    birthDate: _selectedBirthDate,
+                                    userTypeSelection: _userTypeSelection,
+                                    // name: _nameController.text, // 이름 저장 필요 시
+                                  );
+                                },
                         style: ElevatedButton.styleFrom(
-                          /* ... (Onboarding과 동일한 스타일) ... */
                           backgroundColor: Colors.blueAccent,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -249,9 +254,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                           textStyle: Theme.of(context).textTheme.labelLarge,
                         ),
-                        child: const Text('저장'), // 버튼 텍스트 변경
+                        child:
+                            state
+                                    .isSaving // isSaving 상태 확인
+                                ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 3,
+                                    color: Colors.white,
+                                  ),
+                                )
+                                : const Text('저장'),
                       ),
-                      // "간편시작" 버튼 제거
                     ],
                   ),
                 ),

@@ -1,37 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod import
-import 'package:geolocator/geolocator.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 // 상태 및 Notifier Provider import
 import 'main_screen_notifier.dart';
 import 'main_screen_state.dart';
 
-// 서비스, 모델, 유틸리티, 위젯 import (경로 확인!)
+// 서비스, 모델, 유틸리티, 위젯 import
 import '../../../core/constants/app_constants.dart';
-// import '../../core/utils/data_mapper.dart'; // DataMapper는 Notifier에서 사용
-import '../../../core/utils/preferences_service.dart';
 import '../../../data/models/added_person.dart';
-import '../../../data/models/ui/current_weather.dart';
-import '../../../data/models/ui/feels_like_data.dart';
-import '../../../data/models/ui/health_index.dart';
-import '../../widgets/main_screen/weather_info_card.dart';
-import '../../widgets/main_screen/feels_like_card.dart';
-import '../../widgets/main_screen/health_index_card.dart';
+// UI 모델 import는 섹션 위젯에서 처리
+
+// 섹션 위젯 import
+import 'widgets/location_info_widget.dart';
+import 'widgets/weather_section_widget.dart';
+import 'widgets/feels_like_section_widget.dart';
+import 'widgets/major_health_indices_widget.dart';
+import 'widgets/all_health_indices_widget.dart';
+import 'widgets/env_map_section_widget.dart';
+import 'widgets/shelter_map_section_widget.dart';
+import 'widgets/partial_error_widget.dart';
+// 기존 위젯 import
 import '../../widgets/main_screen/health_index_info_dialog.dart';
+import '../../widgets/main_screen/person_selection_dialog.dart';
 import '../menu/menu_screen.dart';
 import '../add_person/add_person_screen.dart';
 
-// ConsumerWidget으로 변경
-class MainScreen extends ConsumerWidget {
+// --- ConsumerStatefulWidget으로 변경 ---
+class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
 
+  // 지도 타입 상수 정의 (기존 코드 유지)
   static const Map<String, String> _envMapTypes = {
     'fine_dust': '미세먼지',
     'uv': '자외선',
     'flood_trace': '침수흔적도',
   };
-  // 재난 유형 목록 (API 명세 기반)
   static const Map<String, String> _disasterTypes = {
     'EARTHQUAKE': '지진',
     'COLD_WAVE': '한파',
@@ -40,202 +44,267 @@ class MainScreen extends ConsumerWidget {
     'FLOOD': '홍수',
   };
 
-  // BottomNavigationBar 탭 처리 로직 (Notifier로 옮겨도 좋음)
-  void _onItemTapped(BuildContext context, WidgetRef ref, int index) {
-    final currentSelectedIndex =
-        ref
-            .read(mainScreenNotifierProvider)
-            .selectedPersonId; // 예시로 현재 선택된 ID 읽기 (Notifier 상태구조에 따라 달라짐)
+  @override
+  ConsumerState<MainScreen> createState() => _MainScreenState();
+}
+
+// --- ConsumerState 클래스 정의 ---
+class _MainScreenState extends ConsumerState<MainScreen> {
+  // 하단 네비게이션 바 선택 인덱스 상태
+  int _selectedIndex = 0;
+
+  // 스크롤 컨트롤러 및 섹션 이동을 위한 GlobalKey 정의
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _majorHealthSectionKey = GlobalKey(); // 주요 건강 지수 섹션 키
+  final GlobalKey _environmentMapSectionKey = GlobalKey(); // 환경 지도 섹션 키
+  final GlobalKey _shelterSectionKey = GlobalKey(); // 대피소 위치 섹션 키
+
+  @override
+  void dispose() {
+    _scrollController.dispose(); // 컨트롤러 해제
+    super.dispose();
+  }
+
+  // --- 하단 네비게이션 탭 처리 로직 (스크롤 기능 추가) ---
+  void _onItemTapped(int index) {
     final notifier = ref.read(mainScreenNotifierProvider.notifier);
 
-    if (index == 3) {
-      // 메뉴 탭
+    // 특정 섹션으로 스크롤하는 로직
+    GlobalKey? targetKey;
+    if (index == 0 && _selectedIndex != 0) {
+      // 홈 (맨 위로)
+      _scrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOut,
+      );
+    } else if (index == 1) {
+      // 건강지수
+      targetKey = _majorHealthSectionKey;
+    } else if (index == 2) {
+      // 환경 지도
+      targetKey = _environmentMapSectionKey;
+    } else if (index == 3) {
+      // 대피소 위치
+      targetKey = _shelterSectionKey;
+    } else if (index == 4) {
+      // 메뉴 (기존 index 3 -> 4로 변경됨)
+      // 스크롤 없이 메뉴 화면으로 이동
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const MenuScreen()),
       ).then((_) {
         print("Returned from MenuScreen, reloading visible indices...");
-        notifier.reloadVisibleIndices(); // Notifier의 함수 호출
+        // MenuScreen에서 변경된 사항(보이는 지수)을 MainScreenNotifier가 다시 로드하도록 함
+        notifier.reloadVisibleIndices();
       });
-    } else if (index != /* ref.read(mainScreenProvider).selectedIndex */ 0) {
-      // TODO: selectedIndex 상태 관리 필요
-      print("Tab $index selected (Not implemented yet)");
-      // notifier.setSelectedIndex(index); // 예시: Notifier에서 인덱스 관리 시
+      // 메뉴 탭 시에는 _selectedIndex 업데이트하지 않고 바로 리턴 (선택사항)
+      // 또는 메뉴 화면 이동 후 돌아왔을 때 이전 탭이 선택된 상태로 두려면 업데이트 X
+      return; // 아래 setState 실행 방지
+    }
+
+    // 대상 키가 있으면 해당 위치로 스크롤
+    if (targetKey != null) {
+      final targetContext = targetKey.currentContext;
+      if (targetContext != null) {
+        Scrollable.ensureVisible(
+          targetContext,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+          alignment: 0.0, // 섹션 상단을 화면 상단에 맞춤
+        );
+      }
+    }
+
+    // 탭 인덱스 상태 업데이트 (메뉴 탭 제외)
+    if (index != 4) {
+      setState(() {
+        _selectedIndex = index;
+      });
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // 상태 감시 (state 객체에 모든 UI 데이터 포함됨)
+  Widget build(BuildContext context) {
     final state = ref.watch(mainScreenNotifierProvider);
-    final notifier = ref.read(mainScreenNotifierProvider.notifier); // 함수 호출용
+    final notifier = ref.read(mainScreenNotifierProvider.notifier);
 
-    // UI 모델 변수 (state에서 직접 가져옴)
-    final CurrentWeather? currentWeatherUI = state.weatherDataUI;
-    final FeelsLikeData? feelsLikeDataUI = state.feelsLikeDataUI;
-    final List<HealthIndex> healthIndicesUI = state.healthIndicesUI;
-
-    // 현재 선택된 사람 이름
+    // 현재 선택된 사람 이름 계산 (기존 코드 유지)
     String currentPersonName = "내 정보";
-    if (state.selectedPersonId != MainScreenState().selectedPersonId) {
-      currentPersonName =
-          state.addedPeopleList
-              .firstWhere(
-                (p) => p.id == state.selectedPersonId,
-                orElse: () => AddedPerson(id: '', name: '알 수 없음'),
-              )
-              .name;
+    if (state.selectedPersonId != myInfoId) {
+      // myInfoId 직접 사용
+      final person = state.addedPeopleList.firstWhere(
+        (p) => p.id == state.selectedPersonId,
+        orElse: () => AddedPerson(id: '', name: '알 수 없음'),
+      );
+      currentPersonName = person.name;
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: _buildPersonSelectorDropdown(context, ref),
-        actions: [
-          // 사람 추가 버튼 (AppBar에 배치)
-          IconButton(
-            icon: Icon(Icons.person_add_alt_1_outlined, size: 24),
-            tooltip: '사람 추가',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AddPersonScreen()),
-              ).then((added) {
-                if (added == true) {
-                  // 사람 추가 성공 시 목록 새로고침 및 UI 갱신
-                  notifier.refreshAddedPeople();
-                }
-              });
-            },
-          ),
-          IconButton(
-            // 기존 새로고침 버튼
-            icon: const Icon(Icons.refresh),
-            onPressed:
-                state.isLoading
-                    ? null
-                    : () => notifier.loadDataForSelectedPerson(refresh: true),
-            tooltip: '데이터 새로고침',
-          ),
-        ],
+        title: Row(
+          children: [
+            // 사용자 선택 드롭다운운
+            Expanded(child: _buildPersonSelectorDropdown(context, ref)),
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Center(
+                child: Image.asset(
+                  'assets/images/welogo.png',
+                  height: 28,
+                  errorBuilder:
+                      (context, error, StackTrace) => SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ],
+        ),
+        // actions: [
+        //   IconButton(
+        //     // 새로고침 버튼
+        //     icon: const Icon(Icons.refresh),
+        //     onPressed:
+        //         state.isLoading
+        //             ? null
+        //             : () => notifier.loadDataForSelectedPerson(refresh: true),
+        //     tooltip: '데이터 새로고침',
+        //   ),
+        // ],
       ),
-      // ------------------------------------
-      body: _buildBody(context, ref, state, currentPersonName), // 매핑된 데이터 전달
+      // --- Body (스크롤 컨트롤러 연결 및 키 할당 필요) ---
+      body: _buildBody(context, ref), // Build 함수 호출
+      // --- 하단 네비게이션 바 (새 디자인 및 기능 적용) ---
       bottomNavigationBar: BottomNavigationBar(
-        // 테마는 AppTheme에서 적용됨
-        currentIndex: 0, // 임시시
-        onTap: (index) => _onItemTapped(context, ref, index),
+        type: BottomNavigationBarType.fixed, // 5개 항목이므로 fixed 타입 사용
+        currentIndex: _selectedIndex, // 상태 변수 사용
+        onTap: _onItemTapped, // 수정된 탭 핸들러 사용
+        selectedItemColor: Colors.blue.shade700, // 새 UI 색상
+        unselectedItemColor: Colors.grey.shade600, // 새 UI 색상
+        selectedFontSize: 12,
+        unselectedFontSize: 12,
+        showSelectedLabels: true, // 라벨 표시 (새 UI 기준)
+        showUnselectedLabels: true, // 라벨 표시 (새 UI 기준)
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: '홈'),
+          // 홈
           BottomNavigationBarItem(
-            icon: Icon(Icons.explore_outlined),
-            label: '탐색',
-          ), // TODO: 실제 기능에 맞는 아이콘/라벨
-          BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: '지도'),
-          BottomNavigationBarItem(icon: Icon(Icons.menu_rounded), label: '메뉴'),
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home), // 선택 시 채워진 아이콘
+            label: '홈',
+          ),
+          // 건강지수
+          BottomNavigationBarItem(
+            icon: Icon(Icons.show_chart_outlined), // 새 아이콘
+            activeIcon: Icon(Icons.show_chart),
+            label: '건강지수',
+          ),
+          // 환경 지도
+          BottomNavigationBarItem(
+            icon: Icon(Icons.map_outlined),
+            activeIcon: Icon(Icons.map),
+            label: '환경 지도',
+          ),
+          // 대피소 위치
+          BottomNavigationBarItem(
+            icon: Icon(Icons.warehouse_outlined), // 새 아이콘
+            activeIcon: Icon(Icons.warehouse),
+            label: '대피소 위치',
+          ),
+          // 메뉴
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu_rounded),
+            activeIcon: Icon(Icons.menu_open_rounded), // 선택 시 다른 아이콘 (선택사항)
+            label: '메뉴',
+          ),
         ],
       ),
     );
   }
 
-  // --- AppBar 사용자 선택 드롭다운 빌더 (추가) ---
+  // --- AppBar 사용자 선택 드롭다운 빌더 (기존 코드 유지) ---
   Widget _buildPersonSelectorDropdown(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(mainScreenNotifierProvider); // 현재 상태 감시
+    final state = ref.watch(mainScreenNotifierProvider);
     final notifier = ref.read(mainScreenNotifierProvider.notifier);
 
-    List<DropdownMenuItem<String>> dropdownItems = [];
+    String currentPersonName = "내 정보";
+    IconData currentPersonIcon = Icons.person_pin_circle_outlined;
+    Color currentPersonIconColor = Colors.blueAccent;
 
-    // 1. "내 정보" 항목 추가
-    dropdownItems.add(
-      DropdownMenuItem(
-        value: MainScreenState().selectedPersonId, // 고유 ID 사용
+    if (state.selectedPersonId != myInfoId) {
+      final person = state.addedPeopleList.firstWhere(
+        (p) => p.id == state.selectedPersonId,
+        orElse: () => AddedPerson(id: '', name: '???'),
+      );
+      currentPersonName = person.name;
+      currentPersonIcon = Icons.person_outline;
+      currentPersonIconColor = Colors.deepPurpleAccent;
+    }
+
+    return InkWell(
+      onTap:
+          state.isLoadingPeople || state.isLoading
+              ? null
+              : () async {
+                final result = await showDialog<String>(
+                  context: context,
+                  builder: (BuildContext dialogContext) {
+                    return PersonSelectionDialog(
+                      currentSelectedPersonId: state.selectedPersonId,
+                      addedPeople: state.addedPeopleList,
+                    );
+                  },
+                );
+                if (result != null) {
+                  if (result == 'ADD_NEW') {
+                    if (context.mounted) {
+                      final added = await Navigator.push<bool?>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AddPersonScreen(),
+                        ),
+                      );
+                      if (added == true) {
+                        await notifier.refreshAddedPeople();
+                      }
+                    }
+                  } else {
+                    notifier.setSelectedPersonId(result);
+                  }
+                }
+              },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
+            Icon(currentPersonIcon, size: 22, color: currentPersonIconColor),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                currentPersonName,
+                style: Theme.of(context).appBarTheme.titleTextStyle,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
             Icon(
-              Icons.person_pin_circle_outlined,
-              size: 20,
-              color: Colors.blueAccent,
-            ), // 아이콘 추가
-            SizedBox(width: 8),
-            Text("내 정보", style: TextStyle(fontWeight: FontWeight.bold)),
+              Icons.keyboard_arrow_down_rounded,
+              color: Colors.grey[700],
+              size: 22,
+            ),
           ],
         ),
       ),
     );
-
-    // 2. 추가된 사람 목록 추가
-    for (var person in state.addedPeopleList) {
-      dropdownItems.add(
-        DropdownMenuItem(
-          value: person.id, // 사람의 고유 ID 사용
-          child: Row(
-            children: [
-              Icon(
-                Icons.person_outline,
-                size: 20,
-                color: Colors.grey[700],
-              ), // 아이콘 추가
-              SizedBox(width: 8),
-              Text(person.name), // 사람 이름 표시
-            ],
-          ),
-        ),
-      );
-    }
-
-    // (선택사항) 구분선 및 추가 버튼 추가
-    dropdownItems.add(
-      DropdownMenuItem(enabled: false, child: Divider(height: 0)),
-    );
-    dropdownItems.add(
-      DropdownMenuItem(value: 'ADD_PERSON', child: Text('+ 사람 추가...')),
-    );
-
-    return DropdownButtonHideUnderline(
-      child: DropdownButton<String>(
-        value: state.selectedPersonId,
-        isDense: true, // AppBar 높이에 맞게 좀 더 컴팩트하게
-        icon: Icon(
-          Icons.keyboard_arrow_down_rounded,
-          color: Colors.grey[700],
-        ), // 드롭다운 아이콘
-        // AppBar 텍스트 스타일과 유사하게 맞춤
-        style: Theme.of(
-          context,
-        ).appBarTheme.titleTextStyle?.copyWith(fontSize: 18),
-        dropdownColor: Colors.white,
-        items: dropdownItems,
-        onChanged:
-            state.isLoadingPeople ||
-                    state
-                        .isLoading // 사람 목록 로딩 중이거나 데이터 로딩 중 변경 불가
-                ? null
-                : (String? newValue) {
-                  if (newValue != null && newValue != state.selectedPersonId) {
-                    notifier.setSelectedPersonId(newValue);
-                  }
-                },
-      ),
-    );
   }
 
-  // 화면 본문 빌드 함수 (매핑된 데이터 받도록 수정)
-  Widget _buildBody(
-    BuildContext context, // context 받기
-    WidgetRef ref, // ref 받기
-    MainScreenState state, // 현재 상태 받기
-    String currentPersonName, // 현재 선택된 사람 이름 받기
-  ) {
-    // UI 모델 변수 (state에서 직접 가져옴)
-    final CurrentWeather? currentWeatherUI = state.weatherDataUI;
-    final FeelsLikeData? feelsLikeDataUI = state.feelsLikeDataUI;
-    final List<HealthIndex> healthIndicesUI = state.healthIndicesUI;
+  // --- 화면 본문 빌드 함수 (분리된 위젯 사용) ---
+  Widget _buildBody(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(mainScreenNotifierProvider);
 
-    if (state.isLoading && currentWeatherUI == null) {
-      // 초기 로딩 또는 데이터 없을 때
+    // 초기 로딩 또는 완전 로딩 실패 처리 (기존 코드 유지)
+    if (state.isLoading && state.weatherDataUI == null) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (state.errorMessage != null && currentWeatherUI == null) {
-      // 완전 로딩 실패
+    if (state.errorMessage != null && state.weatherDataUI == null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -265,167 +334,76 @@ class MainScreen extends ConsumerWidget {
       );
     }
 
-    // 데이터가 있거나 부분 로딩 중
+    // 데이터가 있거나 부분 로딩 중일 때
     return RefreshIndicator(
       onRefresh:
           () => ref
               .read(mainScreenNotifierProvider.notifier)
               .loadDataForSelectedPerson(refresh: true),
       child: Stack(
-        // 로딩 오버레이를 위해 Stack 사용
         children: [
+          // --- SingleChildScrollView에 컨트롤러 연결 ---
           SingleChildScrollView(
+            controller: _scrollController, // 컨트롤러 연결
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 24.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // --- 선택된 사람 표시 ---
                 Padding(
+                  // 선택된 사람 이름 표시 (기존과 동일)
                   padding: const EdgeInsets.only(bottom: 8.0),
                   child: Text(
-                    "$currentPersonName님의 현재 정보",
+                    "${_getCurrentPersonName(ref)}님의 현재 정보",
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
-
-                // --- 위치 정보 ---
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
-                  child: Row(
-                    children: [
-                      Icon(
-                        state.selectedPersonId ==
-                                MainScreenState().selectedPersonId
-                            ? Icons.my_location
-                            : Icons.location_city_outlined,
-                        color: Colors.grey[600],
-                        size: 18,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        state.selectedPersonId ==
-                                MainScreenState().selectedPersonId
-                            ? (currentWeatherUI?.location ?? '위치 정보 로딩 중...')
-                            : '${state.addedPeopleList.firstWhere((p) => p.id == state.selectedPersonId, orElse: () => AddedPerson(id: '', name: '')).gu ?? ""} ${state.addedPeopleList.firstWhere((p) => p.id == state.selectedPersonId, orElse: () => AddedPerson(id: '', name: '')).dong ?? "지역 정보 없음"}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[800],
-                        ),
-                      ),
-                      // 기본 위치 알림
-                      if (state.selectedPersonId ==
-                              MainScreenState().selectedPersonId &&
-                          state.lastLoadedLatitude != null &&
-                          state.lastLoadedLongitude != null &&
-                          state.lastLoadedLatitude == defaultLatitude &&
-                          state.lastLoadedLongitude == defaultLongitude)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: Text(
-                            '(기본위치)',
-                            style: TextStyle(
-                              color: Colors.orange,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                    ],
+                const LocationInfoWidget(), // 위치 정보 위젯
+                const WeatherSectionWidget(), // 날씨 섹션 위젯
+                FeelsLikeSectionWidget(
+                  // 체감 온도 섹션 위젯 (헬퍼 함수 전달)
+                  buildSectionTitle: _buildSectionTitle,
+                  buildDataErrorPlaceholder: _buildDataErrorPlaceholder,
+                ),
+                // --- 주요 건강 지수 섹션 (GlobalKey 할당) ---
+                Container(
+                  // 스크롤 대상으로 삼기 위해 Container 또는 다른 위젯으로 감싸고 Key 할당
+                  key: _majorHealthSectionKey,
+                  child: MajorHealthIndicesWidget(
+                    buildSectionTitle: _buildSectionTitle,
+                    buildDataErrorPlaceholder: _buildDataErrorPlaceholder,
                   ),
                 ),
-
-                // --- 날씨 카드 ---
-                if (currentWeatherUI != null)
-                  WeatherInfoCard(weatherData: currentWeatherUI)
-                else
-                  _buildDataErrorPlaceholder('날씨 정보를 불러올 수 없습니다.'),
-                const SizedBox(height: 24),
-
-                // --- 체감 온도 카드 ---
-                _buildSectionTitle(context, '체감온도'), // context 전달
-                const SizedBox(height: 10),
-                if (feelsLikeDataUI != null)
-                  FeelsLikeCard(feelsLikeData: feelsLikeDataUI)
-                else
-                  _buildDataErrorPlaceholder('체감온도 정보를 불러올 수 없습니다.'),
-                const SizedBox(height: 24),
-
-                // --- 건강 지수 ---
-                _buildSectionTitle(context, '주요 건강 지수', showInfoIcon: true),
-                const SizedBox(height: 10),
-                _buildMajorHealthIndices(
-                  context,
-                  ref,
-                  healthIndicesUI,
-                ), // context, ref, 데이터 전달
-                const SizedBox(height: 24),
-                _buildSectionTitle(context, '전체 건강 지수', showInfoIcon: true),
-                const SizedBox(height: 10),
-                _buildAllHealthIndexList(
-                  context,
-                  ref,
-                  healthIndicesUI,
-                ), // context, ref, 데이터 전달
-                const SizedBox(height: 24),
-
-                // --- 환경 지도 ---
-                _buildSectionTitle(context, '환경 지도'),
-                const SizedBox(height: 10),
-                _buildMapTypeDropdown(
-                  context: context,
-                  ref: ref,
-                  mapTypes: _envMapTypes, // 상수 사용
-                  selectedValueKey: 'selectedEnvMapType',
-                  onChangedCallback:
-                      (v) => ref
-                          .read(mainScreenNotifierProvider.notifier)
-                          .setSelectedEnvMapType(v!),
+                AllHealthIndicesWidget(
+                  // 전체 건강 지수 섹션 위젯
+                  buildSectionTitle: _buildSectionTitle,
+                  buildDataErrorPlaceholder: _buildDataErrorPlaceholder,
                 ),
-                const SizedBox(height: 10),
-                _buildWebViewMap(
-                  controller: state.envMapControllers[state.selectedEnvMapType],
-                  placeholderIcon: Icons.public,
-                  placeholderText:
-                      '${_envMapTypes[state.selectedEnvMapType] ?? "환경"} 지도 로딩 중...',
-                ),
-                const SizedBox(height: 24),
-
-                // --- 대피소 지도 ---
-                _buildSectionTitle(context, '대피소 위치'),
-                const SizedBox(height: 10),
-                _buildMapTypeDropdown(
-                  context: context,
-                  ref: ref,
-                  mapTypes: _disasterTypes, // 상수 사용
-                  selectedValueKey: 'selectedDisasterType',
-                  onChangedCallback:
-                      (v) => ref
-                          .read(mainScreenNotifierProvider.notifier)
-                          .setSelectedDisasterType(v!),
-                ),
-                const SizedBox(height: 10),
-                _buildWebViewMap(
-                  controller:
-                      state.shelterMapControllers[state.selectedDisasterType],
-                  placeholderIcon: Icons.pin_drop_outlined,
-                  placeholderText:
-                      '${_disasterTypes[state.selectedDisasterType] ?? "대피소"} 지도 로딩 중...',
-                ),
-                const SizedBox(height: 16),
-
-                // 부분 에러 메시지
-                if (state.errorMessage != null && state.weatherDataUI != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16.0),
-                    child: Text(
-                      '일부 데이터 로딩 실패:\n${state.errorMessage}',
-                      style: TextStyle(color: Colors.orange[800], fontSize: 12),
-                    ),
+                // --- 환경 지도 섹션 (GlobalKey 할당) ---
+                Container(
+                  key: _environmentMapSectionKey,
+                  child: EnvMapSectionWidget(
+                    envMapTypes: MainScreen._envMapTypes, // static 상수 접근
+                    buildSectionTitle: _buildSectionTitle,
+                    buildMapTypeDropdown: _buildMapTypeDropdown,
+                    buildWebViewMap: _buildWebViewMap,
                   ),
+                ),
+                // --- 대피소 위치 섹션 (GlobalKey 할당) ---
+                Container(
+                  key: _shelterSectionKey,
+                  child: ShelterMapSectionWidget(
+                    disasterTypes: MainScreen._disasterTypes, // static 상수 접근
+                    buildSectionTitle: _buildSectionTitle,
+                    buildMapTypeDropdown: _buildMapTypeDropdown,
+                    buildWebViewMap: _buildWebViewMap,
+                  ),
+                ),
+                const PartialErrorWidget(), // 부분 에러 메시지 위젯
               ],
             ),
           ),
-          // 전체 화면 로딩 인디케이터 (API 호출 중일 때)
+          // 전체 화면 로딩 인디케이터 (기존 코드 유지)
           if (state.isLoading)
             Container(
               color: Colors.black.withOpacity(0.1),
@@ -436,75 +414,27 @@ class MainScreen extends ConsumerWidget {
     );
   }
 
-  // 주요 건강 지수 리스트 위젯 빌더 (상태에서 데이터 읽도록 수정)
-  Widget _buildMajorHealthIndices(
-    BuildContext context,
-    WidgetRef ref,
-    List<HealthIndex> allMappedIndices,
-  ) {
-    final state = ref.watch(mainScreenNotifierProvider); // 보이는 지수 Set 접근 위해 필요
-    final visibleNames = state.visibleIndices;
-    final List<HealthIndex> visibleIndices =
-        allMappedIndices
-            .where((index) => visibleNames.contains(index.name))
-            .toList();
-    final List<HealthIndex> filteredMajorIndices =
-        visibleIndices
-            .where((indexData) => defaultMajorIndices.contains(indexData.name))
-            .toList();
+  // --- Helper 함수들 (StatefulWidget -> StatelessWidget/ConsumerWidget으로 변경되면서 static 또는 별도 파일로 분리 권장) ---
+  // 여기서는 일단 non-static 멤버 함수로 유지 (호출 시 context 필요)
 
-    if (filteredMajorIndices.isEmpty) {
-      return _buildDataErrorPlaceholder('표시할 주요 건강 지수가 없거나\n선택된 지수가 없습니다.');
+  // 현재 선택된 사람 이름 가져오기 (build 함수 밖에서도 사용 가능하도록 분리)
+  String _getCurrentPersonName(WidgetRef ref) {
+    final state = ref.watch(mainScreenNotifierProvider);
+    if (state.selectedPersonId == myInfoId) {
+      return "내 정보";
+    } else {
+      final person = state.addedPeopleList.firstWhere(
+        (p) => p.id == state.selectedPersonId,
+        orElse: () => AddedPerson(id: '', name: '알 수 없음'),
+      );
+      return person.name;
     }
-
-    return ListView.separated(
-      /* ... 이전 코드와 동일 ... */
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemCount: filteredMajorIndices.length,
-      itemBuilder: (context, index) {
-        return HealthIndexCard(
-          healthIndex: filteredMajorIndices[index],
-          showProgressBar: true,
-        ); // 프로그레스 바 표시
-      },
-      separatorBuilder: (context, index) => SizedBox(height: 12),
-    );
-  }
-
-  // 전체 건강 지수 리스트 위젯 빌더 (매핑된 데이터 받도록 수정)
-  Widget _buildAllHealthIndexList(
-    BuildContext context,
-    WidgetRef ref,
-    List<HealthIndex> allMappedIndices,
-  ) {
-    final state = ref.watch(mainScreenNotifierProvider); // 보이는 지수 Set 접근 위해 필요
-    final visibleNames = state.visibleIndices;
-    final List<HealthIndex> filteredHealthIndices =
-        allMappedIndices
-            .where((index) => visibleNames.contains(index.name))
-            .toList();
-
-    if (filteredHealthIndices.isEmpty) {
-      return _buildDataErrorPlaceholder('표시할 건강 지수가 선택되지 않았습니다.');
-    }
-
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemCount: filteredHealthIndices.length,
-      itemBuilder: (context, index) {
-        return HealthIndexCard(
-          healthIndex: filteredHealthIndices[index],
-          showProgressBar: false,
-        );
-      },
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-    );
   }
 
   // 데이터 로드 실패 시 보여줄 플레이스홀더 위젯
   Widget _buildDataErrorPlaceholder(String message) {
+    // 이제 각 위젯에서 직접 구현하거나, 이 함수를 static 또는 유틸리티로 분리 필요
+    // 여기서는 각 위젯으로 로직이 일부 이동되었음 (중복될 수 있음)
     return Container(
       padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       decoration: BoxDecoration(
@@ -515,13 +445,14 @@ class MainScreen extends ConsumerWidget {
       child: Text(
         message,
         style: TextStyle(color: Colors.grey[600], fontSize: 13),
+        textAlign: TextAlign.center, // 가운데 정렬 추가
       ),
     );
   }
 
-  // 섹션 제목 위젯 빌더 (변경 없음)
+  // 섹션 제목 위젯 빌더
   Widget _buildSectionTitle(
-    BuildContext context,
+    BuildContext context, // BuildContext 추가
     String title, {
     bool showInfoIcon = false,
   }) {
@@ -541,7 +472,9 @@ class MainScreen extends ConsumerWidget {
             splashRadius: 18,
             tooltip: '$title 설명 보기',
             onPressed: () {
-              if (title == '주요 건강 지수') {
+              // HealthIndexInfoDialog 표시 로직은 context가 필요하므로 여기서 처리
+              if (title.contains('건강 지수')) {
+                // '주요', '전체' 모두 포함하도록
                 showDialog(
                   context: context,
                   builder: (_) => const HealthIndexInfoDialog(),
@@ -556,14 +489,16 @@ class MainScreen extends ConsumerWidget {
     );
   }
 
+  // 지도 타입 선택 드롭다운 위젯 빌더
   Widget _buildMapTypeDropdown({
-    required BuildContext context, // context 추가
-    required WidgetRef ref, // ref 추가
+    required BuildContext context,
+    required WidgetRef ref,
     required Map<String, String> mapTypes,
-    required String
-    selectedValueKey, // 상태 키 ('selectedEnvMapType' or 'selectedDisasterType')
-    required Function(String?) onChangedCallback, // Notifier 함수 호출용 콜백
+    required String selectedValueKey,
+    required Function(String?) onChangedCallback,
   }) {
+    // selectedValue 가져오는 로직은 각 호출 위젯(EnvMapSectionWidget 등)에서 ref.watch로 처리하는 것이 더 좋음
+    // 여기서는 일단 파라미터로 가정하지 않고, 키를 통해 상태 직접 접근
     final String selectedValue =
         selectedValueKey == 'selectedEnvMapType'
             ? ref.watch(mainScreenNotifierProvider).selectedEnvMapType
@@ -577,32 +512,31 @@ class MainScreen extends ConsumerWidget {
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: DropdownButtonHideUnderline(
-        // 기본 밑줄 제거
         child: DropdownButton<String>(
           value: selectedValue,
-          isExpanded: true, // 너비 최대로 확장
+          isExpanded: true,
           icon: Icon(
             Icons.arrow_drop_down_rounded,
             color: Colors.grey.shade700,
           ),
-          elevation: 2, // 드롭다운 메뉴 그림자
+          elevation: 2,
           style: TextStyle(
             color: Colors.black87,
             fontSize: 14,
             fontFamily: 'Pretendard',
-          ), // 드롭다운 스타일
-          dropdownColor: Colors.white, // 드롭다운 메뉴 배경색
+          ),
+          dropdownColor: Colors.white,
           items:
               mapTypes.entries.map((entry) {
                 return DropdownMenuItem<String>(
-                  value: entry.key, // API 값
-                  child: Text(entry.value), // 사용자에게 보여줄 한글 이름
+                  value: entry.key,
+                  child: Text(entry.value),
                 );
               }).toList(),
           onChanged:
               ref.watch(mainScreenNotifierProvider).isLoading
                   ? null
-                  : onChangedCallback, // 선택 시 호출될 콜백
+                  : onChangedCallback,
         ),
       ),
     );
@@ -610,27 +544,25 @@ class MainScreen extends ConsumerWidget {
 
   // WebView 지도 표시 위젯 빌더
   Widget _buildWebViewMap({
-    required WebViewController? controller,
+    required WebViewController? controller, // 타입 명시
     required IconData placeholderIcon,
     required String placeholderText,
-    double height = 250, // 기본 지도 높이
+    double height = 250,
   }) {
     return AspectRatio(
-      aspectRatio: 16 / 9, // 가로 세로 비율 유지
+      aspectRatio: 16 / 9,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey[200], // 로딩 중 배경색
+          color: Colors.grey[200],
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey[300]!),
         ),
         child: ClipRRect(
-          // 내부 컨텐츠 모서리도 둥글게
           borderRadius: BorderRadius.circular(12),
           child:
               controller != null
-                  ? WebViewWidget(controller: controller) // 컨트롤러 있으면 웹뷰 표시
+                  ? WebViewWidget(controller: controller)
                   : Center(
-                    // 컨트롤러 없으면 플레이스홀더 표시
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

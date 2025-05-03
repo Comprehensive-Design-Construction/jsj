@@ -32,3 +32,7 @@ const List<String> defaultMajorIndices = [
   '자외선 지수',
   '미세먼지 지수', // 예시
 ];
+
+// --- 사용자 정보 관련 상수 추가 ---
+const String myInfoId = 'MY_INFO'; // '내 정보'를 나타내는 고유 ID
+// ---------------------------------

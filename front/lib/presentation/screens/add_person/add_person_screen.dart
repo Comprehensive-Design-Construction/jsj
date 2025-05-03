@@ -1,52 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod import
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart'
     as picker;
 import 'package:intl/intl.dart';
-import 'package:uuid/uuid.dart'; // 고유 ID 생성을 위해 추가 (pubspec.yaml에 uuid 패키지 추가 필요)
+// import 'package:uuid/uuid.dart'; // 이제 Notifier에서 사용
 
-import '../../../core/utils/preferences_service.dart';
-import '../../../data/models/added_person.dart';
-import '../../../data/models/api/coordinates_response.dart'; // 좌표 응답 모델
-import '../../../data/services/api_service.dart';
+// import '../../../core/utils/preferences_service.dart'; // Notifier에서 사용
+// import '../../../data/models/added_person.dart'; // Notifier에서 사용
+// import '../../../data/models/api/coordinates_response.dart'; // Notifier에서 사용
+// import '../../../data/services/api_service.dart'; // Notifier에서 사용
+import 'add_person_notifier.dart'; // Notifier import
+import 'add_person_state.dart'; // State import
 
-class AddPersonScreen extends StatefulWidget {
+// ConsumerStatefulWidget으로 변경
+class AddPersonScreen extends ConsumerStatefulWidget {
   const AddPersonScreen({super.key});
 
   @override
-  State<AddPersonScreen> createState() => _AddPersonScreenState();
+  ConsumerState<AddPersonScreen> createState() => _AddPersonScreenState();
 }
 
-class _AddPersonScreenState extends State<AddPersonScreen> {
-  final ApiService _apiService = ApiService();
-  final PreferencesService _prefsService = PreferencesService();
-  final _formKey = GlobalKey<FormState>(); // Form 위젯 사용 위한 키
+// ConsumerState로 변경
+class _AddPersonScreenState extends ConsumerState<AddPersonScreen> {
+  // ApiService, PreferencesService 인스턴스 제거 -> Notifier에서 관리
 
-  // 입력 컨트롤러 및 상태 변수
-  final _nameController = TextEditingController();
-  DateTime? _selectedBirthDate;
-  List<String> _guList = []; // 구 목록
-  String? _selectedGu; // 선택된 구
-  List<String> _dongList = []; // 동 목록
-  String? _selectedDong; // 선택된 동
-  final Map<String, bool> _userTypeSelection = {
-    // 사용자 특성 선택 상태
-    '농촌': false,
-    '비닐하우스': false,
-    '실외작업자': false,
-    // TODO: 필요한 다른 특성 추가 (예: 노인, 어린이 등 - 온보딩과 일관성 있게)
-  };
-  // TODO: 기저질환 입력 UI 및 상태 변수 추가
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController(); // 이름 컨트롤러는 로컬 상태로 유지
 
-  // 로딩 및 에러 상태
-  bool _isLoadingGu = false;
-  bool _isLoadingDong = false;
-  bool _isSaving = false;
-  String? _errorMessage;
+  // 상태 변수들 제거 -> Riverpod State에서 관리
 
   @override
   void initState() {
     super.initState();
-    _fetchGuData(); // 화면 시작 시 '구' 목록 불러오기
+    // initState에서 데이터 로딩 로직 제거 -> Notifier 생성 시 처리
+    // _fetchGuData();
+
+    // Notifier의 저장 성공 상태를 감지하여 화면 전환
+    // Listener를 사용하여 상태 변경 시 특정 액션 수행
+    ref.listenManual(addPersonNotifierProvider, (previous, next) {
+      // 에러 메시지 표시 (SnackBar)
+      if (next.errorMessage != null &&
+          next.errorMessage != previous?.errorMessage) {
+        _showErrorSnackBar(next.errorMessage!);
+      }
+
+      // 저장 성공 시 이전 화면으로 돌아가기 (true 전달)
+      if (next.savedSuccessfully) {
+        // 성공 메시지 (Notifier에서 처리해도 됨)
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text('${_nameController.text.trim()}님이 추가되었습니다.'), // 이름 접근 주의
+        //     duration: Duration(seconds: 2),
+        //   ),
+        // );
+        Navigator.of(context).pop(true);
+      }
+    });
   }
 
   @override
@@ -55,155 +64,35 @@ class _AddPersonScreenState extends State<AddPersonScreen> {
     super.dispose();
   }
 
-  // '구' 목록 불러오기
-  Future<void> _fetchGuData() async {
-    setState(() {
-      _isLoadingGu = true;
-      _errorMessage = null;
-    });
-    try {
-      _guList = await _apiService.fetchGuList();
-    } catch (e) {
-      _errorMessage = '구 목록을 불러오는데 실패했습니다: $e';
-      print(_errorMessage);
-    } finally {
-      if (mounted) {
-        setState(() => _isLoadingGu = false);
-      }
-    }
-  }
+  // _fetchGuData, _fetchDongData, _calculateAge, _addPerson 함수 제거 -> Notifier로 이동
 
-  // 선택된 '구'에 해당하는 '동' 목록 불러오기
-  Future<void> _fetchDongData(String selectedGu) async {
-    setState(() {
-      _isLoadingDong = true;
-      _dongList = []; // 동 목록 초기화
-      _selectedDong = null; // 동 선택 초기화
-      _errorMessage = null;
-    });
-    try {
-      _dongList = await _apiService.fetchDongList(selectedGu);
-    } catch (e) {
-      _errorMessage = '$selectedGu의 동 목록을 불러오는데 실패했습니다: $e';
-      print(_errorMessage);
-    } finally {
-      if (mounted) {
-        setState(() => _isLoadingDong = false);
-      }
-    }
-  }
-
-  // 생년월일 선택 DatePicker (기존과 동일)
+  // 생년월일 선택 DatePicker (Notifier 호출 방식으로 변경)
   void _presentDatePicker() {
+    // 현재 상태의 생년월일 가져오기
+    final currentBirthDate =
+        ref.read(addPersonNotifierProvider).selectedBirthDate;
+
     picker.DatePicker.showDatePicker(
       context,
-      /* ... 설정 ... */
+      showTitleActions: true,
+      minTime: DateTime(1900, 1, 1),
+      maxTime: DateTime.now(),
       onConfirm: (date) {
-        setState(() {
-          _selectedBirthDate = date;
-        });
+        // Notifier를 통해 상태 업데이트
+        ref.read(addPersonNotifierProvider.notifier).setBirthDate(date);
       },
       currentTime:
-          _selectedBirthDate ??
-          DateTime.now().subtract(Duration(days: 365 * 30)),
+          currentBirthDate ??
+          DateTime.now().subtract(const Duration(days: 365 * 30)),
       locale: picker.LocaleType.ko,
-      // ... 테마 ...
+      theme: const picker.DatePickerTheme(/* 테마 설정 */),
     );
   }
 
-  // 나이 계산 (기존과 동일)
-  int? _calculateAge(DateTime? birthDate) {
-    if (birthDate == null) return null;
-    final today = DateTime.now();
-    int age = today.year - birthDate.year;
-    if (today.month < birthDate.month ||
-        (today.month == birthDate.month && today.day < birthDate.day)) {
-      age--;
-    }
-    return age > 0 ? age : 0;
-  }
-
-  // "추가하기" 버튼 로직
-  Future<void> _addPerson() async {
-    // 입력값 유효성 검사
-    if (!(_formKey.currentState?.validate() ?? false)) return; // 이름 검증
-    if (_selectedBirthDate == null) {
-      _showErrorSnackBar('생년월일을 선택해주세요.');
-      return;
-    }
-    if (_selectedGu == null) {
-      _showErrorSnackBar('지역(구)을 선택해주세요.');
-      return;
-    }
-    if (_selectedDong == null) {
-      _showErrorSnackBar('지역(동)을 선택해주세요.');
-      return;
-    }
-
-    setState(() {
-      _isSaving = true;
-      _errorMessage = null;
-    });
-
-    try {
-      // 1. 위경도 좌표 조회
-      final CoordinatesResponse coords = await _apiService.fetchCoordinates(
-        _selectedGu!,
-        _selectedDong!,
-      );
-
-      // 2. 저장할 데이터 준비
-      final age = _calculateAge(_selectedBirthDate);
-      final selectedTypes =
-          _userTypeSelection.entries
-              .where((entry) => entry.value)
-              .map((entry) => entry.key)
-              .toList();
-      // TODO: 기저질환 리스트 가져오기
-      final List<String> diseaseParam = [...selectedTypes /*, ...diseases*/];
-
-      // 3. AddedPerson 객체 생성 (고유 ID 생성)
-      final newPerson = AddedPerson(
-        id: Uuid().v4(), // UUID로 고유 ID 생성
-        name: _nameController.text.trim(),
-        birthDate: _selectedBirthDate,
-        gu: _selectedGu,
-        dong: _selectedDong,
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        userTypes:
-            diseaseParam.isNotEmpty
-                ? diseaseParam
-                : null, // 빈 리스트 대신 null 저장 가능
-      );
-
-      // 4. 로컬 저장소에 추가
-      await _prefsService.addPerson(newPerson);
-
-      // 5. 성공 처리 및 화면 닫기
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${newPerson.name}님이 추가되었습니다.'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        Navigator.of(context).pop(true); // true를 반환하여 이전 화면에서 갱신 필요 알림
-      }
-    } catch (e) {
-      // 오류 처리
-      _errorMessage = '사람 추가 중 오류가 발생했습니다: $e';
-      print(_errorMessage);
-      _showErrorSnackBar(_errorMessage ?? '알 수 없는 오류 발생');
-    } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
-    }
-  }
-
-  // 에러 메시지 SnackBar 표시 헬퍼
+  // 에러 메시지 SnackBar 표시 헬퍼 (기존과 동일)
   void _showErrorSnackBar(String message) {
+    // 이전에 표시된 SnackBar가 있다면 제거
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
     );
@@ -211,16 +100,19 @@ class _AddPersonScreenState extends State<AddPersonScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 상태 구독
+    final state = ref.watch(addPersonNotifierProvider);
+    final notifier = ref.read(addPersonNotifierProvider.notifier);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('사람 추가'),
         leading: IconButton(
-          icon: const Icon(Icons.close), // 닫기 아이콘
+          icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: Form(
-        // 입력 유효성 검사를 위해 Form 위젯 사용
         key: _formKey,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
@@ -240,7 +132,6 @@ class _AddPersonScreenState extends State<AddPersonScreen> {
                   fillColor: Colors.grey[100],
                 ),
                 validator: (value) {
-                  // 이름 필수 입력 검증
                   if (value == null || value.trim().isEmpty) {
                     return '이름을 입력해주세요.';
                   }
@@ -258,12 +149,14 @@ class _AddPersonScreenState extends State<AddPersonScreen> {
                   color: Colors.grey[700],
                 ),
                 label: Text(
-                  _selectedBirthDate == null
+                  state.selectedBirthDate == null
                       ? '생년월일 선택 *'
-                      : DateFormat('yyyy년 MM월 dd일').format(_selectedBirthDate!),
+                      : DateFormat(
+                        'yyyy년 MM월 dd일',
+                      ).format(state.selectedBirthDate!),
                   style: TextStyle(
                     color:
-                        _selectedBirthDate == null
+                        state.selectedBirthDate == null
                             ? Colors.grey[600]
                             : Colors.black87,
                     fontSize: 16,
@@ -279,9 +172,9 @@ class _AddPersonScreenState extends State<AddPersonScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   alignment: Alignment.centerLeft,
-                  foregroundColor: Colors.black87, // 아이콘 색상
+                  foregroundColor: Colors.black87,
                 ),
-                onPressed: _presentDatePicker,
+                onPressed: _presentDatePicker, // 수정된 함수 호출
               ),
               const SizedBox(height: 24),
 
@@ -290,8 +183,8 @@ class _AddPersonScreenState extends State<AddPersonScreen> {
               const SizedBox(height: 8),
               // 구 선택 드롭다운
               DropdownButtonFormField<String>(
-                value: _selectedGu,
-                hint: Text(_isLoadingGu ? '불러오는 중...' : '구를 선택하세요'),
+                value: state.selectedGu,
+                hint: Text(state.isLoadingGu ? '불러오는 중...' : '구를 선택하세요'),
                 isExpanded: true,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
@@ -305,36 +198,30 @@ class _AddPersonScreenState extends State<AddPersonScreen> {
                   ),
                 ),
                 items:
-                    _guList.map((String gu) {
+                    state.guList.map((String gu) {
+                      // state에서 목록 가져옴
                       return DropdownMenuItem<String>(
                         value: gu,
                         child: Text(gu),
                       );
                     }).toList(),
                 onChanged:
-                    _isLoadingGu
+                    state.isLoadingGu
                         ? null
                         : (String? newValue) {
-                          if (newValue != null && newValue != _selectedGu) {
-                            setState(() {
-                              _selectedGu = newValue;
-                              _selectedDong = null; // 구 변경 시 동 선택 초기화
-                              _dongList = []; // 동 목록 초기화
-                            });
-                            _fetchDongData(newValue); // 동 목록 불러오기
-                          }
+                          // Notifier 함수 호출
+                          notifier.setSelectedGu(newValue);
                         },
                 validator: (value) => value == null ? '구를 선택해주세요.' : null,
               ),
               const SizedBox(height: 12),
               // 동 선택 드롭다운
               DropdownButtonFormField<String>(
-                value: _selectedDong,
-                // 구가 선택되었고 로딩 중이 아니면 활성화, 아니면 비활성화
+                value: state.selectedDong,
                 hint: Text(
-                  _isLoadingDong
+                  state.isLoadingDong
                       ? '불러오는 중...'
-                      : (_selectedGu == null ? '구를 먼저 선택하세요' : '동을 선택하세요'),
+                      : (state.selectedGu == null ? '구를 먼저 선택하세요' : '동을 선택하세요'),
                 ),
                 isExpanded: true,
                 decoration: InputDecoration(
@@ -349,23 +236,23 @@ class _AddPersonScreenState extends State<AddPersonScreen> {
                   ),
                 ),
                 items:
-                    _dongList.map((String dong) {
+                    state.dongList.map((String dong) {
+                      // state에서 목록 가져옴
                       return DropdownMenuItem<String>(
                         value: dong,
                         child: Text(dong),
                       );
                     }).toList(),
                 onChanged:
-                    (_selectedGu == null || _isLoadingDong)
+                    (state.selectedGu == null || state.isLoadingDong)
                         ? null
                         : (String? newValue) {
-                          if (newValue != null) {
-                            setState(() => _selectedDong = newValue);
-                          }
+                          // Notifier 함수 호출
+                          notifier.setSelectedDong(newValue);
                         },
                 validator:
                     (value) =>
-                        (_selectedGu != null && value == null)
+                        (state.selectedGu != null && value == null)
                             ? '동을 선택해주세요.'
                             : null,
               ),
@@ -377,22 +264,21 @@ class _AddPersonScreenState extends State<AddPersonScreen> {
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 8),
-              ..._userTypeSelection.keys.map((String key) {
+              ...state.userTypeSelection.keys.map((String key) {
+                // state에서 가져옴
                 return CheckboxListTile(
-                  /* ... (Onboarding과 동일) ... */
                   title: Text(
                     key,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                  value: _userTypeSelection[key],
+                  value: state.userTypeSelection[key], // state에서 값 가져옴
                   onChanged: (bool? value) {
-                    setState(() {
-                      _userTypeSelection[key] = value!;
-                    });
+                    // Notifier 함수 호출
+                    notifier.toggleUserType(key, value!);
                   },
                   controlAffinity: ListTileControlAffinity.leading,
                   contentPadding: EdgeInsets.zero,
-                  dense: true, // 좀 더 컴팩트하게
+                  dense: true,
                   activeColor: Colors.blueAccent,
                 );
               }).toList(),
@@ -402,7 +288,6 @@ class _AddPersonScreenState extends State<AddPersonScreen> {
               Text('기저질환 (선택)', style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: 8),
               Container(
-                /* ... (Placeholder 내용) ... */
                 padding: const EdgeInsets.all(16),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
@@ -418,7 +303,16 @@ class _AddPersonScreenState extends State<AddPersonScreen> {
 
               // --- 추가하기 버튼 ---
               ElevatedButton(
-                onPressed: _isSaving ? null : _addPerson, // 저장 중 비활성화
+                onPressed:
+                    state
+                            .isSaving // state에서 로딩 상태 확인
+                        ? null
+                        : () {
+                          // Form 유효성 검사 후 Notifier 함수 호출
+                          if (_formKey.currentState?.validate() ?? false) {
+                            notifier.addPerson(_nameController.text);
+                          }
+                        },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
                   foregroundColor: Colors.white,
@@ -429,7 +323,8 @@ class _AddPersonScreenState extends State<AddPersonScreen> {
                   textStyle: Theme.of(context).textTheme.labelLarge,
                 ),
                 child:
-                    _isSaving
+                    state
+                            .isSaving // state에서 로딩 상태 확인
                         ? const SizedBox(
                           width: 24,
                           height: 24,
@@ -441,16 +336,8 @@ class _AddPersonScreenState extends State<AddPersonScreen> {
                         : const Text('추가하기'),
               ),
 
-              // --- 에러 메시지 표시 ---
-              if (_errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 16.0),
-                  child: Text(
-                    _errorMessage!,
-                    style: TextStyle(color: Colors.redAccent),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+              // 에러 메시지 표시는 initState의 listener에서 SnackBar로 처리하므로 제거 가능
+              // if (state.errorMessage != null) ...
             ],
           ),
         ),

@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart'; // Position 타입
 import 'package:webview_flutter/webview_flutter.dart'; // WebViewController
 
 // UI 모델 import
+import '../../../core/constants/app_constants.dart';
 import '../../../data/models/ui/current_weather.dart';
 import '../../../data/models/ui/feels_like_data.dart';
 import '../../../data/models/ui/health_index.dart';
@@ -42,7 +43,7 @@ class MainScreenState extends Equatable {
     this.isLoading = true,
     this.isLoadingPeople = true,
     this.errorMessage,
-    this.selectedPersonId = 'MY_INFO', // 기본값 'MY_INFO'
+    this.selectedPersonId = myInfoId, // 기본값 'MY_INFO'
     this.addedPeopleList = const [],
     this.visibleIndices = const {}, // 초기 빈 Set
     this.lastLoadedLatitude,

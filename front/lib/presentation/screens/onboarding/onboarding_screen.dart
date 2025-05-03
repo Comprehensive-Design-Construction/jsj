@@ -1,28 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod import
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart'
-    as picker; // 이름 충돌 방지
-import 'package:intl/intl.dart'; // 날짜 포매팅
+    as picker;
+import 'package:intl/intl.dart';
 
-import '../../../core/utils/preferences_service.dart'; // Preferences 서비스
-import '../main/main_screen.dart'; // 메인 화면
+// import '../../../core/utils/preferences_service.dart'; // Notifier에서 사용
+import '../main/main_screen.dart';
+import 'onboarding_notifier.dart'; // Notifier import
+import 'onboarding_state.dart'; // State import
 
-class OnboardingScreen extends StatefulWidget {
+// ConsumerStatefulWidget으로 변경
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
-  final PreferencesService _prefsService = PreferencesService();
-  final _nameController = TextEditingController();
-  DateTime? _selectedBirthDate;
-  final Map<String, bool> _userTypeSelection = {
-    '농촌': false,
-    '비닐하우스': false,
-    '실외작업자': false,
-  };
-  // TODO: 기저질환 선택 UI 및 상태 변수 추가
+// ConsumerState로 변경
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
+  // PreferencesService 인스턴스 제거
+  final _nameController = TextEditingController(); // 이름 컨트롤러는 로컬 상태 유지
+
+  // 상태 변수 제거 -> Riverpod State에서 관리
+  // DateTime? _selectedBirthDate;
+  // Map<String, bool> _userTypeSelection = { ... };
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Notifier의 완료 상태를 감지하여 화면 전환
+    ref.listenManual<OnboardingState>(onboardingNotifierProvider, (
+      previous,
+      next,
+    ) {
+      // 에러 메시지 표시
+      if (next.errorMessage != null &&
+          next.errorMessage != previous?.errorMessage) {
+        _showErrorSnackBar(next.errorMessage!);
+      }
+
+      // 온보딩 완료 시 MainScreen으로 이동
+      if (next.onboardingProcessComplete &&
+          previous?.onboardingProcessComplete == false) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainScreen()),
+        );
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -30,21 +58,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  // 생년월일 선택 DatePicker 표시
+  // 생년월일 선택 DatePicker 표시 (Notifier 호출)
   void _presentDatePicker() {
+    final currentBirthDate =
+        ref.read(onboardingNotifierProvider).selectedBirthDate;
+    final notifier = ref.read(onboardingNotifierProvider.notifier);
+
     picker.DatePicker.showDatePicker(
       context,
       showTitleActions: true,
-      minTime: DateTime(1900, 1, 1), // 선택 가능한 최소 날짜
-      maxTime: DateTime.now(), // 선택 가능한 최대 날짜 (오늘)
+      minTime: DateTime(1900, 1, 1),
+      maxTime: DateTime.now(),
       onConfirm: (date) {
-        setState(() {
-          _selectedBirthDate = date;
-        });
-        print('Selected birth date: $date');
+        // Notifier 함수 호출
+        notifier.setBirthDate(date);
       },
-      currentTime: _selectedBirthDate ?? DateTime.now(), // 초기 선택 날짜
-      locale: picker.LocaleType.ko, // 한국어 설정
+      currentTime:
+          currentBirthDate ??
+          DateTime.now().subtract(const Duration(days: 365 * 30)), // 초기값 수정
+      locale: picker.LocaleType.ko,
       theme: const picker.DatePickerTheme(
         // DatePicker 테마 (선택 사항)
         headerColor: Colors.white,
@@ -64,88 +96,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  // 나이 계산 함수
-  int? _calculateAge(DateTime? birthDate) {
-    if (birthDate == null) return null;
-    final today = DateTime.now();
-    int age = today.year - birthDate.year;
-    // 생일 안 지났으면 -1
-    if (today.month < birthDate.month ||
-        (today.month == birthDate.month && today.day < birthDate.day)) {
-      age--;
-    }
-    return age > 0 ? age : 0; // 음수 방지
-  }
-
-  // "시작" 버튼 로직
-  Future<void> _startApp() async {
-    // 입력값 검증 (간단 예시)
-    if (_selectedBirthDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('생년월일을 선택해주세요.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    final age = _calculateAge(_selectedBirthDate);
-    // 선택된 사용자 특성 리스트 생성
-    final selectedTypes =
-        _userTypeSelection.entries
-            .where((entry) => entry.value) // 체크된 것만 필터링
-            .map((entry) => entry.key) // 키(특성 이름)만 추출
-            .toList();
-    // TODO: 기저질환 리스트 가져오기
-    final List<String> diseases = []; // 현재는 비어있음
-
-    // 사용자 특성과 기저질환을 합쳐서 'disease' 파라미터용 리스트 생성
-    final List<String> diseaseParam = [...selectedTypes, ...diseases];
-
-    // 로컬 저장소에 정보 저장
-    await _prefsService.saveUserInfo(age: age, userTypes: diseaseParam);
-    await _prefsService.setOnboardingComplete(); // 온보딩 완료 플래그 설정
-
-    // 메인 화면으로 이동 (현재 화면 스택 제거)
-    if (mounted) {
-      // 위젯이 아직 화면에 있는지 확인
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MainScreen()),
-      );
-    }
-  }
-
-  // "간편시작" 버튼 로직
-  Future<void> _simpleStartApp() async {
-    // 기본값(null)으로 정보 저장
-    await _prefsService.saveUserInfo(age: null, userTypes: []);
-    await _prefsService.setOnboardingComplete(); // 온보딩 완료 플래그 설정
-
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MainScreen()),
-      );
-    }
+  // 에러 메시지 SnackBar 표시 헬퍼
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    // 상태 구독
+    final state = ref.watch(onboardingNotifierProvider);
+    final notifier = ref.read(onboardingNotifierProvider.notifier);
+
     return Scaffold(
       body: SafeArea(
-        // 상태바 등 시스템 영역 침범 방지
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch, // 자식 위젯 가로로 꽉 채우기
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. 로고
+              // 1. 로고 (기존과 동일)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 40.0),
                 child: Image.asset(
-                  'assets/images/welogo.png', // 로고 경로 확인
+                  'assets/images/welogo.png',
                   height: 60,
                   errorBuilder:
                       (context, error, stackTrace) =>
@@ -153,7 +129,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
 
-              // 2. 이름 입력
+              // 2. 이름 입력 (로컬 컨트롤러 사용)
               TextField(
                 controller: _nameController,
                 decoration: InputDecoration(
@@ -169,11 +145,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     vertical: 14,
                   ),
                 ),
-                textInputAction: TextInputAction.next, // 다음 입력 필드로 이동
+                textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 16),
 
-              // 3. 생년월일 선택
+              // 3. 생년월일 선택 (state.selectedBirthDate 사용)
               TextButton(
                 style: TextButton.styleFrom(
                   backgroundColor: Colors.grey[100],
@@ -188,12 +164,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
                 onPressed: _presentDatePicker,
                 child: Text(
-                  _selectedBirthDate == null
-                      ? '생년월일 (예: 1999.01.01)'
-                      : '생년월일: ${DateFormat('yyyy.MM.dd').format(_selectedBirthDate!)}', // intl 패키지 사용
+                  state.selectedBirthDate == null
+                      ? '생년월일 * (예: 1999.01.01)' // 필수 표시 추가
+                      : '생년월일: ${DateFormat('yyyy.MM.dd').format(state.selectedBirthDate!)}',
                   style: TextStyle(
                     color:
-                        _selectedBirthDate == null
+                        state.selectedBirthDate == null
                             ? Colors.grey[600]
                             : Colors.black87,
                     fontSize: 16,
@@ -202,29 +178,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               const SizedBox(height: 24),
 
-              // 4. 사용자 특성 선택 (CheckboxListTile 사용)
+              // 4. 사용자 특성 선택 (state.userTypeSelection 사용)
               Text(
                 '사용자 특성 (중복 선택 가능)',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 8),
-              ..._userTypeSelection.keys.map((String key) {
+              ...state.userTypeSelection.keys.map((String key) {
                 return CheckboxListTile(
                   title: Text(key),
-                  value: _userTypeSelection[key],
-                  onChanged: (bool? value) {
-                    setState(() {
-                      _userTypeSelection[key] = value!;
-                    });
-                  },
-                  controlAffinity: ListTileControlAffinity.leading, // 체크박스 왼쪽으로
-                  contentPadding: EdgeInsets.zero, // 내부 여백 제거
-                  activeColor: Colors.blueAccent, // 체크 시 색상
+                  value: state.userTypeSelection[key],
+                  onChanged:
+                      state.isSaving
+                          ? null
+                          : (bool? value) {
+                            // 저장 중 비활성화
+                            // Notifier 함수 호출
+                            notifier.toggleUserType(key, value!);
+                          },
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: Colors.blueAccent,
                 );
               }).toList(),
               const SizedBox(height: 24),
 
-              // 5. 기저질환 Placeholder
+              // 5. 기저질환 Placeholder (기존과 동일)
               Text('기저질환 (선택)', style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: 8),
               Container(
@@ -240,9 +219,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               const SizedBox(height: 40),
 
-              // 6. 시작 버튼
+              // 6. 시작 버튼 (Notifier 함수 호출)
               ElevatedButton(
-                onPressed: _startApp,
+                onPressed:
+                    state.isSaving
+                        ? null
+                        : () {
+                          // isSaving 상태 확인
+                          notifier.startApp(
+                            _nameController.text,
+                          ); // 이름 전달 (선택적)
+                        },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
                   foregroundColor: Colors.white,
@@ -252,13 +239,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   textStyle: Theme.of(context).textTheme.labelLarge,
                 ),
-                child: const Text('시작'),
+                child:
+                    state
+                            .isSaving // isSaving 상태 확인
+                        ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 3,
+                          ),
+                        )
+                        : const Text('시작'),
               ),
               const SizedBox(height: 12),
 
-              // 7. 간편시작 버튼
+              // 7. 간편시작 버튼 (Notifier 함수 호출)
               TextButton(
-                onPressed: _simpleStartApp,
+                onPressed:
+                    state.isSaving
+                        ? null
+                        : notifier.simpleStartApp, // isSaving 상태 확인
                 style: TextButton.styleFrom(
                   backgroundColor: Colors.grey[300],
                   foregroundColor: Colors.grey[800],
@@ -270,7 +271,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     fontWeight: FontWeight.normal,
                   ),
                 ),
-                child: const Text('간편시작'),
+                child:
+                    state
+                            .isSaving // isSaving 상태 확인
+                        ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 3),
+                        )
+                        : const Text('간편시작'),
               ),
             ],
           ),
