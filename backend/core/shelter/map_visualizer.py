@@ -18,9 +18,9 @@ DISASTER_ICON_STYLES: Dict[str, Dict[str, str]] = {
 def _get_shelter_popup_html(
     row: pd.Series,
     disaster_type: str,
-    is_closest: bool,
-    distance_m: Optional[int],
-    time_sec: Optional[int],
+    # is_closest: bool,
+    # distance_m: Optional[int],
+    # time_sec: Optional[int],
 ) -> str:
     """대피소 정보 팝업 HTML을 생성합니다."""
     name = row.get("시설명", row.get("명칭", "이름 없음"))  # 데이터 컬럼명 확인 필요
@@ -32,11 +32,11 @@ def _get_shelter_popup_html(
     )
 
     popup_title = f"{disaster_type} 대피소"
-    if is_closest:
-        distance_km_str = (
-            f" ({distance_m / 1000:.2f}km)" if distance_m is not None else ""
-        )
-        popup_title = f"⭐ 최단 거리 대피소{distance_km_str} ⭐"
+    # if is_closest:
+    #     distance_km_str = (
+    #         f" ({distance_m / 1000:.2f}km)" if distance_m is not None else ""
+    #     )
+    #     popup_title = f"⭐ 최단 거리 대피소{distance_km_str} ⭐"
 
     content = [f"<h4 style='margin-bottom: 3px; font-size: 1.1em;'>{popup_title}</h4>"]
     content.append(f"<p style='margin:0;'><b>이름:</b> {name}</p>")
@@ -46,18 +46,19 @@ def _get_shelter_popup_html(
             content.append(
                 f"<p style='margin:0;'><b>수용인원:</b> {int(capacity):,}명</p>"
             )
-        except:
+        except (ValueError, TypeError):
             content.append(f"<p style='margin:0;'><b>수용인원:</b> {capacity}</p>")
 
-    if is_closest:
-        if distance_m is not None:
-            content.append(
-                f"<p style='margin:0;'><b>거리:</b> {distance_m / 1000:.2f} km</p>"
-            )
-        if time_sec is not None:
-            content.append(
-                f"<p style='margin:0;'><b>예상 시간:</b> 약 {time_sec / 60:.1f} 분</p>"
-            )
+    #최단 거리 / 시간 정보 표시 로직 제거
+    # if is_closest:
+    #     if distance_m is not None:
+    #         content.append(
+    #             f"<p style='margin:0;'><b>거리:</b> {distance_m / 1000:.2f} km</p>"
+    #         )
+    #     if time_sec is not None:
+    #         content.append(
+    #             f"<p style='margin:0;'><b>예상 시간:</b> 약 {time_sec / 60:.1f} 분</p>"
+    #         )
 
     lat = row.geometry.y
     lon = row.geometry.x
@@ -70,18 +71,18 @@ def _get_shelter_popup_html(
 
 def create_shelter_map(
     shelter_gdf: Optional[gpd.GeoDataFrame],
-    closest_shelter_row: Optional[pd.Series],
+    # closest_shelter_row: Optional[pd.Series],
     user_location: Point,
     disaster_type: str,
     min_distance_m: Optional[int] = None,
-    min_time_sec: Optional[int] = None,
-    route_coordinates: Optional[List[List[float]]] = None,  # 경로 좌표 인자 추가
+    # min_time_sec: Optional[int] = None,
+    # route_coordinates: Optional[List[List[float]]] = None,  # 경로 좌표 인자 추가
 ) -> folium.Map:
     """
     Folium 지도를 생성하여 반환합니다.
     가장 가까운 대피소까지의 경로를 포함하여 시각화합니다.
     """
-    print(f"지도 생성 시작: {disaster_type} (경로 포함)...")
+    print(f"지도 생성 시작: {disaster_type} (경로 미포함)...")
     fmap = folium.Map(
         location=(user_location.y, user_location.x),
         zoom_start=15,
@@ -121,36 +122,50 @@ def create_shelter_map(
                 continue
 
             lat, lon = shelter_geom.y, shelter_geom.x
-            is_closest = (
-                closest_shelter_row is not None and idx == closest_shelter_row.name
-            )
+            # is_closest = (
+            #     closest_shelter_row is not None and idx == closest_shelter_row.name
+            # )
 
             # 아이콘 설정 (가장 가까운 곳은 별 모양)
-            marker_icon = (
-                folium.Icon(color="black", icon="star", prefix="fa")
-                if is_closest
-                else folium.Icon(
-                    color=icon_style["color"],
-                    icon=icon_style["icon"],
-                    prefix=icon_style["prefix"],
-                )
-            )
+            # marker_icon = (
+            #     folium.Icon(color="black", icon="star", prefix="fa")
+            #     if is_closest
+            #     else folium.Icon(
+            #         color=icon_style["color"],
+            #         icon=icon_style["icon"],
+            #         prefix=icon_style["prefix"],
+            #     )
+            # )
+
+            # 여기는 새롭게 추가한 거 위에 거 살리려면 이 아래 부분 지워야함
+            marker_icon = folium.Icon(
+                color=icon_style["color"],
+                icon=icon_style["icon"],
+                prefix=icon_style["prefix"],
+            ) 
 
             # 팝업 HTML 생성
-            popup_html = _get_shelter_popup_html(
-                row, disaster_type, is_closest, min_distance_m, min_time_sec
-            )
+            # popup_html = _get_shelter_popup_html(
+            #     row, disaster_type, is_closest, min_distance_m, min_time_sec
+            # )
+
+            # 여기도 마찬가지 윗 부분 살리려면 이 아래 부분 삭제 필요함
+            popup_html = _get_shelter_popup_html(row, disaster_type)
 
             # 툴팁 텍스트 설정
+            # name = row.get("시설명", row.get("명칭", "이름 없음"))
+            # tooltip_text = f"{disaster_type}: {name}"
+            # if is_closest:
+            #     distance_km_str = (
+            #         f" ({min_distance_m / 1000:.2f}km)"
+            #         if min_distance_m is not None
+            #         else ""
+            #     )
+            #     tooltip_text = f"⭐ 최단 거리{distance_km_str}: {name}"
+
+            #기본 툴팁으로 변경
             name = row.get("시설명", row.get("명칭", "이름 없음"))
             tooltip_text = f"{disaster_type}: {name}"
-            if is_closest:
-                distance_km_str = (
-                    f" ({min_distance_m / 1000:.2f}km)"
-                    if min_distance_m is not None
-                    else ""
-                )
-                tooltip_text = f"⭐ 최단 거리{distance_km_str}: {name}"
 
             # 마커 추가
             folium.Marker(
@@ -159,74 +174,76 @@ def create_shelter_map(
                 icon=marker_icon,
                 tooltip=tooltip_text,
             ).add_to(fmap)
-    elif closest_shelter_row is not None:
-        # 필터링된 대피소는 없지만, API 결과로 가장 가까운 곳만 있는 경우 (예: 반경 밖)
-        print(
-            f"지도 생성: 필터링된 목록은 없으나, 최단 거리 대피소({closest_shelter_row.name}) 1개 추가 중..."
-        )
-        lat, lon = closest_shelter_row.geometry.y, closest_shelter_row.geometry.x
-        popup_html = _get_shelter_popup_html(
-            closest_shelter_row, disaster_type, True, min_distance_m, min_time_sec
-        )
-        name = closest_shelter_row.get(
-            "시설명", closest_shelter_row.get("명칭", "이름 없음")
-        )
-        distance_km_str = (
-            f" ({min_distance_m / 1000:.2f}km)" if min_distance_m is not None else ""
-        )
-        tooltip_text = f"⭐ 최단 거리{distance_km_str}: {name}"
-        folium.Marker(
-            location=(lat, lon),
-            popup=folium.Popup(popup_html, max_width=300),
-            icon=folium.Icon(color="black", icon="star", prefix="fa"),
-            tooltip=tooltip_text,
-        ).add_to(fmap)
+    # elif closest_shelter_row is not None:
+    #     # 필터링된 대피소는 없지만, API 결과로 가장 가까운 곳만 있는 경우 (예: 반경 밖)
+    #     print(
+    #         f"지도 생성: 필터링된 목록은 없으나, 최단 거리 대피소({closest_shelter_row.name}) 1개 추가 중..."
+    #     )
+    #     lat, lon = closest_shelter_row.geometry.y, closest_shelter_row.geometry.x
+    #     popup_html = _get_shelter_popup_html(
+    #         closest_shelter_row, disaster_type, True, min_distance_m, min_time_sec
+    #     )
+    #     name = closest_shelter_row.get(
+    #         "시설명", closest_shelter_row.get("명칭", "이름 없음")
+    #     )
+    #     distance_km_str = (
+    #         f" ({min_distance_m / 1000:.2f}km)" if min_distance_m is not None else ""
+    #     )
+    #     tooltip_text = f"⭐ 최단 거리{distance_km_str}: {name}"
+    #     folium.Marker(
+    #         location=(lat, lon),
+    #         popup=folium.Popup(popup_html, max_width=300),
+    #         icon=folium.Icon(color="black", icon="star", prefix="fa"),
+    #         tooltip=tooltip_text,
+    #     ).add_to(fmap)
 
-    if route_coordinates:
-        print(f"지도 생성: 최단 경로(좌표 {len(route_coordinates)}개) 추가 중...")
-        try:
-            # TMAP 좌표는 [lon, lat] 순서, Folium PolyLine은 [lat, lon] 순서 필요
-            route_latlons = [[coord[1], coord[0]] for coord in route_coordinates]
+    # if route_coordinates:
+    #     print(f"지도 생성: 최단 경로(좌표 {len(route_coordinates)}개) 추가 중...")
+    #     try:
+    #         # TMAP 좌표는 [lon, lat] 순서, Folium PolyLine은 [lat, lon] 순서 필요
+    #         route_latlons = [[coord[1], coord[0]] for coord in route_coordinates]
 
-            # 경로 선 생성
-            folium.PolyLine(
-                locations=route_latlons,
-                color="purple",  # 경로 색상
-                weight=5,  # 경로 두께
-                opacity=0.8,  # 경로 투명도
-                tooltip=(
-                    f"최단 경로 ({min_distance_m / 1000:.2f} km)"
-                    if min_distance_m
-                    else "최단 경로"
-                ),
-            ).add_to(fmap)
-        except Exception as e:
-            print(f"오류: 경로 PolyLine 생성 중 오류 발생: {e}")
+    #         # 경로 선 생성
+    #         folium.PolyLine(
+    #             locations=route_latlons,
+    #             color="purple",  # 경로 색상
+    #             weight=5,  # 경로 두께
+    #             opacity=0.8,  # 경로 투명도
+    #             tooltip=(
+    #                 f"최단 경로 ({min_distance_m / 1000:.2f} km)"
+    #                 if min_distance_m
+    #                 else "최단 경로"
+    #             ),
+    #         ).add_to(fmap)
+    #     except Exception as e:
+    #         print(f"오류: 경로 PolyLine 생성 중 오류 발생: {e}")
 
     # 지도 범위 자동 조절 (fit_bounds)
-    try:
-        bounds_points = [(user_location.y, user_location.x)]
-        # 가장 가까운 대피소가 있으면 해당 위치 추가
-        if (
-            closest_shelter_row is not None
-            and "geometry" in closest_shelter_row
-            and closest_shelter_row.geometry
-        ):
-            bounds_points.append(
-                (closest_shelter_row.geometry.y, closest_shelter_row.geometry.x)
-            )
-        elif display_gdf is not None and len(display_gdf) > 0:
-            sample_points = display_gdf.geometry.representative_point()  # 폴리곤 대비
-            # sample_points = display_gdf.geometry # Point의 경우 그대로 사용
-            # 간단히 첫번째 점 추가 예시
-            if not sample_points.empty:
-                first_point = sample_points.iloc[0]
-                bounds_points.append((first_point.y, first_point.x))
+    # try:
+    #     bounds_points = [(user_location.y, user_location.x)]
+    #     # 가장 가까운 대피소가 있으면 해당 위치 추가
+    #     if (
+    #         closest_shelter_row is not None
+    #         and "geometry" in closest_shelter_row
+    #         and closest_shelter_row.geometry
+    #     ):
+    #         bounds_points.append(
+    #             (closest_shelter_row.geometry.y, closest_shelter_row.geometry.x)
+    #         )
+    #     elif display_gdf is not None and len(display_gdf) > 0:
+    #         sample_points = display_gdf.geometry.representative_point()  # 폴리곤 대비
+    #         # sample_points = display_gdf.geometry # Point의 경우 그대로 사용
+    #         # 간단히 첫번째 점 추가 예시
+    #         if not sample_points.empty:
+    #             first_point = sample_points.iloc[0]
+    #             bounds_points.append((first_point.y, first_point.x))
 
-        if len(bounds_points) >= 2:
-            fmap.fit_bounds(bounds=bounds_points, padding=(0.005, 0.005))  # 패딩값 조절
-    except Exception as e:
-        print(f"지도 범위 자동 조절(fit_bounds) 중 오류 발생: {e}")
+    #     if len(bounds_points) >= 2:
+    #         fmap.fit_bounds(bounds=bounds_points, padding=(0.005, 0.005))  # 패딩값 조절
+    # except Exception as e:
+    #     print(f"지도 범위 자동 조절(fit_bounds) 중 오류 발생: {e}")
+
+    
 
     print(f"지도 생성 완료: {disaster_type}")
     return fmap
