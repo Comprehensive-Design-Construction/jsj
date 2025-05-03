@@ -8,7 +8,7 @@ from typing import Dict, Optional, Tuple
 import config
 from config.settings import settings
 from core.shelter.shelter_loader import load_shelter_by_type
-from core.shelter.tmap_client import find_closest_shelter_with_tmap
+# from core.shelter.tmap_client import find_closest_shelter_with_tmap
 from core.shelter.map_visualizer import create_shelter_map
 
 
@@ -21,6 +21,7 @@ async def _generate_single_map_html(
     user_location = Point(longitude, latitude)
     map_html: Optional[str] = None
     shelter_obj = None
+    shelter_gdf_for_map = None   # 추가한 부분 0503
 
     print(f"\n--- 지도 생성 시작: {disaster_type} (반경: {radius_km}km) ---")
     try:
@@ -29,7 +30,18 @@ async def _generate_single_map_html(
         if shelter_obj.gdf is None or shelter_obj.gdf.empty:
             print(f"  {disaster_type}: 로드된 유효 대피소 데이터 없음.")
             # 대피소 없어도 빈 지도 생성 (사용자 위치만 표시)
-            fmap = create_shelter_map(None, None, user_location, disaster_type)
+            # fmap = create_shelter_map(None, None, user_location, disaster_type) 오류나면 이부분 살려야함 
+
+            fmap = create_shelter_map(
+                shelter_gdf=None,
+                closest_shelter_row=None, # None 전달
+                user_location=user_location,
+                disaster_type=disaster_type,
+                min_distance_m=None,      # None 전달
+                min_time_sec=None,      # None 전달
+                # route_coordinates=None, # create_shelter_map 에서 이 파라미터 제거했다면 생략
+            )
+
             # 지도에 대피소 없음을 알리는 메시지 추가 (선택 사항)
             folium.map.Marker(
                 location=(latitude, longitude),
@@ -53,39 +65,40 @@ async def _generate_single_map_html(
                 # 필터링된 결과가 없어도, 전체 데이터로 API 탐색은 계속 진행할 수 있음
                 # 또는 여기서 멈추고 빈 지도 반환 결정 가능
                 # 여기서는 필터링된 목록이 없으면 API 탐색은 전체 원본 데이터로 진행하도록 함 (선택)
-                shelter_gdf_for_api = shelter_obj.gdf  # 필터링 안되면 원본 사용
-                shelter_gdf_for_map = None  # 지도에는 필터링 결과 없음을 명시
-                print(
-                    f"  {disaster_type}: 반경 내 대피소는 없으나, 전체 {len(shelter_gdf_for_api)}개 대상으로 최단 거리 탐색 시도."
-                )
+                # shelter_gdf_for_api = shelter_obj.gdf  # 필터링 안되면 원본 사용
+                # shelter_gdf_for_map = None  # 지도에는 필터링 결과 없음을 명시
+                # print(
+                #     f"  {disaster_type}: 반경 내 대피소는 없으나, 전체 {len(shelter_gdf_for_api)}개 대상으로 최단 거리 탐색 시도."
+                # )  <<< 68~72 줄 살려야함
+
             else:
                 print(
                     f"  {disaster_type}: 반경 내 {len(shelter_gdf_filtered)}개 대피소 필터링됨."
                 )
-                shelter_gdf_for_api = shelter_gdf_filtered  # API 탐색은 필터링된 것으로
-                shelter_gdf_for_map = shelter_gdf_filtered  # 지도에도 필터링된 것 표시
+                # shelter_gdf_for_api = shelter_gdf_filtered  # API 탐색은 필터링된 것으로
+                # shelter_gdf_for_map = shelter_gdf_filtered  # 지도에도 필터링된 것 표시
         except AttributeError:
             print(
                 f"오류: Shelter 객체에 'get_filtered_by_radius' 메서드가 없습니다. 필터링 없이 진행합니다."
             )
             shelter_gdf_for_api = shelter_obj.gdf  # 필터링 불가 시 원본 사용
-            shelter_gdf_for_map = shelter_obj.gdf  # 지도에도 원본 표시
+            # shelter_gdf_for_map = shelter_obj.gdf  # 지도에도 원본 표시
 
-        # 3. 가장 가까운 대피소 탐색 (TMAP API, 비동기)
-        #    API 탐색은 필터링된 결과(shelter_gdf_for_api)로 수행
-        closest_shelter, travel_time_sec, travel_distance_m, route_coords = (
-            await find_closest_shelter_with_tmap(shelter_gdf_for_api, user_location)
-        )
+        # # 3. 가장 가까운 대피소 탐색 (TMAP API, 비동기)
+        # #    API 탐색은 필터링된 결과(shelter_gdf_for_api)로 수행
+        # closest_shelter, travel_time_sec, travel_distance_m, route_coords = (
+        #     await find_closest_shelter_with_tmap(shelter_gdf_for_api, user_location)
+        # )
 
         # 4. 지도 시각화 (Folium)
         fmap = create_shelter_map(
             shelter_gdf=shelter_gdf_for_map,  # 지도에 표시할 대피소 GDF
-            closest_shelter_row=closest_shelter,  # API로 찾은 가장 가까운 대피소 정보
+            closest_shelter_row= None, #closest_shelter,  # API로 찾은 가장 가까운 대피소 정보
             user_location=user_location,
             disaster_type=disaster_type,
-            min_distance_m=travel_distance_m,
-            min_time_sec=travel_time_sec,
-            route_coordinates=route_coords,  # 경로 좌표 전달
+            min_distance_m= None, #travel_distance_m,
+            min_time_sec= None, #travel_time_sec,
+            # route_coordinates=route_coords,  # 경로 좌표 전달
         )
         map_html = fmap._repr_html_()
 
