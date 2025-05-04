@@ -279,8 +279,8 @@ def calculate_apparent_temp_ali(
         temp = weather_data.get("temp")
         humidity = weather_data.get("humidity")
         wind = weather_data.get("wind_speed")
-        min_temp = weather_data.get("min_temp")
-        max_temp = weather_data.get("max_temp")
+        min_temp = weather_data.get("temp_min")
+        max_temp = weather_data.get("temp_max")
 
         if None in [pressure, temp, humidity, wind, min_temp, max_temp]:
             results["error"] = (
@@ -351,8 +351,8 @@ def calculate_stroke_index(weather_data: Dict[str, Optional[float]]) -> Dict[str
     results = {"stroke_index_score": None, "stroke_index_level": None, "error": None}
     try:
         pressure = weather_data.get("pressure")
-        min_temp = weather_data.get("min_temp")
-        max_temp = weather_data.get("max_temp")
+        min_temp = weather_data.get("temp_min")
+        max_temp = weather_data.get("temp_max")
         humidity = weather_data.get("humidity")
 
         if None in [pressure, min_temp, max_temp, humidity]:
@@ -394,8 +394,8 @@ def calculate_cold_index(weather_data: Dict[str, Optional[float]]) -> Dict[str, 
     results = {"cold_index_score": None, "cold_index_level": None, "error": None}
     try:
         pressure = weather_data.get("pressure")
-        min_temp = weather_data.get("min_temp")
-        max_temp = weather_data.get("max_temp")
+        min_temp = weather_data.get("temp_min")
+        max_temp = weather_data.get("temp_max")
         humidity = weather_data.get("humidity")
 
         if None in [pressure, min_temp, max_temp, humidity]:
