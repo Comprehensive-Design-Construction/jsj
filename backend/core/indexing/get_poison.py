@@ -35,7 +35,10 @@ def _setup_selenium_driver() -> webdriver.Chrome:
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36"
     )
     try:
-        service = Service(executable_path=ChromeDriverManager().install())
+        service = Service(
+            executable_path=ChromeDriverManager().install(),
+            service_args=["--verbose", "--log-path=/tmp/chromedriver.log"],
+        )
         driver = webdriver.Chrome(service=service, options=options)
         driver.implicitly_wait(5)
         logger.info("Selenium WebDriver setup successful.")
