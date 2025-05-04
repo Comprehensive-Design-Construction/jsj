@@ -26,18 +26,17 @@ def _setup_selenium_driver() -> webdriver.Chrome:
     """Selenium WebDriver 설정 및 생성"""
     logger.info("Setting up Selenium WebDriver...")
     options = Options()
-    options.add_argument("--headless")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--window-size=1920,1080")  # 명시적 크기 지정
-    # User-Agent 설정 (차단 방지)
-    options.add_argument(
-        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36"
-    )
+    # options.add_argument("--headless")
+    # options.add_argument("--no-sandbox")
+    # options.add_argument("--disable-dev-shm-usage")
+    # options.add_argument("--window-size=1920,1080")  # 명시적 크기 지정
+    # # User-Agent 설정 (차단 방지)
+    # options.add_argument(
+    #     "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36"
+    # )
     try:
         service = Service(
             executable_path=ChromeDriverManager().install(),
-            service_args=["--verbose", "--log-path=/tmp/chromedriver.log"],
         )
         driver = webdriver.Chrome(service=service, options=options)
         driver.implicitly_wait(5)
