@@ -66,10 +66,10 @@ async def fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
                     "main": {
                         "temp": main_data.get("temp"),
                         "feels_like": main_data.get("feels_like"),
-                        "min_temp": main_data.get(
+                        "temp_min": main_data.get(
                             "temp_min"
                         ),  # API 필드명 확인: temp_min
-                        "max_temp": main_data.get(
+                        "temp_max": main_data.get(
                             "temp_max"
                         ),  # API 필드명 확인: temp_max
                         "pressure": main_data.get("pressure"),
