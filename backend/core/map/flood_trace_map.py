@@ -22,7 +22,7 @@ def convert_to_hex_color(color_value, default_color="#808080"):
 def _fetch_flood_trace_html():
     # --- 파일 읽기 ---
     try:
-        gdf = gpd.read_file("./backend/datasets/map/flood.gpkg")
+        gdf = gpd.read_file("./datasets/map/flood.gpkg")
     except Exception as e:
         print(f"Error reading GeoPackage: {e}")
         return
