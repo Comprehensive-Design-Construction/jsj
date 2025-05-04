@@ -226,5 +226,5 @@ if __name__ == "__main__":
     # reload=True는 개발 중에 유용하지만, 프로덕션에서는 False로 설정하거나 Gunicorn 등 사용
     # workers=12는 로컬 테스트에는 과할 수 있음. CPU 코어 수 고려하여 조절.
     uvicorn.run(
-        "main:app", host="0.0.0.0", port=5000, reload=True
+        "main:app", host="0.0.0.0", port=5000, reload=False
     )  # 개발 시 workers=1, reload=True 권장
