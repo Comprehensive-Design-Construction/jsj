@@ -1,37 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter/webview_flutter.dart'; // WebView 관련 import 유지
 
 import '../main_screen_notifier.dart'; // mainScreenNotifierProvider 사용
 import '../main_screen_state.dart'; // MainScreenState 사용
+// --- 공용 위젯 import ---
+import '../../../widgets/common/section_title_widget.dart';
+import '../../../widgets/common/map_type_dropdown_widget.dart';
+import '../../../widgets/common/webview_map_widget.dart';
+// ---------------------
 
 class EnvMapSectionWidget extends ConsumerWidget {
   const EnvMapSectionWidget({
     super.key,
-    required this.envMapTypes,
-    required this.buildSectionTitle,
-    required this.buildMapTypeDropdown,
-    required this.buildWebViewMap,
+    required this.envMapTypes, // 지도 타입 정보는 계속 받음
   });
 
   final Map<String, String> envMapTypes;
-  final Widget Function(BuildContext, String, {bool showInfoIcon})
-  buildSectionTitle;
-  final Widget Function({
-    required BuildContext context,
-    required WidgetRef ref,
-    required Map<String, String> mapTypes,
-    required String selectedValueKey,
-    required Function(String?) onChangedCallback,
-  })
-  buildMapTypeDropdown;
-  final Widget Function({
-    required WebViewController? controller, // WebViewController? 타입
-    required IconData placeholderIcon,
-    required String placeholderText,
-    // double height,
-  })
-  buildWebViewMap;
+  // --- buildSectionTitle, buildMapTypeDropdown, buildWebViewMap 파라미터 제거 ---
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,17 +27,19 @@ class EnvMapSectionWidget extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        buildSectionTitle(context, '환경 지도'),
+        // --- 공용 위젯 사용 ---
+        const SectionTitleWidget(title: '환경 지도'),
         const SizedBox(height: 10),
-        buildMapTypeDropdown(
-          context: context,
-          ref: ref,
+        // --- 공용 위젯 사용 ---
+        MapTypeDropdownWidget(
           mapTypes: envMapTypes,
-          selectedValueKey: 'selectedEnvMapType',
-          onChangedCallback: (v) => notifier.setSelectedEnvMapType(v!),
+          selectedValue: state.selectedEnvMapType,
+          isLoading: state.isLoading, // 로딩 상태 전달
+          onChanged: (v) => notifier.setSelectedEnvMapType(v!),
         ),
         const SizedBox(height: 10),
-        buildWebViewMap(
+        // --- 공용 위젯 사용 ---
+        WebViewMapWidget(
           controller: state.envMapControllers[state.selectedEnvMapType],
           placeholderIcon: Icons.public,
           placeholderText:

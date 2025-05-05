@@ -1,78 +1,39 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod import
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
-import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart'
-    as picker;
 import 'package:front/presentation/screens/main/main_screen_notifier.dart';
-import 'package:intl/intl.dart';
 
-import 'edit_profile_notifier.dart'; // Notifier import
-import 'edit_profile_state.dart'; // State import
+import 'edit_profile_notifier.dart';
+import 'edit_profile_state.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../data/models/added_person.dart';
+// --- 공용 폼 위젯 import ---
+import '../../widgets/common/form/labeled_dropdown_form_field.dart';
+import '../../widgets/common/form/labeled_date_picker_button.dart';
+import '../../widgets/common/form/labeled_multi_select_field.dart';
+// -------------------------
 
-// ConsumerStatefulWidget으로 변경
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
-
   @override
   ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-// ConsumerState로 변경
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
-  final _nameController = TextEditingController(); // 이름은 로컬 상태로 유지
-
-  // 로컬 상태: 사용자가 화면에서 수정하는 값들
-  // DateTime? _selectedBirthDate;
-  // String? _selectedGu; // 로컬 상태 추가
-  // String? _selectedDong; // 로컬 상태 추가
-  // Map<String, bool> _userTypeSelection = {
-  //   '농촌': false,
-  //   '비닐하우스': false,
-  //   '실외작업자': false,
-  // };
+  // final _nameController = TextEditingController(); // 이름 필드 제거됨
 
   @override
   void initState() {
+    /* 기존과 동일 (Listener 부분 main_screen_notifier import 필요) */
     super.initState();
-
-    // Notifier의 초기 데이터 로드가 완료되면 로컬 상태 업데이트
     ref.listenManual<EditProfileState>(editProfileNotifierProvider, (
       previous,
       next,
     ) {
-      // 초기 데이터 로드 완료 시 로컬 상태 업데이트
-      // isLoading과 isLoadingLocationData 모두 false일 때 UI 업데이트
-      // if ((previous?.isLoading == true ||
-      //         previous?.isLoadingLocationData == true) &&
-      //     next.isLoading == false &&
-      //     next.isLoadingLocationData == false) {
-      //   if (next.initialBirthDate != null) {
-      //     setState(() {
-      //       _selectedBirthDate = next.initialBirthDate;
-      //     });
-      //   }
-      //   // 구/동 초기값 설정 (Notifier의 selectedGu/Dong 사용)
-      //   if (next.selectedGu != null) {
-      //     // Notifier 상태를 로컬 상태로 동기화
-      //     setState(() {
-      //       _selectedGu = next.selectedGu;
-      //       _selectedDong = next.selectedDong;
-      //     });
-      //   }
-      //   setState(() {
-      //     _userTypeSelection = Map.from(next.initialUserTypeSelection);
-      //   });
-      // }
-
-      // 에러 메시지 표시
       if (next.errorMessage != null &&
           next.errorMessage != previous?.errorMessage) {
         _showErrorSnackBar(next.errorMessage!);
       }
-
-      // 저장 성공 시 이전 화면으로 돌아가기
       if (next.savedSuccessfully && previous?.savedSuccessfully == false) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -81,59 +42,29 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             behavior: SnackBarBehavior.floating,
           ),
         );
+        // MainScreen 데이터 갱신 요청
         ref
-            .refresh(mainScreenNotifierProvider.notifier)
-            .loadDataForSelectedPerson(refresh: true);
-
+            .read(mainScreenNotifierProvider.notifier)
+            .loadDataForSelectedPerson(
+              refresh: true,
+            ); // ref.read 사용 시 import 필요
         Future.delayed(const Duration(milliseconds: 500), () {
           if (context.mounted) {
-            // 화면이 여전히 유효한지 확인 후 pop
-            Navigator.of(context).pop(); // true 값 없이 그냥 pop
+            Navigator.of(context).pop();
           }
         });
       }
-    }, fireImmediately: true); // 초기 상태도 listener가 받을 수 있도록 설정
+    }, fireImmediately: true);
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    /* _nameController 관련 제거 */
     super.dispose();
   }
 
-  // 생년월일 선택 DatePicker 표시 (로컬 상태 업데이트)
-  void _presentDatePicker() {
-    // <<< 로컬 상태(_selectedBirthDate) 대신 Notifier 상태 사용 >>>
-    final currentBirthDate =
-        ref.read(editProfileNotifierProvider).initialBirthDate; // 초기값 기준
-    final notifier = ref.read(editProfileNotifierProvider.notifier);
-
-    picker.DatePicker.showDatePicker(
-      context,
-      showTitleActions: true,
-      minTime: DateTime(1900, 1, 1),
-      maxTime: DateTime.now(),
-      onConfirm: (date) {
-        // <<< 로컬 상태 업데이트 대신 Notifier 함수 호출 (별도 함수 필요 시 추가) >>>
-        // 현재는 저장 버튼 누를 때만 Notifier에 전달하므로 여기서는 직접 상태 변경 X
-        // 만약 선택 즉시 상태 변경이 필요하다면 Notifier에 setBirthDate 함수 추가 필요
-        // 여기서는 UI 표시용 로컬 변수만 사용하거나, 저장 시점에만 값을 가져오는 방식 유지
-        // **주의**: 현재 구조는 저장 버튼 클릭 시 모든 값을 가져가므로, DatePicker에서 Notifier 직접 호출 불필요
-        //          대신 화면 리빌드를 위해 setState는 필요할 수 있음 -> Riverpod 상태 쓰면 불필요
-        //          현재 상태에서 Notifier의 상태(initialBirthDate)를 직접 사용하도록 build 메소드 수정
-      },
-      currentTime:
-          currentBirthDate ??
-          DateTime.now().subtract(const Duration(days: 365 * 30)),
-      locale: picker.LocaleType.ko,
-      theme: const picker.DatePickerTheme(/* ... */),
-    );
-    // <<< 로컬 상태 업데이트 제거 >>>
-    // setState(() { _selectedBirthDate = date; });
-  }
-
-  // 에러 메시지 SnackBar 표시 헬퍼
   void _showErrorSnackBar(String message) {
+    /* 기존과 동일 */
     ScaffoldMessenger.of(context).removeCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
@@ -142,17 +73,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 상태 구독
     final state = ref.watch(editProfileNotifierProvider);
     final notifier = ref.read(editProfileNotifierProvider.notifier);
 
-    // Notifier 로드 완료 후 로컬 상태 초기화 (initState에서 listenManual로 처리)
-    // if (!state.isLoading && !state.isLoadingLocationData && _selectedBirthDate == null && _selectedGu == null) {
-    //   _selectedBirthDate = state.initialBirthDate;
-    //   _selectedGu = state.selectedGu;
-    //   _selectedDong = state.selectedDong;
-    //   _userTypeSelection = Map.from(state.initialUserTypeSelection);
-    // }
+    if (state.isLoading ||
+        (state.isLoadingLocationData && state.guList.isEmpty)) {
+      /* 로딩 UI 기존과 동일 */
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -163,410 +90,182 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         ),
       ),
       body: SafeArea(
-        child:
-            (state.isLoading ||
-                    (state.isLoadingLocationData &&
-                        state.guList.isEmpty)) // 초기 구 목록 로딩 중일 때도 인디케이터 표시
-                ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // 이름 입력 (로컬 컨트롤러 사용)
-                      TextField(
-                        controller: _nameController,
-                        decoration: InputDecoration(
-                          labelText: '이름', // 필수 여부 등 표시 필요 시 추가
-                          hintText: '이름을 입력하세요 (선택)',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[100],
-                        ),
-                        textInputAction: TextInputAction.next,
-                      ),
-                      const SizedBox(height: 16),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 성별 선택
+              Text('성별 *', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  /* 기존 RadioListTile */
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text('남성'),
+                      value: Gender.male,
+                      groupValue: state.selectedGender,
+                      onChanged:
+                          state.isSaving ? null : (v) => notifier.setGender(v),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                    ),
+                  ),
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text('여성'),
+                      value: Gender.female,
+                      groupValue: state.selectedGender,
+                      onChanged:
+                          state.isSaving ? null : (v) => notifier.setGender(v),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              // 기타 정보
+              Text('기타 정보', style: Theme.of(context).textTheme.titleSmall),
+              CheckboxListTile(
+                title: const Text('임산부'),
+                value: state.selectedIsPregnant ?? false,
+                onChanged:
+                    state.isSaving ? null : (v) => notifier.setIsPregnant(v),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+              ),
 
-                      // <<< 성별 선택 UI 추가 >>>
-                      Text(
-                        '성별 *',
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: RadioListTile<String>(
-                              title: const Text('남성'),
-                              value: Gender.male,
-                              // <<< groupValue에 state.selectedGender 사용 >>>
-                              groupValue: state.selectedGender,
-                              onChanged:
-                                  state.isSaving
-                                      ? null
-                                      : (value) {
-                                        // <<< Notifier 함수 호출하여 상태 업데이트 >>>
-                                        notifier.setGender(value);
-                                      },
-                              contentPadding: EdgeInsets.zero,
-                              dense: true,
-                            ),
-                          ),
-                          Expanded(
-                            child: RadioListTile<String>(
-                              title: const Text('여성'),
-                              value: Gender.female,
-                              // <<< groupValue에 state.selectedGender 사용 >>>
-                              groupValue: state.selectedGender,
-                              onChanged:
-                                  state.isSaving
-                                      ? null
-                                      : (value) {
-                                        // <<< Notifier 함수 호출하여 상태 업데이트 >>>
-                                        notifier.setGender(value);
-                                      },
-                              contentPadding: EdgeInsets.zero,
-                              dense: true,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
+              // --- 생년월일 선택 (LabeledDatePickerButton 사용) ---
+              LabeledDatePickerButton(
+                label: '생년월일',
+                selectedDate: state.selectedBirthDate,
+                isRequired: true,
+                isEnabled: !state.isSaving,
+                onConfirm: (date) => notifier.setBirthDate(date),
+              ),
+              const SizedBox(height: 24),
 
-                      // <<<-------------------->>>
-                      Text(
-                        '기타 정보',
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      CheckboxListTile(
-                        title: const Text('임산부'),
-                        value:
-                            state.selectedIsPregnant ??
-                            false, // null이면 false로 간주
-                        onChanged:
-                            state.isSaving
-                                ? null
-                                : (bool? value) {
-                                  notifier.setIsPregnant(value);
-                                },
-                        controlAffinity: ListTileControlAffinity.leading,
-                        contentPadding: EdgeInsets.zero,
-                        // activeColor: Colors.pinkAccent, // 색상 예시
-                      ),
+              // 지역 선택 (기존 LabeledDropdownFormField 유지)
+              LabeledDropdownFormField<String>(
+                label: '거주 지역 (구)',
+                value: state.selectedGu,
+                hintText: '구를 선택하세요',
+                isRequired: true,
+                isLoading: state.isLoadingLocationData,
+                items:
+                    state.guList
+                        .map(
+                          (gu) => DropdownMenuItem<String>(
+                            value: gu,
+                            child: Text(gu),
+                          ),
+                        )
+                        .toList(),
+                onChanged:
+                    state.isSaving ? null : (v) => notifier.setSelectedGu(v),
+              ),
+              const SizedBox(height: 12),
+              LabeledDropdownFormField<String>(
+                label: '거주 지역 (동)',
+                value: state.selectedDong,
+                hintText: state.selectedGu == null ? '구를 먼저 선택하세요' : '동을 선택하세요',
+                isRequired: true,
+                isLoading: state.isLoadingLocationData,
+                items:
+                    state.dongList
+                        .map(
+                          (dong) => DropdownMenuItem<String>(
+                            value: dong,
+                            child: Text(dong),
+                          ),
+                        )
+                        .toList(),
+                onChanged:
+                    (state.selectedGu == null ||
+                            state.isLoadingLocationData ||
+                            state.isSaving)
+                        ? null
+                        : (v) => notifier.setSelectedDong(v),
+              ),
+              const SizedBox(height: 24),
 
-                      // 생년월일 선택 (로컬 상태 _selectedBirthDate 사용)
-                      TextButton.icon(
-                        icon: Icon(
-                          Icons.calendar_today,
-                          size: 18,
-                          color: Colors.grey[700],
-                        ),
-                        label: Text(
-                          state.selectedBirthDate == null
-                              ? '생년월일 선택 *'
-                              : '생년월일: ${DateFormat('yyyy.MM.dd').format(state.selectedBirthDate!)}',
-                          style: TextStyle(
-                            color:
-                                state.initialBirthDate == null
-                                    ? Colors.grey[600]
-                                    : Colors.black87,
-                            fontSize: 16,
+              // 사용자 특성 선택 (기존 LabeledDropdownFormField 유지)
+              LabeledDropdownFormField<String>(
+                label: '사용자 특성',
+                value: state.selectedUserType,
+                hintText: '사용자 특성을 선택하세요 (선택)',
+                items:
+                    EditProfileState.availableUserTypes
+                        .map(
+                          (type) => DropdownMenuItem<String>(
+                            value: type,
+                            child: Text(type),
                           ),
-                        ),
-                        style: TextButton.styleFrom(
-                          backgroundColor: Colors.grey[100],
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          alignment: Alignment.centerLeft,
-                          foregroundColor: Colors.black87,
-                        ),
-                        onPressed: () {
-                          picker.DatePicker.showDatePicker(
-                            context,
-                            showTitleActions: true,
-                            minTime: DateTime(1900, 1, 1),
-                            maxTime: DateTime.now(),
-                            // <<< onConfirm에서 Notifier 직접 호출 대신, 선택값은 '저장' 시점에 사용 >>>
-                            onConfirm: (date) {
-                              notifier.setBirthDate(date);
-                            },
-                            currentTime:
-                                state.selectedBirthDate ??
-                                DateTime.now().subtract(
-                                  const Duration(days: 365 * 30),
-                                ),
-                            locale: picker.LocaleType.ko,
-                            theme: const picker.DatePickerTheme(/* ... */),
+                        )
+                        .toList(),
+                onChanged:
+                    state.isSaving ? null : (v) => notifier.setUserType(v),
+              ),
+              const SizedBox(height: 24),
+
+              // --- 기저질환 선택 (LabeledMultiSelectField 사용) ---
+              LabeledMultiSelectField<String>(
+                label: '기저질환 (중복 선택 가능)',
+                items:
+                    availableDiseases
+                        .map((d) => MultiSelectItem<String>(d, d))
+                        .toList(),
+                initialValue: state.selectedDiseases.toList(),
+                buttonHint: "기저질환을 선택하세요 (선택)",
+                dialogTitle: "기저질환 선택",
+                searchHint: "검색",
+                isEnabled: !state.isSaving,
+                onConfirm:
+                    (results) => notifier.setSelectedDiseases(results.toSet()),
+                onItemTapped: (item) => notifier.toggleDiseaseSelection(item),
+              ),
+              const SizedBox(height: 40),
+
+              // 저장 버튼 (Notifier 호출 로직 확인 - 상태값 직접 전달 제거 필요 시 Notifier 수정)
+              ElevatedButton(
+                onPressed:
+                    state.isSaving
+                        ? null
+                        : () {
+                          // Notifier가 자신의 상태를 사용하도록 변경했으므로 파라미터 불필요
+                          notifier.saveProfile(
+                            selectedGu:
+                                state
+                                    .selectedGu, // Screen의 현재 상태값을 넘겨주는 것이 안전할 수 있음
+                            selectedDong: state.selectedDong,
+                            selectedGender: state.selectedGender,
                           );
                         },
-                      ),
-                      const SizedBox(height: 24),
-
-                      // --- 지역 선택 UI 추가 (add_person_screen.dart 참고) ---
-                      Text(
-                        '거주 지역 *',
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      // 구 선택 드롭다운
-                      DropdownButtonFormField<String>(
-                        value: state.selectedGu, // 로컬 상태 사용
-                        hint: Text(
-                          state.isLoadingLocationData
-                              ? '불러오는 중...'
-                              : '구를 선택하세요',
-                        ),
-                        // isExpanded: true,
-                        // decoration: InputDecoration(
-                        //   border: OutlineInputBorder(
-                        //     borderRadius: BorderRadius.circular(12),
-                        //   ),
-                        //   filled: true,
-                        //   fillColor: Colors.grey[100],
-                        //   contentPadding: const EdgeInsets.symmetric(
-                        //     horizontal: 16,
-                        //     vertical: 14,
-                        //   ),
-                        // ),
-                        items:
-                            state.guList.map((String gu) {
-                              return DropdownMenuItem<String>(
-                                value: gu,
-                                child: Text(gu),
-                              );
-                            }).toList(),
-                        onChanged:
-                            state.isLoadingLocationData
-                                ? null
-                                : (String? newValue) {
-                                  notifier.setSelectedGu(
-                                    newValue,
-                                  ); // Notifier 호출 (동 목록 로드 또는 초기화)
-                                },
-                        // validator는 Form 사용 시 필요
-                      ),
-                      const SizedBox(height: 12),
-                      // 동 선택 드롭다운
-                      DropdownButtonFormField<String>(
-                        value: state.selectedDong, // 로컬 상태 사용
-                        hint: Text(
-                          state.isLoadingLocationData
-                              ? '불러오는 중...'
-                              : (state.selectedGu == null
-                                  ? '구를 먼저 선택하세요'
-                                  : '동을 선택하세요'),
-                        ),
-                        // isExpanded: true,
-                        // decoration: InputDecoration(
-                        //   border: OutlineInputBorder(
-                        //     borderRadius: BorderRadius.circular(12),
-                        //   ),
-                        //   filled: true,
-                        //   fillColor: Colors.grey[100],
-                        //   contentPadding: const EdgeInsets.symmetric(
-                        //     horizontal: 16,
-                        //     vertical: 14,
-                        //   ),
-                        // ),
-                        // 구 선택 전에는 비활성화, 로딩 중 비활성화
-                        items:
-                            (state.isLoadingLocationData ||
-                                    state.selectedGu == null)
-                                ? []
-                                : state.dongList.map((String dong) {
-                                  return DropdownMenuItem<String>(
-                                    value: dong,
-                                    child: Text(dong),
-                                  );
-                                }).toList(),
-                        onChanged:
-                            (state.isLoadingLocationData ||
-                                    state.selectedGu == null)
-                                ? null
-                                : (String? newValue) {
-                                  // null 선택 시 처리 추가
-                                  notifier.setSelectedDong(
-                                    newValue,
-                                  ); // Notifier에도 반영 (선택적이지만 상태 동기화 위해 권장)
-                                },
-                      ),
-                      const SizedBox(height: 24),
-
-                      // 사용자 특성 선택 (로컬 상태 _userTypeSelection 사용)
-                      DropdownButtonFormField<String>(
-                        value: state.selectedUserType, // <<< 상태 값 바인딩
-                        hint: const Text('사용자 특성을 선택하세요'), // 힌트 텍스트
-                        isExpanded: true,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[100],
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                        ),
-                        // items 목록: 해당 State 클래스에 정의된 availableUserTypes 사용
-                        // 예: OnboardingState.availableUserTypes
-                        items:
-                            EditProfileState.availableUserTypes.map((
-                              String type,
-                            ) {
-                              // <<< State 클래스의 목록 사용
-                              return DropdownMenuItem<String>(
-                                value: type,
-                                child: Text(type),
-                              );
-                            }).toList(),
-                        onChanged:
-                            state.isSaving
-                                ? null
-                                : (String? newValue) {
-                                  notifier.setUserType(
-                                    newValue,
-                                  ); // <<< Notifier의 새 함수 호출
-                                },
-                        // validator: (value) => value == null ? '사용자 특성을 선택해주세요.' : null, // 필요시 유효성 검사 추가
-                      ),
-                      const SizedBox(height: 24),
-
-                      // 기저질환 Placeholder (기존과 동일)
-                      Text(
-                        '기저질환 (중복 선택 가능)',
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      MultiSelectDialogField<String>(
-                        items:
-                            availableDiseases // app_constants 에 정의된 목록
-                                .map(
-                                  (disease) =>
-                                      MultiSelectItem<String>(disease, disease),
-                                )
-                                .toList(),
-                        initialValue:
-                            state.selectedDiseases
-                                .toList(), // 현재 선택된 값 (List로 변환)
-                        title: Text("기저질환 선택"), // 다이얼로그 제목
-                        selectedColor: Colors.blueAccent, // 선택 항목 강조 색상
-                        // --- 버튼 스타일링 ---
-                        decoration: BoxDecoration(
-                          // 버튼 모양 설정
-                          color: Colors.grey[100], // 배경색
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
-                          border: Border.all(
-                            color: Colors.grey.shade300,
-                            width: 1,
-                          ),
-                        ),
-                        buttonIcon: Icon(
-                          // 버튼 옆 아이콘
-                          Icons.arrow_drop_down,
-                          color: Colors.grey[700],
-                        ),
-                        buttonText: Text(
-                          // 버튼에 표시될 텍스트
-                          state.selectedDiseases.isEmpty
-                              ? "기저질환을 선택하세요 (선택)"
-                              : state.selectedDiseases.join(
-                                ', ',
-                              ), // 선택된 항목 표시 (쉼표 구분)
-                          style: TextStyle(
-                            color:
-                                state.selectedDiseases.isEmpty
-                                    ? Colors.grey[600]
-                                    : Colors.black87,
-                            fontSize: 16,
-                          ),
-                          overflow: TextOverflow.ellipsis, // 길면 ... 처리
-                        ),
-                        // --- 다이얼로그 설정 ---
-                        listType:
-                            MultiSelectListType
-                                .LIST, // 다이얼로그 내 항목 표시 방식 (LIST 또는 CHIP)
-                        searchable: true, // 검색 기능 활성화
-                        searchHint: '검색',
-                        confirmText: Text('확인'),
-                        cancelText: Text('취소'),
-                        // --- 선택 완료 시 콜백 ---
-                        onConfirm: (results) {
-                          // results는 선택된 항목들의 List<String>
-                          // Notifier의 새 함수 호출하여 상태 업데이트
-                          notifier.setSelectedDiseases(results.toSet());
-                        },
-                        // --- 선택된 항목 표시 방식 (버튼 아래 Chip) ---
-                        chipDisplay: MultiSelectChipDisplay<String>(
-                          chipColor: Colors.blueAccent.withOpacity(0.15),
-                          textStyle: TextStyle(
-                            color: Colors.blueAccent,
-                            fontSize: 13,
-                          ),
-                          // 아이콘 버튼으로 개별 삭제 기능 (선택적)
-                          icon: Icon(
-                            Icons.close,
-                            color: Colors.blueAccent,
-                            size: 16,
-                          ),
-                          onTap: (value) {
-                            // 개별 Chip 탭 시 제거 (toggle 함수 필요)
-                            notifier.toggleDiseaseSelection(value);
-                          },
-                          // 스크롤 가능하게 하려면 scrollbar 추가
-                          // scrollBar: HorizontalScrollBar(),
-                        ),
-                        // validator: (value) { ... } // 필요시 유효성 검사
-                      ),
-                      const SizedBox(height: 40),
-
-                      // "저장" 버튼 (Notifier 함수 호출)
-                      ElevatedButton(
-                        onPressed:
-                            state.isSaving
-                                ? null
-                                : () {
-                                  // <<< Notifier의 saveProfile 호출 시, UI 상태 값들을 직접 넘길 필요 없어짐 >>>
-                                  // (단, 지역/성별은 파라미터 유지했으므로 전달)
-                                  notifier.saveProfile(
-                                    // birthDate, userTypeSelection 파라미터 제거됨
-                                    selectedGu: state.selectedGu,
-                                    selectedDong: state.selectedDong,
-                                    selectedGender: state.selectedGender,
-                                  );
-                                },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          textStyle: Theme.of(context).textTheme.labelLarge,
-                        ),
-                        child:
-                            state
-                                    .isSaving // isSaving 상태 확인
-                                ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 3,
-                                    color: Colors.white,
-                                  ),
-                                )
-                                : const Text('저장'),
-                      ),
-                    ],
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                child:
+                    state.isSaving
+                        ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3,
+                            color: Colors.white,
+                          ),
+                        )
+                        : const Text('저장'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -16,6 +16,7 @@ class AddPersonState extends Equatable {
   final List<String> guList;
   final bool isLoadingDong;
   final List<String> dongList;
+  final String? locationErrorText; // <<< 지역 로딩 에러 메시지 추가
   final bool isSaving;
   final String? errorMessage;
   final bool savedSuccessfully;
@@ -43,6 +44,7 @@ class AddPersonState extends Equatable {
     this.guList = const [],
     this.isLoadingDong = false,
     this.dongList = const [],
+    this.locationErrorText, // <<< 추가
     this.selectedGender,
     this.isSaving = false,
     this.errorMessage,
@@ -64,6 +66,8 @@ class AddPersonState extends Equatable {
     List<String>? guList,
     bool? isLoadingDong,
     List<String>? dongList,
+    String? locationErrorText, // <<< 추가
+    bool clearLocationErrorText = false, // <<< 추가
     String? selectedGender,
     Set<String>? selectedDiseases, // <<< 추가
     bool? isSaving,
@@ -87,6 +91,10 @@ class AddPersonState extends Equatable {
       guList: guList ?? this.guList,
       isLoadingDong: isLoadingDong ?? this.isLoadingDong,
       dongList: dongList ?? this.dongList,
+      locationErrorText:
+          clearLocationErrorText
+              ? null
+              : locationErrorText ?? this.locationErrorText, // <<< 추가
       selectedGender: selectedGender ?? this.selectedGender,
       selectedDiseases: selectedDiseases ?? this.selectedDiseases, // <<< 추가
       isSaving: isSaving ?? this.isSaving,
@@ -110,6 +118,7 @@ class AddPersonState extends Equatable {
     guList,
     isLoadingDong,
     dongList,
+    locationErrorText,
     selectedGender,
     isSaving,
     errorMessage,
