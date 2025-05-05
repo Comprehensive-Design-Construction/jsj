@@ -40,8 +40,14 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
       final String? initialUserType =
           await _prefsService.getUserType(); // <<< 수정: 단일 특성 로드
 
+      final List<String>? initialDiseasesList =
+          await _prefsService.getUserDiseases(); // <<< 로드
+      final Set<String> initialDiseasesSet =
+          initialDiseasesList?.toSet() ?? const {}; // <<< List -> Set
+
       final (savedGu, savedDong) = await _prefsService.getMyGuDong();
       final String? savedGender = await _prefsService.getUserGender();
+      final bool? initialIsPregnant = await _prefsService.getIsPregnant();
       final initialGender = savedGender ?? Gender.male;
 
       state = state.copyWith(
@@ -49,10 +55,14 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
         initialBirthDate: initialBirthDate,
         // initialUserTypeSelection: initialUserTypeSelection, // <<< 제거
         initialUserType: initialUserType, // <<< 추가
+        initialIsPregnant: initialIsPregnant,
         selectedBirthDate: initialBirthDate,
         // selectedUserTypeSelection: Map.from(initialUserTypeSelection), // <<< 제거
         selectedUserType: initialUserType, // <<< 추가
         selectedGender: initialGender,
+        initialDiseases: initialDiseasesSet, // <<< 초기값 설정
+        selectedDiseases: initialDiseasesSet, // <<< 선택값도 초기값으로 설정
+        selectedIsPregnant: initialIsPregnant,
         selectedGu: savedGu,
       );
       print("EditProfileNotifier: User basic data loaded.");
@@ -105,6 +115,31 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
   void setGender(String? gender) {
     if (gender != null && gender != state.selectedGender) {
       state = state.copyWith(selectedGender: gender);
+    }
+  }
+
+  void setIsPregnant(bool? value) {
+    state = state.copyWith(selectedIsPregnant: value);
+  }
+
+  // 기저 질환 선택/해제 처리 함수
+  void toggleDiseaseSelection(String diseaseName) {
+    // 현재 Set 복사 (불변성 유지)
+    final currentSelection = Set<String>.from(state.selectedDiseases);
+    if (currentSelection.contains(diseaseName)) {
+      currentSelection.remove(diseaseName); // 있으면 제거
+    } else {
+      currentSelection.add(diseaseName); // 없으면 추가
+    }
+    // 변경된 Set으로 상태 업데이트 (각 Notifier의 State 타입에 맞게 copyWith 호출)
+    state = state.copyWith(selectedDiseases: currentSelection);
+    // 아래 각 Notifier 수정 시 이 함수 호출 부분 참고
+  }
+
+  void setSelectedDiseases(Set<String> newSelection) {
+    // 상태 변경 시에만 업데이트 (불필요한 리빌드 방지)
+    if (state.selectedDiseases != newSelection) {
+      state = state.copyWith(selectedDiseases: newSelection);
     }
   }
 
@@ -230,6 +265,9 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
       final String? userTypeToSave =
           currentSelectedUserType == '없음' ? null : currentSelectedUserType;
 
+      final List<String> selectedDiseasesList =
+          state.selectedDiseases.toList(); // <<< Set -> List
+
       // 로컬 저장소에 수정된 정보 저장
       await _prefsService.saveUserInfo(
         age: age,
@@ -237,7 +275,11 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
         userType: userTypeToSave, // <<< 수정
         gender: selectedGender,
       );
+      await _prefsService.saveUserDiseases(
+        selectedDiseasesList,
+      ); // <<< 기저 질환 저장
       await _prefsService.saveMyGuDong(selectedGu, selectedDong);
+      await _prefsService.saveIsPregnant(state.selectedIsPregnant);
 
       if (!mounted) return; // 비동기 호출 후 mounted 확인
 
@@ -247,6 +289,8 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
         initialBirthDate: currentBirthDate,
         // initialUserTypeSelection: Map.from(currentUserTypes), // <<< 제거
         initialUserType: currentSelectedUserType, // <<< 수정: 저장된 값으로 초기값 업데이트
+        initialDiseases: state.selectedDiseases,
+        initialIsPregnant: state.selectedIsPregnant,
       );
       print("EditProfileNotifier: Profile saved successfully.");
     } catch (e) {

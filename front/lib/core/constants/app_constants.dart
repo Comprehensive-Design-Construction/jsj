@@ -33,6 +33,13 @@ const List<String> defaultMajorIndices = [
   '미세먼지 지수', // 예시
 ];
 
+const List<String> availableDiseases = [
+  '당뇨병', // Diabetes (condition 7)
+  '심뇌혈관질환', // Cardiovascular (condition 8)
+  '호흡기 질환', // Respiratory (condition 9)
+  // 필요시 다른 질환 추가
+];
+
 // --- 사용자 정보 관련 상수 추가 ---
 const String myInfoId = 'MY_INFO'; // '내 정보'를 나타내는 고유 ID
 // ---------------------------------

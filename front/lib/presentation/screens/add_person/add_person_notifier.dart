@@ -68,6 +68,30 @@ class AddPersonNotifier extends StateNotifier<AddPersonState> {
     state = state.copyWith(selectedGender: gender);
   }
 
+  void setIsPregnant(bool? value) {
+    state = state.copyWith(selectedIsPregnant: value);
+  }
+
+  // 기저 질환 선택/해제 처리 함수
+  void toggleDiseaseSelection(String diseaseName) {
+    // 현재 Set 복사 (불변성 유지)
+    final currentSelection = Set<String>.from(state.selectedDiseases);
+    if (currentSelection.contains(diseaseName)) {
+      currentSelection.remove(diseaseName); // 있으면 제거
+    } else {
+      currentSelection.add(diseaseName); // 없으면 추가
+    }
+    // 변경된 Set으로 상태 업데이트 (각 Notifier의 State 타입에 맞게 copyWith 호출)
+    state = state.copyWith(selectedDiseases: currentSelection);
+    // 아래 각 Notifier 수정 시 이 함수 호출 부분 참고
+  }
+
+  void setSelectedDiseases(Set<String> newSelection) {
+    // 상태 변경 시에만 업데이트 (불필요한 리빌드 방지)
+    if (state.selectedDiseases != newSelection) {
+      state = state.copyWith(selectedDiseases: newSelection);
+    }
+  }
   // --- 로직 함수 ---
 
   // 구 목록 불러오기 (내부 사용)
@@ -141,7 +165,9 @@ class AddPersonNotifier extends StateNotifier<AddPersonState> {
           state.selectedUserType; // UI에서 선택한 근무 유형
 
       // TODO: 향후 기저 질환 선택 UI 구현 시, 여기서 선택된 기저 질환 목록을 가져와야 함.
-      final List<String>? selectedDiseases = []; // 현재는 기저 질환 선택 기능 없으므로 빈 리스트
+      final List<String> selectedDiseasesList =
+          state.selectedDiseases.toList(); // <<< Set -> List
+      await _prefsService.saveIsPregnant(state.selectedIsPregnant);
 
       final newPerson = AddedPerson(
         id: const Uuid().v4(),
@@ -150,13 +176,17 @@ class AddPersonNotifier extends StateNotifier<AddPersonState> {
         gu: state.selectedGu,
         dong: state.selectedDong,
         gender: state.selectedGender,
+        isPregnant: state.selectedIsPregnant,
         latitude: coords.latitude,
         longitude: coords.longitude,
         workingType:
             selectedWorkingType == '없음'
                 ? null
                 : selectedWorkingType, // <<< 근무 유형 저장
-        diseases: selectedDiseases, // <<< 기저 질환 저장 (현재는 빈 리스트)
+        diseases:
+            selectedDiseasesList.isNotEmpty
+                ? selectedDiseasesList
+                : null, // <<< 기저 질환 저장 (현재는 빈 리스트)
       );
 
       await _prefsService.addPerson(newPerson);

@@ -95,6 +95,30 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     state = state.copyWith(selectedDong: dong, clearSelectedDong: dong == null);
   }
 
+  void setIsPregnant(bool? value) {
+    state = state.copyWith(selectedIsPregnant: value);
+  }
+
+  // 기저 질환 선택/해제 처리 함수
+  void toggleDiseaseSelection(String diseaseName) {
+    // 현재 Set 복사 (불변성 유지)
+    final currentSelection = Set<String>.from(state.selectedDiseases);
+    if (currentSelection.contains(diseaseName)) {
+      currentSelection.remove(diseaseName); // 있으면 제거
+    } else {
+      currentSelection.add(diseaseName); // 없으면 추가
+    }
+    // 변경된 Set으로 상태 업데이트 (각 Notifier의 State 타입에 맞게 copyWith 호출)
+    state = state.copyWith(selectedDiseases: currentSelection);
+    // 아래 각 Notifier 수정 시 이 함수 호출 부분 참고
+  }
+
+  void setSelectedDiseases(Set<String> newSelection) {
+    // 상태 변경 시에만 업데이트 (불필요한 리빌드 방지)
+    if (state.selectedDiseases != newSelection) {
+      state = state.copyWith(selectedDiseases: newSelection);
+    }
+  }
   // --- 로직 함수 ---
 
   // 나이 계산 (기존 로직)
@@ -144,6 +168,8 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       //         .toList();
       // final List<String> diseaseParam = [...selectedTypes];
       final String? selectedType = state.selectedUserType;
+      final List<String> selectedDiseasesList =
+          state.selectedDiseases.toList(); // <<< Set -> List
 
       // 로컬 저장소에 정보 저장
       await _prefsService.saveUserInfo(
@@ -152,7 +178,9 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
         gender: state.selectedGender,
       );
       // '내 정보'의 구/동 정보 저장 추가
+      await _prefsService.saveUserDiseases(selectedDiseasesList);
       await _prefsService.saveMyGuDong(state.selectedGu, state.selectedDong);
+      await _prefsService.saveIsPregnant(state.selectedIsPregnant);
       await _prefsService.setOnboardingComplete(); // 온보딩 완료 플래그 설정
 
       state = state.copyWith(isSaving: false, onboardingProcessComplete: true);
@@ -179,6 +207,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
         userType: null,
         gender: Gender.male,
       );
+      await _prefsService.saveUserDiseases(null);
       // '내 정보' 구/동 정보는 저장하지 않음 (또는 명시적으로 null 저장)
       await _prefsService.saveMyGuDong(null, null);
       await _prefsService.setOnboardingComplete(); // 온보딩 완료 플래그 설정

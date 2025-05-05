@@ -4,6 +4,9 @@ import 'package:flutter/material.dart'; // DateTime 사용
 @immutable
 class AddPersonState extends Equatable {
   final DateTime? selectedBirthDate;
+  final bool? initialIsPregnant;
+  final bool? selectedIsPregnant;
+  final Set<String> selectedDiseases; // <<< 추가
   final String? selectedGu;
   final String? selectedDong;
   final String? selectedGender;
@@ -33,6 +36,9 @@ class AddPersonState extends Equatable {
     this.selectedDong,
     // this.userTypeSelection = const { ... }, // <<< 제거
     this.selectedUserType, // <<< 추가
+    this.initialIsPregnant,
+    this.selectedIsPregnant,
+    this.selectedDiseases = const {}, // <<< 기본값 빈 Set
     this.isLoadingGu = false,
     this.guList = const [],
     this.isLoadingDong = false,
@@ -51,12 +57,15 @@ class AddPersonState extends Equatable {
     bool clearSelectedDong = false,
     // Map<String, bool>? userTypeSelection, // <<< 제거
     String? selectedUserType, // <<< 추가
+    bool? initialIsPregnant,
+    bool? selectedIsPregnant,
     bool clearSelectedUserType = false, // <<< 추가
     bool? isLoadingGu,
     List<String>? guList,
     bool? isLoadingDong,
     List<String>? dongList,
     String? selectedGender,
+    Set<String>? selectedDiseases, // <<< 추가
     bool? isSaving,
     String? errorMessage,
     bool clearErrorMessage = false,
@@ -64,6 +73,8 @@ class AddPersonState extends Equatable {
   }) {
     return AddPersonState(
       selectedBirthDate: selectedBirthDate ?? this.selectedBirthDate,
+      initialIsPregnant: initialIsPregnant ?? this.initialIsPregnant,
+      selectedIsPregnant: selectedIsPregnant ?? this.selectedIsPregnant,
       selectedGu: clearSelectedGu ? null : selectedGu ?? this.selectedGu,
       selectedDong:
           clearSelectedDong ? null : selectedDong ?? this.selectedDong,
@@ -77,6 +88,7 @@ class AddPersonState extends Equatable {
       isLoadingDong: isLoadingDong ?? this.isLoadingDong,
       dongList: dongList ?? this.dongList,
       selectedGender: selectedGender ?? this.selectedGender,
+      selectedDiseases: selectedDiseases ?? this.selectedDiseases, // <<< 추가
       isSaving: isSaving ?? this.isSaving,
       errorMessage:
           clearErrorMessage ? null : errorMessage ?? this.errorMessage,
@@ -91,6 +103,9 @@ class AddPersonState extends Equatable {
     selectedDong,
     // userTypeSelection, // <<< 제거
     selectedUserType, // <<< 추가
+    initialIsPregnant,
+    selectedIsPregnant,
+    selectedDiseases, // <<< 추가
     isLoadingGu,
     guList,
     isLoadingDong,

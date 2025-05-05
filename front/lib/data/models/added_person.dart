@@ -18,6 +18,7 @@ class AddedPerson {
   final String? workingType; // <<< 이름 변경 (단일 근무 유형)
   final List<String>? diseases; // <<< 기저 질환 필드 추가
   final String? gender;
+  final bool? isPregnant;
 
   AddedPerson({
     required this.id,
@@ -31,6 +32,7 @@ class AddedPerson {
     this.workingType, // <<< 이름 변경
     this.diseases, // <<< 추가
     this.gender,
+    this.isPregnant,
   });
 
   // 나이 계산 getter (유지)
@@ -59,6 +61,7 @@ class AddedPerson {
       'workingType': workingType, // <<< 이름 변경
       'diseases': diseases, // <<< 추가
       'gender': gender,
+      'isPregnant': isPregnant,
     };
   }
 
@@ -82,6 +85,7 @@ class AddedPerson {
               ?.cast<String>()
               .toList(), // <<< 추가
       gender: json['gender'] as String?,
+      isPregnant: json['isPregnant'] as bool?,
     );
   }
 }

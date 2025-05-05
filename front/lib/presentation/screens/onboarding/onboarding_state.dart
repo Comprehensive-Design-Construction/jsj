@@ -7,7 +7,10 @@ import '../../../data/models/added_person.dart';
 @immutable
 class OnboardingState extends Equatable {
   final DateTime? selectedBirthDate;
+  final bool? initialIsPregnant;
+  final bool? selectedIsPregnant;
   // final Map<String, bool> userTypeSelection;
+  final Set<String> selectedDiseases; // <<< 기저 질환 Set 추가
   final String? selectedUserType;
   final String? selectedGu;
   final String? selectedDong;
@@ -36,12 +39,15 @@ class OnboardingState extends Equatable {
     //   '실외작업자': false,
     // },
     this.selectedUserType,
+    this.initialIsPregnant,
+    this.selectedIsPregnant,
     this.selectedGu,
     this.selectedDong,
     this.guList = const [],
     this.dongList = const [],
     this.isLoadingLocationData = true,
     this.selectedGender, // <<< 초기값 null
+    this.selectedDiseases = const {},
     this.isSaving = false,
     this.errorMessage,
     this.onboardingProcessComplete = false,
@@ -52,6 +58,8 @@ class OnboardingState extends Equatable {
     // Map<String, bool>? userTypeSelection,
     String? selectedUserType,
     bool clearSelectedUserType = false,
+    bool? initialIsPregnant,
+    bool? selectedIsPregnant,
     String? selectedGu,
     bool clearSelectedGu = false,
     String? selectedDong,
@@ -60,6 +68,7 @@ class OnboardingState extends Equatable {
     List<String>? dongList,
     bool? isLoadingLocationData,
     String? selectedGender, // <<< copyWith에 추가
+    Set<String>? selectedDiseases, // <<< 추가
     bool? isSaving,
     String? errorMessage,
     bool clearErrorMessage = false,
@@ -67,6 +76,8 @@ class OnboardingState extends Equatable {
   }) {
     return OnboardingState(
       selectedBirthDate: selectedBirthDate ?? this.selectedBirthDate,
+      initialIsPregnant: initialIsPregnant ?? this.initialIsPregnant,
+      selectedIsPregnant: selectedIsPregnant ?? this.selectedIsPregnant,
       // userTypeSelection: userTypeSelection ?? this.userTypeSelection,
       selectedUserType:
           clearSelectedUserType
@@ -80,6 +91,7 @@ class OnboardingState extends Equatable {
       isLoadingLocationData:
           isLoadingLocationData ?? this.isLoadingLocationData,
       selectedGender: selectedGender ?? this.selectedGender, // <<< 추가
+      selectedDiseases: selectedDiseases ?? this.selectedDiseases, // <<< 추가
       isSaving: isSaving ?? this.isSaving,
       errorMessage:
           clearErrorMessage ? null : errorMessage ?? this.errorMessage,
@@ -93,12 +105,15 @@ class OnboardingState extends Equatable {
     selectedBirthDate,
     // userTypeSelection,
     selectedUserType,
+    initialIsPregnant,
+    selectedIsPregnant,
     selectedGu,
     selectedDong,
     guList,
     dongList,
     isLoadingLocationData,
     selectedGender, // <<< props에 추가
+    selectedDiseases, // <<< 추가
     isSaving,
     errorMessage,
     onboardingProcessComplete,

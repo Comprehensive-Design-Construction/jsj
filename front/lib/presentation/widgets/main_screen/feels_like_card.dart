@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
-import 'dart:math'; // max 함수 사용 위해 추가
-
+import 'dart:math';
 import '../../../data/models/ui/feels_like_data.dart';
-import '../common/speech_bubble.dart'; // 분리된 SpeechBubble 위젯 import
+import '../common/speech_bubble.dart';
+// 상세 페이지 import (추후 생성 후 경로 수정)
+import '../../screens/index_detail/index_detail_screen.dart';
+// PreferencesService import (기저질환 등 정보 가져오기 위함)
+import '../../../core/utils/preferences_service.dart';
+// Riverpod import (ref 사용 위함) - ConsumerWidget으로 변경 또는 ref 전달 필요
+// 여기서는 onTap 내에서 임시로 Provider를 직접 read하는 방식으로 처리 (개선 가능)
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../screens/main/main_screen_notifier.dart'; // provider 사용 위함
 
-class FeelsLikeCard extends StatelessWidget {
+class FeelsLikeCard extends ConsumerWidget {
   final FeelsLikeData feelsLikeData;
   const FeelsLikeCard({Key? key, required this.feelsLikeData})
     : super(key: key);
@@ -37,7 +44,7 @@ class FeelsLikeCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // 프로그레스 바 관련 상수 (새 디자인 기준)
     const double speechBubbleWidth = 60.0;
     const double thumbRadius = 10.0;
@@ -65,6 +72,7 @@ class FeelsLikeCard extends StatelessWidget {
         children: [
           // --- 상단: 아이콘, 온도 --- (상태 태그는 프로그레스 바로 이동)
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 아이콘 (배경색은 statusColor 사용)
               Container(
@@ -82,14 +90,56 @@ class FeelsLikeCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               // 온도 텍스트
-              Text(
-                '${feelsLikeData.temperature.toStringAsFixed(1)}°', // 소수점 한 자리
-                style: const TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  height: 1.0,
+              Expanded(
+                // Expanded 추가하여 공간 차지
+                child: Text(
+                  '${feelsLikeData.temperature.toStringAsFixed(1)}°',
+                  style: const TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    height: 1.0,
+                  ),
                 ),
               ),
+              // <<< 화살표 버튼 추가 >>>
+              InkWell(
+                onTap: () async {
+                  // async 추가
+                  print('FeelsLikeCard arrow tapped!');
+                  // TODO: 현재 사용자 정보(기저질환 등) 로드
+                  // 예시: '내 정보' 기준 (실제로는 selectedPersonId 확인 필요)
+                  final prefsService = ref.read(preferencesServiceProvider);
+                  final diseases = await prefsService.getUserDiseases();
+                  // final isPregnant = await prefsService.getIsPregnant();
+                  // ... 기타 필요한 정보 로드 ...
+
+                  // 상세 페이지로 이동 (indexData 전달)
+                  if (context.mounted) {
+                    // context 유효성 검사
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => IndexDetailPage(
+                              indexData: feelsLikeData,
+                              // userDiseases: diseases ?? [], // 필요시 전달
+                              // isPregnant: isPregnant, // 필요시 전달
+                            ),
+                      ),
+                    );
+                  }
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0), // 탭 영역 확보
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    size: 24,
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ),
+              // <<< --------- >>>
             ],
           ),
           const SizedBox(height: 40), // 상단과 프로그레스 바 사이 간격
@@ -232,30 +282,30 @@ class FeelsLikeCard extends StatelessWidget {
           const SizedBox(height: 20),
 
           // --- 하단 버튼 (스타일 변경) ---
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              // 아이콘 없는 버튼으로 변경
-              child: Text(feelsLikeData.buttonText),
-              onPressed: () {
-                // TODO: 버튼 클릭 동작 (기능 미확정 상태)
-                print('"${feelsLikeData.buttonText}" 버튼 클릭됨');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[400], // 배경색 변경
-                foregroundColor: Colors.white, // 글자색 변경
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ), // 모서리 덜 둥글게
-                textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
+          // SizedBox(
+          //   width: double.infinity,
+          //   child: ElevatedButton(
+          //     // 아이콘 없는 버튼으로 변경
+          //     child: Text(feelsLikeData.buttonText),
+          //     onPressed: () {
+          //       // TODO: 버튼 클릭 동작 (기능 미확정 상태)
+          //       print('"${feelsLikeData.buttonText}" 버튼 클릭됨');
+          //     },
+          //     style: ElevatedButton.styleFrom(
+          //       backgroundColor: Colors.grey[400], // 배경색 변경
+          //       foregroundColor: Colors.white, // 글자색 변경
+          //       elevation: 0,
+          //       padding: const EdgeInsets.symmetric(vertical: 14),
+          //       shape: RoundedRectangleBorder(
+          //         borderRadius: BorderRadius.circular(8),
+          //       ), // 모서리 덜 둥글게
+          //       textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+          //         fontSize: 14,
+          //         fontWeight: FontWeight.bold,
+          //       ),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );

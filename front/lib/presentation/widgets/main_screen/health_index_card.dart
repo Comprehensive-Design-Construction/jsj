@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
-import 'dart:math'; // max 함수 사용 위해 추가
-
+import 'dart:math';
 import '../../../data/models/ui/health_index.dart';
-import '../common/speech_bubble.dart'; // 분리된 SpeechBubble 위젯 import
+import '../common/speech_bubble.dart';
+// 상세 페이지 import (추후 생성 후 경로 수정)
+import '../../screens/index_detail/index_detail_screen.dart';
+// PreferencesService import (기저질환 등 정보 가져오기 위함)
+import '../../../core/utils/preferences_service.dart';
+// Riverpod import (ref 사용 위함) - ConsumerWidget으로 변경 또는 ref 전달 필요
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../screens/main/main_screen_notifier.dart'; // provider 사용 위함
 
-class HealthIndexCard extends StatelessWidget {
+class HealthIndexCard extends ConsumerWidget {
   final HealthIndex healthIndex;
   final bool showProgressBar; // 프로그레스 바 표시 여부
   // final VoidCallback? onTap; // 카드 전체 탭 콜백 (필요 시 추가)
@@ -78,7 +84,7 @@ class HealthIndexCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // 프로그레스 바 관련 상수
     const double thumbRadius = 10.0;
     const double trackHeight = 8.0;
@@ -309,23 +315,43 @@ class HealthIndexCard extends StatelessWidget {
                 const SizedBox(width: 8), // '>' 아이콘과의 간격을 위해
               // 맨 오른쪽: '>' 아이콘 (탭 가능)
               InkWell(
-                onTap: () {
-                  // TODO: 카드 또는 '>' 아이콘 탭 시 동작 구현 (상세 페이지 이동 등)
-                  print('${healthIndex.name} card tapped');
+                onTap: () async {
+                  // async 추가
+                  print('${healthIndex.name} card arrow tapped');
+                  // TODO: 현재 사용자 정보(기저질환 등) 로드
+                  // 예시: '내 정보' 기준 (실제로는 selectedPersonId 확인 필요)
+                  final prefsService = ref.read(preferencesServiceProvider);
+                  final diseases = await prefsService.getUserDiseases();
+                  // final isPregnant = await prefsService.getIsPregnant();
+                  // ... 기타 필요한 정보 로드 ...
+
+                  // 상세 페이지로 이동 (healthIndex 전달)
+                  if (context.mounted) {
+                    // context 유효성 검사
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => IndexDetailPage(
+                              indexData: healthIndex, // <<< HealthIndex 객체 전달
+                              // userDiseases: diseases ?? [], // 필요시 전달
+                              // isPregnant: isPregnant, // 필요시 전달
+                            ),
+                      ),
+                    );
+                  }
+                  /* // 기존 SnackBar 코드 제거
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                        '${healthIndex.name} 카드 클릭됨! 상세 페이지 이동 등 구현 필요.',
-                      ),
+                      content: Text('${healthIndex.name} 카드 클릭됨! 상세 페이지 이동 등 구현 필요.'),
                       duration: const Duration(seconds: 1),
                     ),
                   );
-                  // 필요하다면 생성자에 onTap 콜백 추가
-                  // onTap?.call();
+                  */
                 },
-                borderRadius: BorderRadius.circular(20), // 탭 효과 영역
+                borderRadius: BorderRadius.circular(20),
                 child: Padding(
-                  padding: const EdgeInsets.all(8.0), // 탭 영역 확보
+                  padding: const EdgeInsets.all(8.0),
                   child: Icon(
                     Icons.chevron_right_rounded,
                     size: 24,

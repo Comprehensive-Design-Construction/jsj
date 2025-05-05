@@ -279,5 +279,54 @@ class ApiService {
     }
   }
 
-  // -------------------------------------------
+  Future<String> fetchRecommendation({
+    required String indexType,
+    required String indexLevel,
+    required int? age,
+    required String? workingType,
+    required List<String>? diseases,
+    required bool? isPregnant,
+  }) async {
+    // TODO: 백엔드와 협의된 실제 API 경로 및 요청 방식 사용
+    final uri = Uri.parse('$_baseUrl/recommendation'); // <<< 실제 경로로 수정
+    final body = jsonEncode({
+      'index_type': indexType,
+      'index_level': indexLevel,
+      'age': age,
+      'working_type': workingType, // 백엔드에서 받을 파라미터 이름 확인
+      'diseases': diseases ?? [],
+      'is_pregnant': isPregnant ?? false,
+    });
+    final headers = {'Content-Type': 'application/json'};
+
+    print('Requesting Recommendation: $uri with body: $body');
+
+    try {
+      final response = await http
+          .post(uri, headers: headers, body: body)
+          .timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        final responseBody = utf8.decode(response.bodyBytes);
+        final decoded = jsonDecode(responseBody);
+        // TODO: 백엔드 응답에서 실제 행동 요령 텍스트 키 확인 (예: 'recommendation')
+        return decoded['recommendation'] as String? ?? '행동 요령을 불러올 수 없습니다.';
+      } else {
+        // API 에러 응답 처리 (예: 응답 body에 에러 메시지가 담겨 올 경우)
+        String errorMsg =
+            'Failed to load recommendation: ${response.statusCode}';
+        try {
+          final decodedBody = jsonDecode(utf8.decode(response.bodyBytes));
+          if (decodedBody['detail'] != null) {
+            errorMsg += '\nDetail: ${decodedBody['detail']}';
+          }
+        } catch (_) {} // 디코딩 실패 시 무시
+        throw Exception(errorMsg);
+      }
+    } catch (e) {
+      print('Error fetchRecommendation: $e');
+      // 네트워크 오류 등 다양한 예외 처리
+      throw Exception('행동 요령 로드 실패: $e');
+    }
+  }
 }

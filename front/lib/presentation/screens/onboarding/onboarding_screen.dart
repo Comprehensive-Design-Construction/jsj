@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod import
+import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart'
     as picker;
 import 'package:intl/intl.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../main/main_screen.dart';
 import 'onboarding_notifier.dart'; // Notifier import
 import 'onboarding_state.dart'; // State import
@@ -193,6 +195,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ),
                 const SizedBox(height: 24),
                 // <<<------------------->>>
+                Text('기타 정보', style: Theme.of(context).textTheme.titleSmall),
+                CheckboxListTile(
+                  title: const Text('임산부'),
+                  value: state.selectedIsPregnant ?? false, // null이면 false로 간주
+                  onChanged:
+                      state.isSaving
+                          ? null
+                          : (bool? value) {
+                            notifier.setIsPregnant(value);
+                          },
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  // activeColor: Colors.pinkAccent, // 색상 예시
+                ),
 
                 // 3. 생년월일 선택 (state.selectedBirthDate 사용)
                 // TextFormField 대신 TextButton 유지, 유효성 검사는 버튼 클릭 시 Notifier에서
@@ -351,20 +367,81 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
                 // 5. 기저질환 Placeholder (기존과 동일)
                 Text(
-                  '기저질환 (선택)',
+                  '기저질환 (중복 선택 가능)',
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(16),
+                MultiSelectDialogField<String>(
+                  items:
+                      availableDiseases // app_constants 에 정의된 목록
+                          .map(
+                            (disease) =>
+                                MultiSelectItem<String>(disease, disease),
+                          )
+                          .toList(),
+                  initialValue:
+                      state.selectedDiseases.toList(), // 현재 선택된 값 (List로 변환)
+                  title: Text("기저질환 선택"), // 다이얼로그 제목
+                  selectedColor: Colors.blueAccent, // 선택 항목 강조 색상
+                  // --- 버튼 스타일링 ---
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12),
+                    // 버튼 모양 설정
+                    color: Colors.grey[100], // 배경색
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                    border: Border.all(color: Colors.grey.shade300, width: 1),
                   ),
-                  child: Text(
-                    '향후 기저질환 선택 기능이 추가될 예정입니다.',
-                    style: TextStyle(color: Colors.grey[600]),
+                  buttonIcon: Icon(
+                    // 버튼 옆 아이콘
+                    Icons.arrow_drop_down,
+                    color: Colors.grey[700],
                   ),
+                  buttonText: Text(
+                    // 버튼에 표시될 텍스트
+                    state.selectedDiseases.isEmpty
+                        ? "기저질환을 선택하세요 (선택)"
+                        : state.selectedDiseases.join(
+                          ', ',
+                        ), // 선택된 항목 표시 (쉼표 구분)
+                    style: TextStyle(
+                      color:
+                          state.selectedDiseases.isEmpty
+                              ? Colors.grey[600]
+                              : Colors.black87,
+                      fontSize: 16,
+                    ),
+                    overflow: TextOverflow.ellipsis, // 길면 ... 처리
+                  ),
+                  // --- 다이얼로그 설정 ---
+                  listType:
+                      MultiSelectListType
+                          .LIST, // 다이얼로그 내 항목 표시 방식 (LIST 또는 CHIP)
+                  searchable: true, // 검색 기능 활성화
+                  searchHint: '검색',
+                  confirmText: Text('확인'),
+                  cancelText: Text('취소'),
+                  // --- 선택 완료 시 콜백 ---
+                  onConfirm: (results) {
+                    // results는 선택된 항목들의 List<String>
+                    // Notifier의 새 함수 호출하여 상태 업데이트
+                    notifier.setSelectedDiseases(results.toSet());
+                  },
+                  // --- 선택된 항목 표시 방식 (버튼 아래 Chip) ---
+                  chipDisplay: MultiSelectChipDisplay<String>(
+                    chipColor: Colors.blueAccent.withOpacity(0.15),
+                    textStyle: TextStyle(
+                      color: Colors.blueAccent,
+                      fontSize: 13,
+                    ),
+                    // 아이콘 버튼으로 개별 삭제 기능 (선택적)
+                    icon: Icon(Icons.close, color: Colors.blueAccent, size: 16),
+                    onTap: (value) {
+                      // 개별 Chip 탭 시 제거 (toggle 함수 필요)
+                      notifier.toggleDiseaseSelection(value);
+                    },
+                    // 스크롤 가능하게 하려면 scrollbar 추가
+                    // scrollBar: HorizontalScrollBar(),
+                  ),
+                  // validator: (value) { ... } // 필요시 유효성 검사
                 ),
                 const SizedBox(height: 40),
 
