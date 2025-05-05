@@ -37,7 +37,7 @@ def get_index_request_params(
     latitude: float,
     longitude: float,
     age: Optional[int] = None,
-    user_type: Optional[str] = None,
+    user_type: Optional[List[str]] = Query(None),
     disease: Optional[List[str]] = Query(None),
 ) -> IndexRequestParams:
     try:
@@ -45,7 +45,7 @@ def get_index_request_params(
             latitude=latitude,
             longitude=longitude,
             age=age,
-            user_type=user_type,
+            user_type=user_type or [],
             disease=disease or [],
         )
     except ValidationError as e:

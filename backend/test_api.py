@@ -151,8 +151,8 @@ def test_index_api():
     params = {
         "latitude": 37.498095,
         "longitude": 127.027610,
-        "age": 30,
-        "user_type": "비닐하우스",
+        "age": 100,
+        "user_type": ["비닐하우스"],
     }
 
     url = f"{BASE_URL}/index"

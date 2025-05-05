@@ -9,7 +9,7 @@ class LocationInput(BaseModel):
 
 class UserInput(BaseModel):
     age: Optional[int] = Field(None, ge=0, description="사용자 나이")
-    user_type: Optional[str] = Field(default=None)
+    user_type: List[str] = Field(default=[])
     disease: List[str] = Field(
         default=[],
         description="사용자 보유 질병 목록 (쉼표로 구분된 문자열 대신 리스트 사용)",
@@ -31,7 +31,7 @@ class IndexRequestParams(BaseModel):
     latitude: float = Field(..., ge=-90.0, le=90.0)
     longitude: float = Field(..., ge=-180.0, le=180.0)
     age: Optional[int] = Field(None, ge=0)
-    user_type: Optional[str] = Field(None, ge="")
+    user_type: List[str] = Field(default=[])
     disease: List[str] = Field(default=[])
 
 
