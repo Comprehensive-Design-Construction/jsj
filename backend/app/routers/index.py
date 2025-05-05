@@ -37,11 +37,16 @@ def get_index_request_params(
     latitude: float,
     longitude: float,
     age: Optional[int] = None,
+    user_type: Optional[str] = None,
     disease: Optional[List[str]] = Query(None),
 ) -> IndexRequestParams:
     try:
         return IndexRequestParams(
-            latitude=latitude, longitude=longitude, age=age, disease=disease or []
+            latitude=latitude,
+            longitude=longitude,
+            age=age,
+            user_type=user_type,
+            disease=disease or [],
         )
     except ValidationError as e:
         # FastAPI가 자동으로 422 응답 처리하지만, 명시적으로 남겨둘 수 있음
@@ -253,7 +258,11 @@ async def get_indices(params: IndexRequestParams = Depends(get_index_request_par
     # 2. 건강 지수 병렬 계산 (날씨 데이터가 있을 때만)
     index_results = IndexCalculationResult()  # 빈 결과 객체로 시작
     if weather_data:
-        user_data_for_calc = {"age": params.age, "disease": params.disease}
+        user_data_for_calc = {
+            "age": params.age,
+            "user_type": params.user_type,
+            "disease": params.disease,
+        }
         calculation_output, calc_errors = await _calculate_health_indices(
             weather_data, user_data_for_calc
         )

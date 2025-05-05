@@ -289,16 +289,15 @@ def calculate_apparent_temp_ali(
             return results
 
         # 사용자 유형 결정 로직
-        user_types = []
+        user_types = user_input.get("user_type", None)
         age = user_input.get("age")
         diseases = user_input.get("disease", [])
-        print(user_input)
+
         # if age is not None:
-        #     if age >= 65:
-        #         user_types.append("노인")
-        #     if age <= 7:
-        #         user_types.append("어린이")
-        # We Need To Do !!!!!!!!!!!!
+        if age >= 65:
+            user_types.append("노인")
+        elif age <= 18:
+            user_types.append("어린이")
 
         # 계산 수행
         tw = _compute_tw(temp, humidity)
