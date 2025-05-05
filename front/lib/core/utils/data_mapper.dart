@@ -13,6 +13,26 @@ import '../../data/models/ui/feels_like_data.dart';
 import '../../data/models/ui/health_index.dart';
 // import '../../data/models/ui/user_profile.dart'; // 필요시 사용
 
+// --- 통합 상태 및 색상 정의 (가독성을 위해 추가) ---
+class UnifiedStatus {
+  static const String low = '낮음';
+  static const String moderate = '보통';
+  static const String high = '높음';
+  static const String veryHigh = '매우 높음';
+  static const String extreme = '위험'; // 5단계
+  static const String unknown = '정보 없음';
+
+  static final Map<String, Color> colors = {
+    low: Colors.green, // Level 1
+    moderate: Colors.blue, // Level 2
+    high: Colors.yellow.shade700, // Level 3
+    veryHigh: Colors.red, // Level 4
+    extreme: Colors.purple, // Level 5
+    unknown: Colors.grey, // Level 0
+  };
+}
+// ---------------------------------------------
+
 class DataMapper {
   // --- 날씨 정보 매핑 ---
   static CurrentWeather mapWeatherResponseToUI(
@@ -90,153 +110,133 @@ class DataMapper {
     );
   }
 
-  // --- 체감 온도 정보 매핑 ---
+  // --- 체감 온도 정보 매핑 (통합 상태/색상 사용) ---
   static FeelsLikeData mapFeelsLikeResponseToUI(
     HealthIndexResponse apiResponse,
   ) {
-    // HealthIndexResponse 전체를 받는 것이 더 유연할 수 있음
     IndexCalculationResult? apiIndexData = apiResponse.indices;
 
     double temperature = apiIndexData?.apparentTemperature ?? 0.0;
-    String status = "정보 없음";
-    Color statusColor = Colors.grey;
+    String status = UnifiedStatus.unknown; // 기본값: 정보 없음
+    Color statusColor = UnifiedStatus.colors[UnifiedStatus.unknown]!;
     String message1 = "체감 온도 정보를 확인하세요.";
     String message2 = "";
     String buttonText = "관련 정보 보기"; // 기본 버튼 텍스트
 
-    // 상태 및 색상 매핑
-    // TODO: '일반인' 등급 처리 및 메시지 구체화 논의 필요
     switch (apiIndexData?.apparentTempRiskStatus) {
       case "위험":
-        status = "위험";
-        statusColor = Colors.red; // '매우 높음' 색상
+        status = UnifiedStatus.veryHigh; // '위험' -> '매우 높음' 매핑
+        statusColor = UnifiedStatus.colors[UnifiedStatus.veryHigh]!;
         message1 = "매우 높은 체감 온도! 건강에 유의하세요.";
         message2 = "야외 활동을 자제하고 수분을 충분히 섭취하세요.";
-        // buttonText = "폭염 대피소 찾기"; // TODO: 기능 확정 후 연결
         break;
       case "경고":
-        status = "경고";
-        statusColor =
-            Colors.redAccent; // '높음' 색상 (사용자 정의 필요, 일단 RedAccent) -> 노랑으로 변경
-        statusColor = Colors.yellow.shade700;
+        status = UnifiedStatus.high; // '경고' -> '높음' 매핑
+        statusColor = UnifiedStatus.colors[UnifiedStatus.high]!;
         message1 = "높은 체감 온도! 주의가 필요합니다.";
         message2 = "물을 자주 마시고, 더위에 지치지 않도록 주의하세요.";
-        // buttonText = "더위 쉼터 정보";
         break;
       case "주의":
-        status = "주의";
-        statusColor = Colors.blue; // '보통' 색상
-        message1 = "체감 온도가 다소 높습니다.";
-        message2 = "수분 섭취에 신경 쓰고, 무리한 활동은 피하세요.";
-        // buttonText = "오늘의 날씨 정보 더보기";
+      case "일반인": // '일반인'도 '보통'으로 취급
+        status = UnifiedStatus.moderate; // '주의', '일반인' -> '보통' 매핑
+        statusColor = UnifiedStatus.colors[UnifiedStatus.moderate]!;
+        message1 = "체감 온도가 다소 높거나 보통입니다."; // 메시지 통합 또는 조정
+        message2 = "상황에 맞게 활동 및 옷차림을 조절하세요.";
         break;
       case "관심":
-        status = "관심";
-        statusColor = Colors.green; // '낮음' 색상
+        status = UnifiedStatus.low; // '관심' -> '낮음' 매핑
+        statusColor = UnifiedStatus.colors[UnifiedStatus.low]!;
         message1 = "체감 온도를 주시할 필요가 있습니다.";
-        message2 = "상황에 맞게 옷차림을 조절하세요.";
-        break;
-      case "일반인": // TODO: '일반인' 등급 처리 논의 필요
-        status = "보통"; // 임시로 '보통'으로 매핑
-        statusColor = Colors.blue; // '보통' 색상
-        message1 = "적절한 체감 온도입니다.";
-        message2 = "활동하기 좋은 날씨입니다.";
+        message2 = "환절기 등 변화에 유의하세요.";
         break;
       default:
-        status = apiIndexData?.apparentTempRiskStatus ?? "정보 없음";
-        statusColor = Colors.grey; // 기본 회색
+        // 상태 문자열이 있지만 위 case에 해당하지 않으면 그대로 사용 (색상은 grey)
+        status = apiIndexData?.apparentTempRiskStatus ?? UnifiedStatus.unknown;
+        statusColor = UnifiedStatus.colors[UnifiedStatus.unknown]!;
         break;
     }
 
     return FeelsLikeData(
       temperature: temperature,
-      status: status,
-      statusColor: statusColor,
+      status: status, // 통합된 상태 문자열 사용
+      statusColor: statusColor, // 통합된 색상 사용
       message1: message1,
       message2: message2,
-      buttonText: buttonText, // TODO: 버튼 기능 확정 필요
+      buttonText: buttonText,
     );
   }
 
-  // --- 건강 지수 리스트 매핑 ---
+  // --- 건강 지수 리스트 매핑 (통합 상태/색상 사용) ---
   static List<HealthIndex> mapHealthIndicesResponseToUI(
-    HealthIndexResponse? apiIndexResponse, // 전체 응답 받기
+    HealthIndexResponse? apiIndexResponse,
     SingleRegionUvResponse? uvData,
     SingleRegionFineDustResponse? fineDustData,
   ) {
     final List<HealthIndex> indices = [];
-    if (apiIndexResponse == null) return indices; // 기본 지수 데이터 없으면 빈 리스트 반환
+    if (apiIndexResponse == null) return indices;
 
-    final apiIndexData = apiIndexResponse.indices; // 실제 지수 데이터 접근
+    final apiIndexData = apiIndexResponse.indices;
 
-    // --- API 응답 데이터를 UI용 HealthIndex 객체로 변환 ---
+    // --- 헬퍼 함수들을 사용하여 통합 상태/색상 정보 가져오기 ---
 
     // 1. 천식/폐질환 (ALI)
     if (apiIndexData.aliLevel != null) {
-      var mapped = _mapLevelToStatusInfo(apiIndexData.aliLevel!);
-      Color iconBackgroundColor =
-          Color.lerp(mapped.color, Colors.white, 0.8) ??
-          mapped.color.withOpacity(0.1);
+      var mapped = _mapLevelToUnifiedStatusInfo(apiIndexData.aliLevel!);
+      Color iconBackgroundColor = _calculateIconBgColor(mapped.color);
       indices.add(
         HealthIndex(
           name: '천식질환 지수',
           value: apiIndexData.aliScore ?? apiIndexData.aliLevel!.toDouble(),
-          status: mapped.status,
-          icon: Icons.masks, // 아이콘 확인
+          status: mapped.status, // 통합 상태
+          icon: Icons.masks,
           iconColor: iconBackgroundColor,
-          statusColor: mapped.color,
+          statusColor: mapped.color, // 통합 색상
         ),
       );
     }
 
-    // 2. 뇌졸중 (Stroke) - API 모델명 확인: stroke_index_level
+    // 2. 뇌졸중 (Stroke)
     if (apiIndexData.strokeIndexLevel != null) {
-      var mapped = _mapLevelToStatusInfo(apiIndexData.strokeIndexLevel!);
-      Color iconBackgroundColor =
-          Color.lerp(mapped.color, Colors.white, 0.8) ??
-          mapped.color.withOpacity(0.1);
+      var mapped = _mapLevelToUnifiedStatusInfo(apiIndexData.strokeIndexLevel!);
+      Color iconBackgroundColor = _calculateIconBgColor(mapped.color);
       indices.add(
         HealthIndex(
-          name: '심뇌혈관질환 지수', // UI 이름 확인
+          name: '심뇌혈관질환 지수',
           value:
               apiIndexData.strokeIndexScore ??
               apiIndexData.strokeIndexLevel!.toDouble(),
-          status: mapped.status,
-          icon: Icons.monitor_heart_outlined, // 아이콘 확인
+          status: mapped.status, // 통합 상태
+          icon: Icons.monitor_heart_outlined,
           iconColor: iconBackgroundColor,
-          statusColor: mapped.color,
+          statusColor: mapped.color, // 통합 색상
         ),
       );
     }
 
-    // 3. 감기 (Cold) - API 모델명 확인: cold_index_level
+    // 3. 감기 (Cold)
     if (apiIndexData.coldIndexLevel != null) {
-      var mapped = _mapLevelToStatusInfo(apiIndexData.coldIndexLevel!);
-      Color iconBackgroundColor =
-          Color.lerp(mapped.color, Colors.white, 0.8) ??
-          mapped.color.withOpacity(0.1);
+      var mapped = _mapLevelToUnifiedStatusInfo(apiIndexData.coldIndexLevel!);
+      Color iconBackgroundColor = _calculateIconBgColor(mapped.color);
       indices.add(
         HealthIndex(
           name: '감기가능 지수',
           value:
               apiIndexData.coldIndexScore ??
               apiIndexData.coldIndexLevel!.toDouble(),
-          status: mapped.status,
-          icon: Icons.sick, // 아이콘 확인
+          status: mapped.status, // 통합 상태
+          icon: Icons.sick,
           iconColor: iconBackgroundColor,
-          statusColor: mapped.color,
+          statusColor: mapped.color, // 통합 색상
         ),
       );
     }
 
     // 4. 식중독 (Food Poisoning)
     if (apiIndexData.foodPoisoningRisk != null) {
-      var mapped = _mapFoodPoisoningRiskToStatusInfo(
+      var mapped = _mapFoodPoisoningRiskToUnifiedStatusInfo(
         apiIndexData.foodPoisoningRisk!,
       );
-      Color iconBackgroundColor =
-          Color.lerp(mapped.color, Colors.white, 0.8) ??
-          mapped.color.withOpacity(0.1);
+      Color iconBackgroundColor = _calculateIconBgColor(mapped.color);
       double parsedValue =
           double.tryParse(apiIndexData.foodPoisoningIndex ?? '0.0') ?? 0.0;
 
@@ -244,186 +244,267 @@ class DataMapper {
         HealthIndex(
           name: '식중독 지수',
           value: parsedValue,
-          status: mapped.status,
-          icon: Icons.fastfood, // 아이콘 확인
+          status: mapped.status, // 통합 상태
+          icon: Icons.fastfood,
           iconColor: iconBackgroundColor,
-          statusColor: mapped.color,
+          statusColor: mapped.color, // 통합 색상
         ),
       );
     }
 
-    // 5. UV 지수 (별도 API 응답 사용)
+    // 5. UV 지수
     if (uvData?.uvData?.uvIndex != null) {
       int uvValue = uvData!.uvData!.uvIndex!;
-      var mapped = _mapUvIndexToStatusInfo(uvValue);
-      Color iconBackgroundColor =
-          Color.lerp(mapped.color, Colors.white, 0.8) ??
-          mapped.color.withOpacity(0.1);
+      var mapped = _mapUvIndexToUnifiedStatusInfo(uvValue);
+      Color iconBackgroundColor = _calculateIconBgColor(mapped.color);
       indices.add(
         HealthIndex(
           name: '자외선 지수',
           value: uvValue.toDouble(),
-          status: mapped.status,
-          icon: Icons.wb_sunny_outlined, // 아이콘 확인
+          status: mapped.status, // 통합 상태
+          icon: Icons.wb_sunny_outlined,
           iconColor: iconBackgroundColor,
-          statusColor: mapped.color,
+          statusColor: mapped.color, // 통합 색상
         ),
       );
     }
 
-    // 6. 미세먼지 지수 (별도 API 응답 사용)
+    // 6. 미세먼지 지수
     if (fineDustData?.fineDustData != null) {
-      // PM10 값을 우선 사용하고, 없으면 PM2.5 값을 사용 (예시)
-      // TODO: 기준값 논의 필요 (PM10? PM2.5? 통합지수? GRADE?)
       var pmValue =
           fineDustData!.fineDustData!.pm10 ?? fineDustData!.fineDustData!.pm25;
-      var grade = fineDustData!.fineDustData!.grade; // API에서 제공하는 등급
+      var grade = fineDustData!.fineDustData!.grade;
 
       if (pmValue != null) {
-        var mapped = _mapAirQualityToStatusInfo(pmValue, grade); // 값과 등급 모두 활용
-        Color iconBackgroundColor =
-            Color.lerp(mapped.color, Colors.white, 0.8) ??
-            mapped.color.withOpacity(0.1);
+        var mapped = _mapAirQualityToUnifiedStatusInfo(pmValue, grade);
+        Color iconBackgroundColor = _calculateIconBgColor(mapped.color);
         indices.add(
           HealthIndex(
-            name: '미세먼지 지수', // TODO: 어떤 기준인지 명시?
+            name: '미세먼지 지수',
             value: pmValue.toDouble(),
-            status: mapped.status,
-            icon: Icons.blur_linear_rounded, // 아이콘 확인
+            status: mapped.status, // 통합 상태
+            icon: Icons.blur_linear_rounded,
             iconColor: iconBackgroundColor,
-            statusColor: mapped.color,
+            statusColor: mapped.color, // 통합 색상
           ),
         );
       }
     }
 
-    // 7. 꽃가루 지수 (소나무) - API 없음, 임시 더미 데이터
-    // TODO: 실제 데이터 연동 또는 제거
+    // 7. 꽃가루 지수 (소나무) - 더미 데이터 (통합 매핑 적용)
+    var pollenMapped = _mapDummyStatusToUnified('나쁨'); // '나쁨' -> '높음'으로 간주
     indices.add(
       HealthIndex(
         name: '꽃가루농도 지수(소나무)',
         value: 66,
-        status: '나쁨', // '높음' 수준
+        status: pollenMapped.status, // 통합 상태
         icon: Icons.local_florist,
-        iconColor: Colors.yellow.shade100,
-        statusColor: Colors.yellow.shade700,
+        iconColor: _calculateIconBgColor(pollenMapped.color),
+        statusColor: pollenMapped.color, // 통합 색상
       ),
     );
 
-    // 8. 대기 정체 지수 - API 없음, 임시 더미 데이터
-    // TODO: 실제 데이터 연동 또는 제거
+    // 8. 대기 정체 지수 - 더미 데이터 (통합 매핑 적용)
+    var stagnationMapped = _mapDummyStatusToUnified('보통'); // '보통' -> '보통'으로 간주
     indices.add(
       HealthIndex(
         name: '대기정체 지수',
         value: 27,
-        status: '보통', // '보통' 수준
+        status: stagnationMapped.status, // 통합 상태
         icon: Icons.landscape_outlined,
-        iconColor: Colors.blue.shade100,
-        statusColor: Colors.blue,
+        iconColor: _calculateIconBgColor(stagnationMapped.color),
+        statusColor: stagnationMapped.color, // 통합 색상
       ),
     );
-
-    // TODO: 지수 순서 정렬 로직 추가 (예: 특정 순서대로 표시)
-    // 예시: 원하는 순서 리스트 정의 후 정렬
-    // final displayOrder = ['체감 온도', '미세먼지 지수', '자외선 지수', ...];
-    // indices.sort((a, b) => displayOrder.indexOf(a.name).compareTo(displayOrder.indexOf(b.name)));
 
     return indices;
   }
 
-  // --- Helper 함수들 ---
+  // --- Helper 함수들 (통합 상태/색상 반환하도록 수정) ---
 
-  // 숫자 레벨(1:매우높음 ~ 4:낮음)을 상태 문자열 및 색상으로 변환
-  // 낮음(4)->초록, 보통(3)->파랑, 높음(2)->노랑, 매우높음(1)->빨강
-  static ({String status, Color color}) _mapLevelToStatusInfo(int level) {
-    switch (level) {
-      case 1:
-        return (status: '매우 높음', color: Colors.red);
-      case 2:
-        return (status: '높음', color: Colors.yellow.shade700);
-      case 3:
-        return (status: '보통', color: Colors.blue);
-      case 4:
-        return (status: '낮음', color: Colors.green);
-      default:
-        return (status: '정보 없음', color: Colors.grey);
-    }
+  // 아이콘 배경색 계산 (기존 로직 유지, 상태 색상 기반)
+  static Color _calculateIconBgColor(Color statusColor) {
+    return Color.lerp(statusColor, Colors.white, 0) ??
+        statusColor.withOpacity(0.1);
   }
 
-  // 식중독 위험도 문자열을 상태 및 색상으로 변환
-  // 위험->빨강, 경고->노랑, 주의->파랑, 관심->초록
-  static ({String status, Color color}) _mapFoodPoisoningRiskToStatusInfo(
-    String risk,
+  // 숫자 레벨(1:매우높음 ~ 4:낮음) -> 통합 상태/색상
+  static ({String status, Color color}) _mapLevelToUnifiedStatusInfo(
+    int level,
   ) {
-    switch (risk) {
-      case '위험':
-        return (status: '위험', color: Colors.red);
-      case '경고':
-        return (status: '경고', color: Colors.yellow.shade700);
-      case '주의':
-        return (status: '주의', color: Colors.blue);
-      case '관심':
-        return (status: '관심', color: Colors.green);
+    switch (level) {
+      case 1: // 매우높음
+        return (
+          status: UnifiedStatus.veryHigh,
+          color: UnifiedStatus.colors[UnifiedStatus.veryHigh]!,
+        );
+      case 2: // 높음
+        return (
+          status: UnifiedStatus.high,
+          color: UnifiedStatus.colors[UnifiedStatus.high]!,
+        );
+      case 3: // 보통
+        return (
+          status: UnifiedStatus.moderate,
+          color: UnifiedStatus.colors[UnifiedStatus.moderate]!,
+        );
+      case 4: // 낮음
+        return (
+          status: UnifiedStatus.low,
+          color: UnifiedStatus.colors[UnifiedStatus.low]!,
+        );
       default:
-        return (status: risk, color: Colors.grey);
+        return (
+          status: UnifiedStatus.unknown,
+          color: UnifiedStatus.colors[UnifiedStatus.unknown]!,
+        );
     }
   }
 
-  // UV 지수 값을 상태 및 색상으로 변환 (WHO 기준 + 사용자 색상 규칙 적용)
-  // 낮음->초록, 보통->파랑, 높음->노랑, 매우높음->빨강, 위험->보라
-  static ({String status, Color color}) _mapUvIndexToStatusInfo(int uvIndex) {
-    if (uvIndex <= 2) return (status: '낮음', color: Colors.green);
-    if (uvIndex <= 5) return (status: '보통', color: Colors.blue);
-    if (uvIndex <= 7) return (status: '높음', color: Colors.yellow.shade700);
-    if (uvIndex <= 10) return (status: '매우 높음', color: Colors.red);
-    return (status: '위험', color: Colors.purple); // 11 이상
+  // 식중독 위험도 문자열 -> 통합 상태/색상
+  static ({String status, Color color})
+  _mapFoodPoisoningRiskToUnifiedStatusInfo(String risk) {
+    switch (risk) {
+      case '위험': // 매우 높음
+        return (
+          status: UnifiedStatus.veryHigh,
+          color: UnifiedStatus.colors[UnifiedStatus.veryHigh]!,
+        );
+      case '경고': // 높음
+        return (
+          status: UnifiedStatus.high,
+          color: UnifiedStatus.colors[UnifiedStatus.high]!,
+        );
+      case '주의': // 보통
+        return (
+          status: UnifiedStatus.moderate,
+          color: UnifiedStatus.colors[UnifiedStatus.moderate]!,
+        );
+      case '관심': // 낮음
+        return (
+          status: UnifiedStatus.low,
+          color: UnifiedStatus.colors[UnifiedStatus.low]!,
+        );
+      default:
+        return (
+          status: UnifiedStatus.unknown,
+          color: UnifiedStatus.colors[UnifiedStatus.unknown]!,
+        );
+    }
   }
 
-  // 미세먼지(PM10) 값과 등급(GRADE)을 상태 및 색상으로 변환 (한국 기준 + 사용자 색상 규칙)
-  // 좋음->초록, 보통->파랑, 나쁨->노랑, 매우나쁨->빨강
-  // TODO: GRADE 문자열 활용 방안 검토 (예: 상태 문자열로 GRADE 직접 사용?)
-  static ({String status, Color color}) _mapAirQualityToStatusInfo(
+  // UV 지수 값 -> 통합 상태/색상 (5단계)
+  static ({String status, Color color}) _mapUvIndexToUnifiedStatusInfo(
+    int uvIndex,
+  ) {
+    if (uvIndex <= 2) {
+      // 낮음
+      return (
+        status: UnifiedStatus.low,
+        color: UnifiedStatus.colors[UnifiedStatus.low]!,
+      );
+    } else if (uvIndex <= 5) {
+      // 보통
+      return (
+        status: UnifiedStatus.moderate,
+        color: UnifiedStatus.colors[UnifiedStatus.moderate]!,
+      );
+    } else if (uvIndex <= 7) {
+      // 높음
+      return (
+        status: UnifiedStatus.high,
+        color: UnifiedStatus.colors[UnifiedStatus.high]!,
+      );
+    } else if (uvIndex <= 10) {
+      // 매우 높음
+      return (
+        status: UnifiedStatus.veryHigh,
+        color: UnifiedStatus.colors[UnifiedStatus.veryHigh]!,
+      );
+    } else {
+      // 위험 (11 이상)
+      return (
+        status: UnifiedStatus.extreme,
+        color: UnifiedStatus.colors[UnifiedStatus.extreme]!,
+      );
+    }
+  }
+
+  // 미세먼지(PM) 값과 등급(GRADE) -> 통합 상태/색상
+  static ({String status, Color color}) _mapAirQualityToUnifiedStatusInfo(
     int pmValue,
     String? grade,
   ) {
-    // GRADE 문자열 우선 사용 (API 응답 신뢰)
-    String statusText = grade ?? "정보 없음"; // 등급 없으면 값 기준으로 판단
-    Color statusColor = Colors.grey;
+    String statusText;
+    Color statusColor;
 
     if (grade != null) {
       switch (grade) {
         case "좋음":
-          statusColor = Colors.green;
-          break; // 좋음 -> 초록 ('낮음' 색)
+          statusText = UnifiedStatus.low;
+          statusColor = UnifiedStatus.colors[UnifiedStatus.low]!;
+          break;
         case "보통":
-          statusColor = Colors.blue;
-          break; // 보통 -> 파랑 ('보통' 색)
+          statusText = UnifiedStatus.moderate;
+          statusColor = UnifiedStatus.colors[UnifiedStatus.moderate]!;
+          break;
         case "나쁨":
-          statusColor = Colors.yellow.shade700;
-          break; // 나쁨 -> 노랑 ('높음' 색)
+          statusText = UnifiedStatus.high;
+          statusColor = UnifiedStatus.colors[UnifiedStatus.high]!;
+          break;
         case "매우나쁨":
-          statusColor = Colors.red;
-          break; // 매우나쁨 -> 빨강 ('매우 높음' 색)
+          statusText = UnifiedStatus.veryHigh;
+          statusColor = UnifiedStatus.colors[UnifiedStatus.veryHigh]!;
+          break;
         default:
-          statusColor = Colors.grey;
+          statusText = UnifiedStatus.unknown;
+          statusColor = UnifiedStatus.colors[UnifiedStatus.unknown]!;
           break;
       }
     } else {
-      // 등급 정보 없을 때 PM 값 기준으로 판단 (예시)
+      // 등급 정보 없을 때 PM 값 기준으로 판단 (예시, 기준값 조정 필요)
       if (pmValue <= 30) {
-        statusText = '좋음';
-        statusColor = Colors.green;
+        // 좋음 -> 낮음
+        statusText = UnifiedStatus.low;
+        statusColor = UnifiedStatus.colors[UnifiedStatus.low]!;
       } else if (pmValue <= 80) {
-        statusText = '보통';
-        statusColor = Colors.blue;
+        // 보통 -> 보통
+        statusText = UnifiedStatus.moderate;
+        statusColor = UnifiedStatus.colors[UnifiedStatus.moderate]!;
       } else if (pmValue <= 150) {
-        statusText = '나쁨';
-        statusColor = Colors.yellow.shade700;
+        // 나쁨 -> 높음
+        statusText = UnifiedStatus.high;
+        statusColor = UnifiedStatus.colors[UnifiedStatus.high]!;
       } else {
-        statusText = '매우 나쁨';
-        statusColor = Colors.red;
+        // 매우 나쁨 -> 매우 높음
+        statusText = UnifiedStatus.veryHigh;
+        statusColor = UnifiedStatus.colors[UnifiedStatus.veryHigh]!;
       }
     }
     return (status: statusText, color: statusColor);
   }
-}
+
+  // (더미 데이터용) 임시 상태 문자열 -> 통합 상태/색상
+  // 예시: '나쁨' -> '높음', '보통' -> '보통'
+  static ({String status, Color color}) _mapDummyStatusToUnified(
+    String dummyStatus,
+  ) {
+    if (dummyStatus == '나쁨') {
+      return (
+        status: UnifiedStatus.high,
+        color: UnifiedStatus.colors[UnifiedStatus.high]!,
+      );
+    } else if (dummyStatus == '보통') {
+      return (
+        status: UnifiedStatus.moderate,
+        color: UnifiedStatus.colors[UnifiedStatus.moderate]!,
+      );
+    } // ... 다른 더미 상태에 대한 매핑 추가
+    else {
+      return (
+        status: UnifiedStatus.unknown,
+        color: UnifiedStatus.colors[UnifiedStatus.unknown]!,
+      );
+    }
+  }
+} // End of DataMapper class

@@ -171,7 +171,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               child: Center(
                 child: Image.asset(
                   'assets/images/welogo.png', // 로고 경로 확인!
-                  height: 24, // 이미지에 맞게 높이 조정
+                  height: 50, // 이미지에 맞게 높이 조정
                   errorBuilder:
                       (context, error, stackTrace) => SizedBox.shrink(),
                 ),
