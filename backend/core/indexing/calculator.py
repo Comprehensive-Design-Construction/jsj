@@ -309,7 +309,7 @@ def calculate_apparent_temp_ali(
         results["risk_status"] = _check_risk(user_types, apparent_temperature)
 
         # ALI 계산
-        lpressure = pressure - 10.4  # 현지 기압 보정, 확인 필요 !!!!!!
+        lpressure = pressure  # 현지 기압 보정, 확인 필요 !!!!!!
         dtr = max_temp - min_temp  # 일교차
 
         score_min_temp = _calculate_score("최저기온", min_temp)
