@@ -31,6 +31,7 @@ class IndexRequestParams(BaseModel):
     latitude: float = Field(..., ge=-90.0, le=90.0)
     longitude: float = Field(..., ge=-180.0, le=180.0)
     age: Optional[int] = Field(None, ge=0)
+    user_type: Optional[str] = Field(None, ge="")
     disease: List[str] = Field(default=[])
 
 

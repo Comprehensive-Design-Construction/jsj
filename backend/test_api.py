@@ -148,7 +148,12 @@ def test_index_api():
     print("\n=== 건강 지수 API 테스트 ===")
 
     # 테스트 좌표 (서울 강남구)
-    params = {"latitude": 37.498095, "longitude": 127.027610, "age": 30}
+    params = {
+        "latitude": 37.498095,
+        "longitude": 127.027610,
+        "age": 30,
+        "user_type": "비닐하우스",
+    }
 
     url = f"{BASE_URL}/index"
     print(f"요청 URL: {url}")
