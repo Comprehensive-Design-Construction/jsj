@@ -6,13 +6,14 @@ class PreferencesService {
   // SharedPreferences 키 정의
   static const String _onboardingCompleteKey = 'onboarding_complete';
   static const String _userAgeKey = 'user_age';
-  static const String _userTypesKey = 'user_types'; // 사용자 특성 (disease 파라미터용)
+  static const String _userTypeKey = 'user_type';
+  static const String _userGenderKey = 'user_gender'; // <<< 내 정보 성별 키 추가
   static const String _visibleIndicesKey = 'visible_health_indices';
-  static const String _addedPeopleKey = 'added_people_list'; // 추가된 사람 목록 키
-  static const String _myGuKey = 'my_gu'; // 내 정보의 구
-  static const String _myDongKey = 'my_dong'; // 내 정보의 동
+  static const String _addedPeopleKey = 'added_people_list';
+  static const String _myGuKey = 'my_gu';
+  static const String _myDongKey = 'my_dong';
+  static const String _userDiseasesKey = 'user_diseases';
 
-  // SharedPreferences 인스턴스 가져오기
   Future<SharedPreferences> _getPrefs() async {
     return await SharedPreferences.getInstance();
   }
@@ -30,19 +31,37 @@ class PreferencesService {
   }
 
   // 사용자 정보 저장 (나이, 특성 리스트)
-  Future<void> saveUserInfo({int? age, List<String>? userTypes}) async {
+  Future<void> saveUserInfo({
+    int? age,
+    // List<String>? userTypes, // <<< 제거
+    String? userType, // <<< 추가: 단일 특성 파라미터
+    String? gender,
+  }) async {
     final prefs = await _getPrefs();
     if (age != null) {
       await prefs.setInt(_userAgeKey, age);
     } else {
-      await prefs.remove(_userAgeKey); // null이면 삭제
+      await prefs.remove(_userAgeKey);
     }
+    /* // <<< 기존 List 저장 로직 제거
     if (userTypes != null) {
       await prefs.setStringList(_userTypesKey, userTypes);
     } else {
-      await prefs.remove(_userTypesKey); // null이면 삭제
+      await prefs.remove(_userTypesKey);
     }
-    print('Saved User Info: age=$age, types=$userTypes'); // 저장 확인 로그
+    */
+    if (userType != null) {
+      // <<< 단일 특성 저장 로직 추가
+      await prefs.setString(_userTypeKey, userType);
+    } else {
+      await prefs.remove(_userTypeKey); // null이면 삭제
+    }
+    if (gender != null) {
+      await prefs.setString(_userGenderKey, gender);
+    } else {
+      await prefs.remove(_userGenderKey);
+    }
+    print('Saved User Info: age=$age, type=$userType, gender=$gender'); // 로그 수정
   }
 
   // 사용자 나이 불러오기
@@ -52,9 +71,33 @@ class PreferencesService {
   }
 
   // 사용자 특성 리스트 불러오기 (disease 파라미터용)
-  Future<List<String>?> getUserTypes() async {
+  Future<String?> getUserType() async {
     final prefs = await _getPrefs();
-    return prefs.getStringList(_userTypesKey); // 저장된 값 없으면 null 반환
+    return prefs.getString(_userTypeKey); // 저장된 값 없으면 null 반환
+  }
+
+  Future<String?> getUserGender() async {
+    // <<< 내 정보 성별 로드 메서드 추가
+    final prefs = await _getPrefs();
+    // 저장된 값이 없으면 기본값(male) 반환 또는 null 반환 후 호출부에서 처리
+    return prefs.getString(
+      _userGenderKey,
+    ); // ?? Gender.male; // 기본값을 여기서 설정할 수도 있음
+  }
+
+  Future<void> saveUserDiseases(List<String>? diseases) async {
+    final prefs = await _getPrefs();
+    if (diseases != null && diseases.isNotEmpty) {
+      await prefs.setStringList(_userDiseasesKey, diseases);
+    } else {
+      await prefs.remove(_userDiseasesKey);
+    }
+    print('Saved User Diseases: $diseases');
+  }
+
+  Future<List<String>?> getUserDiseases() async {
+    final prefs = await _getPrefs();
+    return prefs.getStringList(_userDiseasesKey);
   }
 
   Future<void> saveMyGuDong(String? gu, String? dong) async {

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:front/data/models/added_person.dart';
 
 import '../../../core/utils/preferences_service.dart';
 import '../../../data/services/api_service.dart'; // ApiService import
@@ -23,10 +24,21 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     );
   }
 
-  void toggleUserType(String type, bool value) {
-    final currentSelection = Map<String, bool>.from(state.userTypeSelection);
-    currentSelection[type] = value;
-    state = state.copyWith(userTypeSelection: currentSelection);
+  // void toggleUserType(String type, bool value) {
+  //   final currentSelection = Map<String, bool>.from(state.userTypeSelection);
+  //   currentSelection[type] = value;
+  //   state = state.copyWith(userTypeSelection: currentSelection);
+  // }
+
+  void setUserType(String? type) {
+    // '없음'을 선택하면 null로 저장할지, '없음' 문자열 그대로 저장할지 결정 필요
+    // 여기서는 '없음'도 유효한 값으로 간주하고 그대로 저장
+    state = state.copyWith(selectedUserType: type);
+  }
+
+  // 성별 설정 함수
+  void setGender(String? gender) {
+    state = state.copyWith(selectedGender: gender);
   }
 
   // 구/동 선택 관련 함수 추가 (edit_profile_notifier.dart 와 유사)
@@ -112,6 +124,10 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       state = state.copyWith(errorMessage: '거주 지역(동)을 선택해주세요.');
       return;
     }
+    if (state.selectedGender == null) {
+      state = state.copyWith(errorMessage: '성별을 선택해주세요.');
+      return;
+    }
 
     state = state.copyWith(
       isSaving: true,
@@ -121,15 +137,20 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
     try {
       final age = _calculateAge(state.selectedBirthDate);
-      final selectedTypes =
-          state.userTypeSelection.entries
-              .where((entry) => entry.value)
-              .map((entry) => entry.key)
-              .toList();
-      final List<String> diseaseParam = [...selectedTypes];
+      // final selectedTypes =
+      //     state.userTypeSelection.entries
+      //         .where((entry) => entry.value)
+      //         .map((entry) => entry.key)
+      //         .toList();
+      // final List<String> diseaseParam = [...selectedTypes];
+      final String? selectedType = state.selectedUserType;
 
       // 로컬 저장소에 정보 저장
-      await _prefsService.saveUserInfo(age: age, userTypes: diseaseParam);
+      await _prefsService.saveUserInfo(
+        age: age,
+        userType: selectedType == '없음' ? null : selectedType,
+        gender: state.selectedGender,
+      );
       // '내 정보'의 구/동 정보 저장 추가
       await _prefsService.saveMyGuDong(state.selectedGu, state.selectedDong);
       await _prefsService.setOnboardingComplete(); // 온보딩 완료 플래그 설정
@@ -153,7 +174,11 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     );
     try {
       // 기본값(null)으로 정보 저장
-      await _prefsService.saveUserInfo(age: null, userTypes: []);
+      await _prefsService.saveUserInfo(
+        age: null,
+        userType: null,
+        gender: Gender.male,
+      );
       // '내 정보' 구/동 정보는 저장하지 않음 (또는 명시적으로 null 저장)
       await _prefsService.saveMyGuDong(null, null);
       await _prefsService.setOnboardingComplete(); // 온보딩 완료 플래그 설정

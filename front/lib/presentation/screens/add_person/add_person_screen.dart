@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 // import '../../../data/services/api_service.dart'; // Notifier에서 사용
 import 'add_person_notifier.dart'; // Notifier import
 import 'add_person_state.dart'; // State import
+import '../../../data/models/added_person.dart';
 
 // ConsumerStatefulWidget으로 변경
 class AddPersonScreen extends ConsumerStatefulWidget {
@@ -141,6 +142,45 @@ class _AddPersonScreenState extends ConsumerState<AddPersonScreen> {
               ),
               const SizedBox(height: 16),
 
+              // 성별
+              Text('성별 *', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text('남성'),
+                      value: Gender.male,
+                      groupValue: state.selectedGender,
+                      onChanged:
+                          state.isSaving
+                              ? null
+                              : (value) {
+                                notifier.setGender(value);
+                              },
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                    ),
+                  ),
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text('여성'),
+                      value: Gender.female,
+                      groupValue: state.selectedGender,
+                      onChanged:
+                          state.isSaving
+                              ? null
+                              : (value) {
+                                notifier.setGender(value);
+                              },
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
               // --- 생년월일 ---
               TextButton.icon(
                 icon: Icon(
@@ -259,29 +299,41 @@ class _AddPersonScreenState extends ConsumerState<AddPersonScreen> {
               const SizedBox(height: 24),
 
               // --- 사용자 특성 ---
-              Text(
-                '사용자 특성 (중복 선택 가능)',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 8),
-              ...state.userTypeSelection.keys.map((String key) {
-                // state에서 가져옴
-                return CheckboxListTile(
-                  title: Text(
-                    key,
-                    style: Theme.of(context).textTheme.bodyMedium,
+              DropdownButtonFormField<String>(
+                value: state.selectedUserType, // <<< 상태 값 바인딩
+                hint: const Text('사용자 특성을 선택하세요'), // 힌트 텍스트
+                isExpanded: true,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  value: state.userTypeSelection[key], // state에서 값 가져옴
-                  onChanged: (bool? value) {
-                    // Notifier 함수 호출
-                    notifier.toggleUserType(key, value!);
-                  },
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  activeColor: Colors.blueAccent,
-                );
-              }).toList(),
+                  filled: true,
+                  fillColor: Colors.grey[100],
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
+                // items 목록: 해당 State 클래스에 정의된 availableUserTypes 사용
+                // 예: OnboardingState.availableUserTypes
+                items:
+                    AddPersonState.availableUserTypes.map((String type) {
+                      // <<< State 클래스의 목록 사용
+                      return DropdownMenuItem<String>(
+                        value: type,
+                        child: Text(type),
+                      );
+                    }).toList(),
+                onChanged:
+                    state.isSaving
+                        ? null
+                        : (String? newValue) {
+                          notifier.setUserType(
+                            newValue,
+                          ); // <<< Notifier의 새 함수 호출
+                        },
+                // validator: (value) => value == null ? '사용자 특성을 선택해주세요.' : null, // 필요시 유효성 검사 추가
+              ),
               const SizedBox(height: 24),
 
               // --- 기저질환 Placeholder ---

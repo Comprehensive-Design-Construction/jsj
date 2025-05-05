@@ -1,14 +1,23 @@
-import 'dart:convert'; // jsonEncode, jsonDecode 사용
+// lib/data/models/added_person.dart
+import 'dart:convert';
+
+class Gender {
+  static const String male = 'male';
+  static const String female = 'female';
+}
 
 class AddedPerson {
-  final String id; // 각 사람을 구분할 고유 ID (예: 타임스탬프 또는 UUID)
+  final String id;
   final String name;
-  final DateTime? birthDate; // 생년월일 직접 저장
-  final String? gu; // 선택한 구
-  final String? dong; // 선택한 동
-  final double? latitude; // 조회된 위도
-  final double? longitude; // 조회된 경도
-  final List<String>? userTypes; // 선택한 사용자 특성/질병 목록
+  final DateTime? birthDate;
+  final String? gu;
+  final String? dong;
+  final double? latitude;
+  final double? longitude;
+  // final List<String>? userTypes; // <<< 이름 변경
+  final String? workingType; // <<< 이름 변경 (단일 근무 유형)
+  final List<String>? diseases; // <<< 기저 질환 필드 추가
+  final String? gender;
 
   AddedPerson({
     required this.id,
@@ -18,10 +27,13 @@ class AddedPerson {
     this.dong,
     this.latitude,
     this.longitude,
-    this.userTypes,
+    // this.userTypes, // <<< 이름 변경
+    this.workingType, // <<< 이름 변경
+    this.diseases, // <<< 추가
+    this.gender,
   });
 
-  // 나이 계산 getter (필요시 사용)
+  // 나이 계산 getter (유지)
   int? get age {
     if (birthDate == null) return null;
     final today = DateTime.now();
@@ -33,27 +45,28 @@ class AddedPerson {
     return age > 0 ? age : 0;
   }
 
-  // 객체를 JSON(Map)으로 변환 (shared_preferences 저장용)
+  // 객체를 JSON(Map)으로 변환 (수정)
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
-      // DateTime은 ISO8601 문자열로 저장
       'birthDate': birthDate?.toIso8601String(),
       'gu': gu,
       'dong': dong,
       'latitude': latitude,
       'longitude': longitude,
-      'userTypes': userTypes,
+      // 'userTypes': userTypes, // <<< 이름 변경
+      'workingType': workingType, // <<< 이름 변경
+      'diseases': diseases, // <<< 추가
+      'gender': gender,
     };
   }
 
-  // JSON(Map)을 객체로 변환 (shared_preferences 로드용)
+  // JSON(Map)을 객체로 변환 (수정)
   factory AddedPerson.fromJson(Map<String, dynamic> json) {
     return AddedPerson(
       id: json['id'] as String,
       name: json['name'] as String,
-      // 저장된 ISO8601 문자열을 DateTime으로 변환
       birthDate:
           json['birthDate'] != null
               ? DateTime.tryParse(json['birthDate'] as String)
@@ -62,8 +75,13 @@ class AddedPerson {
       dong: json['dong'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
-      // List<dynamic>을 List<String>으로 변환
-      userTypes: (json['userTypes'] as List<dynamic>?)?.cast<String>().toList(),
+      // userTypes: (json['userTypes'] as List<dynamic>?)?.cast<String>().toList(), // <<< 이름 변경
+      workingType: json['workingType'] as String?, // <<< 이름 변경
+      diseases:
+          (json['diseases'] as List<dynamic>?)
+              ?.cast<String>()
+              .toList(), // <<< 추가
+      gender: json['gender'] as String?,
     );
   }
 }

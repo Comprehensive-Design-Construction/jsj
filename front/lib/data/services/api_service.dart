@@ -27,6 +27,7 @@ class ApiService {
     double longitude, {
     int? age,
     List<String>? disease,
+    String? userType,
   }) async {
     final Map<String, String> queryParameters = {
       'latitude': latitude.toString(),
@@ -35,6 +36,7 @@ class ApiService {
       // disease: List[str] 처리 - 쉼표 구분 문자열로 전달 시도 (백엔드 확인 필요)
       // TODO: FastAPI에서 List[str] = Query([]) 인 경우 파라미터 반복 필요
       if (disease != null && disease.isNotEmpty) 'disease': disease.join(','),
+      if (userType != null && userType != '없음') 'user_type': userType,
     };
     final uri = Uri.parse(
       '$_baseUrl/index',

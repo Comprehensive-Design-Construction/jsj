@@ -4,6 +4,7 @@ import '../../../core/utils/preferences_service.dart';
 import '../../../data/services/api_service.dart'; // ApiService import
 import '../../screens/main/main_screen_notifier.dart'; // preferencesServiceProvider, apiServiceProvider 사용 위해
 import 'edit_profile_state.dart';
+import '../../../data/models/added_person.dart';
 
 class EditProfileNotifier extends StateNotifier<EditProfileState> {
   // ApiService 의존성 추가
@@ -28,58 +29,82 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
       clearErrorMessage: true,
     );
     try {
-      // 이름은 현재 저장 기능 없음 (필요시 추가)
-
-      // 나이 -> 생년월일 변환 (기존 로직 유지, 개선 필요 시 생년월일 직접 저장)
       final int? savedAge = await _prefsService.getUserAge();
       DateTime? initialBirthDate;
       if (savedAge != null) {
-        // TODO: 생년월일 직접 저장 방식으로 개선 권장
         initialBirthDate = DateTime(DateTime.now().year - savedAge);
       }
 
-      // 사용자 특성 불러오기
-      final List<String>? savedTypes = await _prefsService.getUserTypes();
-      final initialUserTypeSelection = <String, bool>{
-        '농촌': savedTypes?.contains('농촌') ?? false,
-        '비닐하우스': savedTypes?.contains('비닐하우스') ?? false,
-        '실외작업자': savedTypes?.contains('실외작업자') ?? false,
-      };
+      // final List<String>? savedTypes = await _prefsService.getUserTypes(); // <<< 제거
+      // final initialUserTypeSelection = <String, bool>{ ... }; // <<< 제거
+      final String? initialUserType =
+          await _prefsService.getUserType(); // <<< 수정: 단일 특성 로드
 
-      // 저장된 '내 정보' 구/동 정보 로드
       final (savedGu, savedDong) = await _prefsService.getMyGuDong();
+      final String? savedGender = await _prefsService.getUserGender();
+      final initialGender = savedGender ?? Gender.male;
 
-      // 동 목록은 구 선택 시 로드되므로 여기서는 초기화만
       state = state.copyWith(
-        isLoading: false, // 기본 정보 로딩 완료
+        isLoading: false,
         initialBirthDate: initialBirthDate,
-        initialUserTypeSelection: initialUserTypeSelection,
-        selectedGu: savedGu, // 로드된 구 정보 설정
-        // selectedDong은 setSelectedGu 호출 시 설정됨
+        // initialUserTypeSelection: initialUserTypeSelection, // <<< 제거
+        initialUserType: initialUserType, // <<< 추가
+        selectedBirthDate: initialBirthDate,
+        // selectedUserTypeSelection: Map.from(initialUserTypeSelection), // <<< 제거
+        selectedUserType: initialUserType, // <<< 추가
+        selectedGender: initialGender,
+        selectedGu: savedGu,
       );
       print("EditProfileNotifier: User basic data loaded.");
 
+      // ... (지역 데이터 로딩 로직 유지) ...
       if (savedGu != null) {
-        // 저장된 구가 있으면 해당 구의 동 목록 로드 시도
-        await setSelectedGu(savedGu); // 동 목록 로드 포함
-        // 동 정보도 있으면 설정 (setSelectedGu 호출 후 동 목록 로드가 완료된 상태에서 설정)
+        await setSelectedGu(savedGu);
+        if (!mounted) return; // 비동기 호출 후 mounted 확인
         if (savedDong != null && state.dongList.contains(savedDong)) {
-          // await 키워드 추가하여 동 목록 로드 완료 후 실행 보장 (선택적)
           await Future.delayed(Duration.zero); // 상태 업데이트 반영 대기
+          if (!mounted) return; // 비동기 호출 후 mounted 확인
           state = state.copyWith(selectedDong: savedDong);
         }
       } else {
-        // 저장된 구가 없으면 지역 데이터 로딩 완료 처리
+        if (!mounted) return; // mounted 확인
         state = state.copyWith(isLoadingLocationData: false);
       }
-      // 구/동 로딩 상태는 _fetchGuData 및 setSelectedGu에서 최종 관리됨
     } catch (e) {
       print("EditProfileNotifier: Error loading user data: $e");
+      if (!mounted) return; // mounted 확인
       state = state.copyWith(
         isLoading: false,
-        isLoadingLocationData: false, // 에러 시 로딩 종료
+        isLoadingLocationData: false,
         errorMessage: "사용자 정보 로드 실패: $e",
       );
+    }
+  }
+
+  void setBirthDate(DateTime? date) {
+    if (date != state.selectedBirthDate) {
+      state = state.copyWith(selectedBirthDate: date);
+    }
+  }
+
+  // <<< 사용자 특성 상태 업데이트 함수 추가 >>>
+  // void toggleUserType(String type, bool value) {
+  //   // 현재 상태 복사 후 업데이트 (불변성 유지)
+  //   final currentSelection = Map<String, bool>.from(
+  //     state.selectedUserTypeSelection,
+  //   );
+  //   currentSelection[type] = value;
+  //   // 변경된 Map으로 상태 업데이트
+  //   state = state.copyWith(selectedUserTypeSelection: currentSelection);
+  // }
+
+  void setUserType(String? type) {
+    state = state.copyWith(selectedUserType: type);
+  }
+
+  void setGender(String? gender) {
+    if (gender != null && gender != state.selectedGender) {
+      state = state.copyWith(selectedGender: gender);
     }
   }
 
@@ -165,14 +190,15 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
 
   // 프로필 저장 로직 (기존 로직 이전)
   Future<void> saveProfile({
-    required DateTime? birthDate, // Screen에서 현재 선택된 값 전달 받음
     required String? selectedGu, // Screen에서 현재 선택된 값 전달 받음
     required String? selectedDong, // Screen에서 현재 선택된 값 전달 받음
-    required Map<String, bool> userTypeSelection, // Screen에서 현재 선택된 값 전달 받음
+    required String? selectedGender,
     // required String name, // 이름 저장 필요 시 추가
   }) async {
+    final currentBirthDate = state.selectedBirthDate;
+    final currentSelectedUserType = state.selectedUserType;
     // 유효성 검사 (생년월일 필수)
-    if (birthDate == null) {
+    if (currentBirthDate == null) {
       state = state.copyWith(errorMessage: '생년월일을 선택해주세요.');
       return;
     }
@@ -185,6 +211,11 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
       state = state.copyWith(errorMessage: '거주 지역(동)을 선택해주세요.');
       return;
     }
+    if (selectedGender == null) {
+      // <<< 성별 누락 체크
+      state = state.copyWith(errorMessage: '성별을 선택해주세요.');
+      return;
+    }
 
     state = state.copyWith(
       isSaving: true,
@@ -193,32 +224,34 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
     );
 
     try {
-      final age = _calculateAge(birthDate);
-      final selectedTypes =
-          userTypeSelection.entries
-              .where((entry) => entry.value)
-              .map((entry) => entry.key)
-              .toList();
-      // TODO: 기저질환 정보 가져오기
-      final List<String> diseaseParam = [...selectedTypes /*, ...diseases*/];
+      final age = _calculateAge(currentBirthDate);
+      // final selectedTypes = ... // <<< 제거
+      // final List<String> diseaseParam = [...selectedTypes]; // <<< 제거
+      final String? userTypeToSave =
+          currentSelectedUserType == '없음' ? null : currentSelectedUserType;
 
       // 로컬 저장소에 수정된 정보 저장
-      await _prefsService.saveUserInfo(age: age, userTypes: diseaseParam);
-      // '내 정보'의 구/동 정보 저장
+      await _prefsService.saveUserInfo(
+        age: age,
+        // userTypes: [], // <<< 제거
+        userType: userTypeToSave, // <<< 수정
+        gender: selectedGender,
+      );
       await _prefsService.saveMyGuDong(selectedGu, selectedDong);
-      // TODO: 이름 저장 로직 추가 시 여기에 포함 (_prefsService에 관련 함수 추가 필요)
 
-      // 저장 성공 시 초기값들도 업데이트 (선택사항)
+      if (!mounted) return; // 비동기 호출 후 mounted 확인
+
       state = state.copyWith(
         isSaving: false,
         savedSuccessfully: true,
-        initialBirthDate: birthDate, // 저장된 값으로 초기값 업데이트
-        // selectedGu, selectedDong은 이미 상태에 반영되어 있음
-        initialUserTypeSelection: userTypeSelection,
+        initialBirthDate: currentBirthDate,
+        // initialUserTypeSelection: Map.from(currentUserTypes), // <<< 제거
+        initialUserType: currentSelectedUserType, // <<< 수정: 저장된 값으로 초기값 업데이트
       );
       print("EditProfileNotifier: Profile saved successfully.");
     } catch (e) {
       print("EditProfileNotifier: Error saving profile: $e");
+      if (!mounted) return; // mounted 확인
       state = state.copyWith(isSaving: false, errorMessage: "정보 저장 실패: $e");
     }
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:front/data/models/added_person.dart';
 
 // API 응답 모델 import (경로 수정)
 import '../../data/models/api/health_index_response.dart';
@@ -38,31 +39,52 @@ class DataMapper {
   static CurrentWeather mapWeatherResponseToUI(
     WeatherDetailResponse apiData,
     RegionInfo? regionInfo,
+    String? gender,
   ) {
     // 옷차림 및 아바타 결정 로직 (임시)
     // TODO: 날씨 상태(description), 온도 등을 고려한 실제 로직 구현 필요
     String recommendation = "날씨 확인 중...";
     String avatarImageAsset = 'assets/images/man_1.png'; // 기본 아바타 (경로 수정)
     double currentTemp = apiData.measurements?.temp ?? 0.0;
+    String currentGender = gender ?? Gender.male;
+    String cGender = currentGender == "male" ? "man" : "women";
 
     // --- 온도 기반 추천 및 아바타 (개선) ---
+    print(apiData.measurements?.temp);
     if (apiData.measurements?.temp != null) {
       currentTemp = apiData.measurements!.temp!;
       if (currentTemp >= 28) {
         recommendation = "매우 더워요! 반팔, 반바지가 좋겠어요.";
-        avatarImageAsset = 'assets/images/man_halfT.png'; // 더울 때 아바타 (경로 수정)
-      } else if (currentTemp >= 20) {
+        avatarImageAsset =
+            'assets/images/avatar/${cGender}/${cGender}_short.png';
+      } else if (currentTemp >= 23) {
         recommendation = "따뜻한 날씨네요. 가벼운 옷차림이 좋아요.";
         avatarImageAsset =
-            'assets/images/man_shirt.png'; // 따뜻할 때 아바타 (경로 수정, 에셋 필요)
-      } else if (currentTemp >= 10) {
-        recommendation = "쌀쌀해요. 겉옷을 챙기세요.";
+            'assets/images/avatar/${cGender}/${cGender}_sshirt.png';
+      } else if (currentTemp >= 20) {
+        recommendation = "선선한 날씨에요. 긴팔 티가 적당해요.";
         avatarImageAsset =
-            'assets/images/man_jacket.png'; // 쌀쌀할 때 아바타 (경로 수정, 에셋 필요)
+            'assets/images/avatar/${cGender}/${cGender}_longsl.png';
+      } else if (currentTemp >= 17) {
+        recommendation = "조금 쌀쌀해졌어요. 얇은 외투를 챙기세요.";
+        avatarImageAsset =
+            'assets/images/avatar/${cGender}/${cGender}_gadi.png';
+      } else if (currentTemp >= 12) {
+        recommendation = "제법 쌀쌀해요. 바람막이를 챙기세요.";
+        avatarImageAsset =
+            'assets/images/avatar/${cGender}/${cGender}_hood.png';
+      } else if (currentTemp >= 9) {
+        recommendation = "쌀쌀한 날씨에요. 점퍼나 기모 옷을 입는게 좋아요.";
+        avatarImageAsset =
+            'assets/images/avatar/${cGender}/${cGender}_jumpper.png';
+      } else if (currentTemp >= 5) {
+        recommendation = "추운 날씨에요. 두꺼운 옷을 입으세요.";
+        avatarImageAsset =
+            'assets/images/avatar/${cGender}/${cGender}_knit.png';
       } else {
         recommendation = "추워요! 따뜻하게 입으세요.";
         avatarImageAsset =
-            'assets/images/man_padding.png'; // 추울 때 아바타 (경로 수정, 에셋 필요)
+            'assets/images/avatar/${cGender}/${cGender}_padding.png';
       }
     }
     // TODO: 날씨 상태(맑음, 비, 눈 등)에 따른 추천 및 아바타 추가

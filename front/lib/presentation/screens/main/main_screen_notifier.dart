@@ -27,7 +27,13 @@ import '../../../data/services/api_service.dart';
 
 // API 호출 파라미터를 묶기 위한 레코드 타입 정의 (Dart 3 이상)
 typedef _ApiParams =
-    ({double latitude, double longitude, int? age, List<String>? userTypes});
+    ({
+      double latitude,
+      double longitude,
+      int? age,
+      List<String>? diseases,
+      String? userType, // <<< 사용자 근무 유형 필드 다시 추가
+    });
 
 // API 호출 결과를 묶기 위한 레코드 타입 정의
 typedef _ApiRawResults =
@@ -84,6 +90,9 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
   Future<void> _initializeScreen() async {
     await Future.wait([_loadAddedPeople(), _loadVisibleIndicesFromPrefs()]);
     await loadDataForSelectedPerson();
+    if (mounted) {
+      await loadDataForSelectedPerson();
+    }
   }
 
   Future<void> _loadAddedPeople() async {
@@ -94,10 +103,38 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
   }
 
   Future<void> _loadVisibleIndicesFromPrefs() async {
-    final savedIndices = await _prefsService.getVisibleIndices();
-    final initialVisible = savedIndices ?? availableHealthIndices.toSet();
-    state = state.copyWith(visibleIndices: initialVisible);
-    print("Visible indices loaded: $initialVisible");
+    try {
+      // 안전을 위해 try-catch 블록 추가
+      final savedIndices = await _prefsService.getVisibleIndices();
+
+      // <<<--- await 이후 Notifier가 여전히 mounted 상태인지 확인 --->>>
+      if (!mounted) {
+        // Notifier가 이미 dispose 되었다면 아무 작업도 하지 않고 함수 종료
+        print(
+          "Warning: MainScreenNotifier disposed before updating visible indices.",
+        );
+        return;
+      }
+      // <<<---------------------------------------------------->>>
+
+      final initialVisible = savedIndices ?? availableHealthIndices.toSet();
+
+      // 상태 업데이트 직전에 한 번 더 확인 (선택 사항이지만 더 안전)
+      if (!mounted) return;
+
+      // mounted 상태임이 확인되었으므로 안전하게 상태 업데이트
+      state = state.copyWith(visibleIndices: initialVisible);
+      print("Visible indices loaded: $initialVisible");
+    } catch (e) {
+      // SharedPreferences 로드 중 발생할 수 있는 오류 처리
+      print("Error loading visible indices from preferences: $e");
+      // 오류 발생 시에도 mounted 상태인지 확인 후 에러 상태 업데이트 가능
+      if (mounted) {
+        state = state.copyWith(errorMessage: "표시 지수 로드 중 오류 발생: $e");
+        // 또는 오류 시 기본값으로 설정
+        // state = state.copyWith(visibleIndices: availableHealthIndices.toSet());
+      }
+    }
   }
 
   Future<void> reloadVisibleIndices() async {
@@ -145,27 +182,40 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
 
   // --- 데이터 로드 메인 함수 ---
   Future<void> loadDataForSelectedPerson({bool refresh = false}) async {
+    // 함수 시작 시점에서도 mounted 확인 (선택적이지만 안전)
+    if (!mounted) return;
+
+    // 상태 업데이트 전 mounted 확인
     if (!refresh) {
+      if (!mounted) return; // 추가된 체크
       state = state.copyWith(isLoading: true);
     }
-    // 에러 메시지 초기화는 여기서 한 번만 수행
+    if (!mounted) return; // 추가된 체크
     state = state.copyWith(errorMessage: null, clearErrorMessage: true);
 
     try {
       final params = await _determineApiParams();
-      final apiResults = await _fetchApiDataInParallel(params);
-      final processedData = _processApiResults(apiResults);
+      // await 이후 mounted 확인
+      if (!mounted) return;
 
-      // 최종 상태 업데이트 (기존 errorMessage와 processedData.errorMessage 병합 또는 선택)
-      // 여기서는 processedData.errorMessage 를 우선 사용
+      final apiResults = await _fetchApiDataInParallel(params);
+      // await 이후 mounted 확인
+      if (!mounted) return;
+
+      final _ProcessedData processedData = await _processApiResults(
+        apiResults,
+        params,
+      );
+      // await 이후 mounted 확인
+      if (!mounted) return;
+
+      // 최종 상태 업데이트 전 mounted 확인
+      if (!mounted) return;
       state = state.copyWith(
         isLoading: false,
-        errorMessage:
-            processedData.errorMessage ??
-            state.errorMessage, // 기존 에러 유지 또는 새 에러 표시
+        errorMessage: processedData.errorMessage ?? state.errorMessage,
         clearErrorMessage:
-            processedData.errorMessage != null ||
-            state.errorMessage == null, // 에러 메시지 유무에 따라 clear 설정
+            processedData.errorMessage != null || state.errorMessage == null,
         weatherDataUI: processedData.weatherUI,
         feelsLikeDataUI: processedData.feelsLikeUI,
         healthIndicesUI: processedData.healthIndicesUI,
@@ -176,8 +226,19 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
       );
       print("Data loaded for selected person.");
     } catch (e, stacktrace) {
-      print('Error loading data preparation: $e\n$stacktrace');
-      state = state.copyWith(errorMessage: '데이터 준비 중 오류: $e', isLoading: false);
+      print('Error during data loading process: $e\n$stacktrace');
+      // 에러 상태 업데이트 전 mounted 확인
+      if (mounted) {
+        state = state.copyWith(
+          errorMessage: '데이터 로드 중 오류 발생: $e',
+          isLoading: false,
+        );
+      }
+    } finally {
+      // 필요시 로딩 상태 정리 (이미 try 블록에서 처리되지만, 만약을 위해 추가 가능)
+      // if (mounted && state.isLoading) {
+      //   state = state.copyWith(isLoading: false);
+      // }
     }
   }
 
@@ -188,77 +249,82 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
     double? latitude;
     double? longitude;
     int? age;
-    List<String>? userTypes;
-    String? determinedErrorMessage; // 여기서 발생한 에러 메시지 임시 저장
+    List<String>? userDiseases;
+    String? userType;
+    String? determinedErrorMessage;
 
     if (state.selectedPersonId == myInfoId) {
       try {
-        // 저장된 '내 정보'의 구, 동 정보 가져오기
+        // --- '내 정보' 처리 로직 ---
         final (myGu, myDong) = await _prefsService.getMyGuDong();
-
         if (myGu != null && myDong != null) {
-          // 저장된 구/동 정보가 있으면 좌표 조회
-          print('Using saved My Location: $myGu $myDong');
           try {
             final coords = await _apiService.fetchCoordinates(myGu, myDong);
             latitude = coords.latitude;
             longitude = coords.longitude;
           } catch (e) {
-            print(
-              'Failed to fetch coordinates for saved location ($myGu $myDong): $e. Using default.',
-            );
             latitude = defaultLatitude;
             longitude = defaultLongitude;
             determinedErrorMessage =
-                '저장된 지역($myGu $myDong)의 좌표를 찾을 수 없어 기본 위치로 조회합니다.'; // 에러 메시지 설정
+                '저장된 지역($myGu $myDong)의 좌표를 찾을 수 없어 기본 위치로 조회합니다.';
           }
         } else {
-          // 저장된 정보 없으면 기본값 사용 (예: 서울시청 좌표)
-          print(
-            'No saved My Location found. Using default location (Seoul City Hall).',
-          );
-          latitude = defaultLatitude; // app_constants.dart의 기본값
+          latitude = defaultLatitude;
           longitude = defaultLongitude;
-          // 사용자에게 지역 설정 유도 메시지 표시 (상태 업데이트는 loadDataForSelectedPerson 완료 후)
           determinedErrorMessage = '기본 지역이 설정되지 않았습니다. 메뉴 > 내 정보 수정에서 설정해주세요.';
         }
-
-        // 사용자 정보(나이, 타입)는 기존대로 가져옴
+        // 사용자 정보 로드
         age = await _prefsService.getUserAge();
-        userTypes = await _prefsService.getUserTypes() ?? [];
-        print(
-          'Determined params for: MY INFO (using specified or default location)',
-        );
+        userDiseases = await _prefsService.getUserDiseases() ?? [];
+        userType = await _prefsService.getUserType();
+        print('Determined params for: MY INFO');
       } catch (e) {
+        // '내 정보' 처리 중 오류 발생 시 fallback
         print('Error determining params for MY INFO: $e');
-        // 예외 발생 시에도 기본값 사용 시도
         latitude ??= defaultLatitude;
         longitude ??= defaultLongitude;
-        determinedErrorMessage = '내 정보 처리 중 오류 발생: $e'; // 에러 메시지 설정
+        // 오류 발생 시에도 값 할당 시도 (null일 수 있음)
+        age ??= await _prefsService.getUserAge();
+        userDiseases ??= await _prefsService.getUserDiseases() ?? [];
+        userType ??= await _prefsService.getUserType();
+        determinedErrorMessage = '내 정보 처리 중 오류 발생: $e';
       }
     } else {
-      // 추가된 사람 선택 시 기존 로직 유지
+      // --- 추가된 사람 처리 로직 ---
       final selectedPerson = state.addedPeopleList.firstWhere(
         (p) => p.id == state.selectedPersonId,
-        orElse: () => AddedPerson(id: '', name: 'Unknown'),
+        orElse: () => AddedPerson(id: '', name: 'Unknown'), // ID가 없는 기본 객체 반환
       );
+
+      // selectedPerson이 유효한지 (ID가 있고, 위치 정보가 있는지) 확인
       if (selectedPerson.id.isNotEmpty &&
           selectedPerson.latitude != null &&
           selectedPerson.longitude != null) {
+        // 유효한 경우, 해당 정보 사용
         latitude = selectedPerson.latitude;
         longitude = selectedPerson.longitude;
         age = selectedPerson.age;
-        userTypes = selectedPerson.userTypes ?? [];
+        userDiseases = selectedPerson.diseases ?? [];
+        userType = selectedPerson.workingType;
         print('Determined params for: ${selectedPerson.name}');
       } else {
-        // 선택된 사람 정보 오류 시 에러 throw
-        throw Exception("선택된 사람의 위치 정보가 유효하지 않습니다.");
+        // 유효하지 않은 경우 (리스트에 없거나, 정보 부족) -> '내 정보' 기준으로 Fallback
+        print(
+          "Warning: Could not find valid AddedPerson data for ID: ${state.selectedPersonId}. Falling back to My Info/Defaults.",
+        );
+        age = await _prefsService.getUserAge(); // 내 정보 나이
+        userDiseases =
+            await _prefsService.getUserDiseases() ?? []; // 내 정보 기저 질환
+        userType = await _prefsService.getUserType(); // 내 정보 근무 유형
+        latitude = defaultLatitude; // 기본 위치
+        longitude = defaultLongitude;
+        determinedErrorMessage = "선택된 사용자 정보를 찾을 수 없어 기본 정보로 조회합니다.";
+        // <<< throw Exception(...) 라인 삭제됨 >>>
       }
     }
 
-    // 위경도 null 체크 강화 (모든 경로에서 위경도가 설정되도록 보장)
+    // 최종 위경도 null 체크
     if (latitude == null || longitude == null) {
-      // 이 경우는 거의 발생하지 않아야 하지만, 방어 코드
       latitude = defaultLatitude;
       longitude = defaultLongitude;
       print(
@@ -266,25 +332,29 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
       );
       determinedErrorMessage =
           determinedErrorMessage ?? '위치 정보를 최종 결정할 수 없어 기본 위치로 조회합니다.';
-      // throw Exception("최종 위치 정보를 결정할 수 없습니다."); // 앱 중단 대신 기본값 사용
     }
 
-    // _determineApiParams 에서 발생한 에러 메시지가 있으면 상태에 반영
-    // loadDataForSelectedPerson 완료 시점에 반영되도록 Future.microtask 사용 고려 가능
-    // 또는 여기서 바로 상태 업데이트 (주의: API 호출 전에 에러 메시지가 표시될 수 있음)
+    // 에러 메시지 상태 업데이트 (안전하게)
     if (determinedErrorMessage != null &&
         determinedErrorMessage != state.errorMessage) {
-      // 비동기적으로 상태 업데이트 예약 (UI 빌드 사이클 간섭 방지)
-      Future.microtask(
-        () => state = state.copyWith(errorMessage: determinedErrorMessage),
-      );
+      Future.microtask(() {
+        // Notifier가 dispose되지 않았을 경우에만 상태 업데이트
+        if (mounted) {
+          state = state.copyWith(errorMessage: determinedErrorMessage);
+        }
+      });
     }
 
+    // <<< 불필요한 diseaseParam 생성 로직 삭제됨 >>>
+    // final List<String> diseaseParam = (userType != null && userType != '없음') ? [userType] : [];
+
+    // 최종 반환 (레코드 필드 이름 확인: diseases, userType)
     return (
-      latitude: latitude,
-      longitude: longitude,
+      latitude: latitude!, // 위에서 null 아님을 보장
+      longitude: longitude!, // 위에서 null 아님을 보장
       age: age,
-      userTypes: userTypes,
+      diseases: userDiseases, // 실제 기저 질환 목록
+      userType: userType, // 실제 근무 유형
     );
   }
 
@@ -314,7 +384,8 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
         params.latitude,
         params.longitude,
         age: params.age,
-        disease: params.userTypes,
+        disease: params.diseases,
+        userType: params.userType,
       );
     } catch (e) {
       print('Failed to fetch health index: $e');
@@ -390,11 +461,30 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
   }
 
   /// 3. API 결과 처리 및 UI 데이터/컨트롤러 생성
-  _ProcessedData _processApiResults(_ApiRawResults rawResults) {
+  Future<_ProcessedData> _processApiResults(
+    _ApiRawResults rawResults,
+    _ApiParams apiParams,
+  ) async {
     CurrentWeather? weatherDataUI;
     FeelsLikeData? feelsLikeDataUI;
     List<HealthIndex> healthIndicesUI = [];
     String? processingErrorMessage; // 여기서 발생한 에러 메시지
+
+    // --- 현재 선택된 사용자의 성별 정보 가져오기 ---
+    String? selectedGender;
+    if (state.selectedPersonId == myInfoId) {
+      selectedGender = await _prefsService.getUserGender(); // 저장된 내 정보 성별 로드
+      // 저장된 성별이 없으면 기본값(male) 사용
+      selectedGender ??= Gender.male;
+    } else {
+      final selectedPerson = state.addedPeopleList.firstWhere(
+        (p) => p.id == state.selectedPersonId,
+        orElse: () => AddedPerson(id: '', name: 'Unknown'), // 오류 처리 개선 필요
+      );
+      selectedGender =
+          selectedPerson.gender ?? Gender.male; // 추가된 사람의 성별 또는 기본값
+    }
+    // ---------------------------------------
 
     // 데이터 매핑 (주요 데이터 없으면 일부만 표시될 수 있음)
     if (rawResults.weather != null && rawResults.healthIndex != null) {
@@ -402,6 +492,7 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
         weatherDataUI = DataMapper.mapWeatherResponseToUI(
           rawResults.weather!,
           rawResults.healthIndex!.region, // RegionInfo 전달
+          selectedGender,
         );
       } catch (e) {
         print("Error mapping weather data: $e");

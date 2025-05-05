@@ -53,10 +53,19 @@ class AddPersonNotifier extends StateNotifier<AddPersonState> {
     state = state.copyWith(selectedDong: dong);
   }
 
-  void toggleUserType(String type, bool value) {
-    final currentSelection = Map<String, bool>.from(state.userTypeSelection);
-    currentSelection[type] = value;
-    state = state.copyWith(userTypeSelection: currentSelection);
+  // void toggleUserType(String type, bool value) {
+  //   final currentSelection = Map<String, bool>.from(state.userTypeSelection);
+  //   currentSelection[type] = value;
+  //   state = state.copyWith(userTypeSelection: currentSelection);
+  // }
+
+  void setUserType(String? type) {
+    state = state.copyWith(selectedUserType: type);
+  }
+
+  // 성별 설정 함수
+  void setGender(String? gender) {
+    state = state.copyWith(selectedGender: gender);
   }
 
   // --- 로직 함수 ---
@@ -111,6 +120,10 @@ class AddPersonNotifier extends StateNotifier<AddPersonState> {
       state = state.copyWith(errorMessage: '지역(동)을 선택해주세요.');
       return;
     }
+    if (state.selectedGender == null) {
+      state = state.copyWith(errorMessage: '성별을 선택해주세요.');
+      return;
+    }
 
     state = state.copyWith(
       isSaving: true,
@@ -119,57 +132,42 @@ class AddPersonNotifier extends StateNotifier<AddPersonState> {
     );
 
     try {
-      // 1. 위경도 좌표 조회
       final CoordinatesResponse coords = await _apiService.fetchCoordinates(
         state.selectedGu!,
         state.selectedDong!,
       );
-
-      // 2. 저장할 데이터 준비
       final age = _calculateAge(state.selectedBirthDate);
-      final selectedTypes =
-          state.userTypeSelection.entries
-              .where((entry) => entry.value)
-              .map((entry) => entry.key)
-              .toList();
-      // TODO: 기저질환 리스트 가져오기
-      final List<String> diseaseParam = [...selectedTypes /*, ...diseases*/];
+      final String? selectedWorkingType =
+          state.selectedUserType; // UI에서 선택한 근무 유형
 
-      // 3. AddedPerson 객체 생성
+      // TODO: 향후 기저 질환 선택 UI 구현 시, 여기서 선택된 기저 질환 목록을 가져와야 함.
+      final List<String>? selectedDiseases = []; // 현재는 기저 질환 선택 기능 없으므로 빈 리스트
+
       final newPerson = AddedPerson(
-        id: const Uuid().v4(), // 고유 ID 생성
-        name: name.trim(), // 전달받은 이름 사용
+        id: const Uuid().v4(),
+        name: name.trim(),
         birthDate: state.selectedBirthDate,
         gu: state.selectedGu,
         dong: state.selectedDong,
+        gender: state.selectedGender,
         latitude: coords.latitude,
         longitude: coords.longitude,
-        userTypes: diseaseParam.isNotEmpty ? diseaseParam : null,
+        workingType:
+            selectedWorkingType == '없음'
+                ? null
+                : selectedWorkingType, // <<< 근무 유형 저장
+        diseases: selectedDiseases, // <<< 기저 질환 저장 (현재는 빈 리스트)
       );
 
-      // 4. 로컬 저장소에 추가
       await _prefsService.addPerson(newPerson);
 
-      // 5. 성공 상태 업데이트
       state = state.copyWith(isSaving: false, savedSuccessfully: true);
       print('${newPerson.name}님이 추가되었습니다.');
     } catch (e) {
-      // 오류 처리
       state = state.copyWith(errorMessage: '사람 추가 중 오류: $e', isSaving: false);
       print('Error adding person: $e');
-    } finally {
-      // 저장 시도 후에는 savedSuccessfully 상태를 다시 false로 초기화 (연속 추가 대비)
-      // 단, 화면 전환 후 초기화하거나 다른 방식 사용 가능
-      // state = state.copyWith(savedSuccessfully: false); // <<< 위치 주의: 화면 전환 후가 더 나을 수 있음
     }
   }
-
-  // Notifier가 제거될 때 savedSuccessfully 상태 초기화 (선택적)
-  // @override
-  // void dispose() {
-  //   // 필요한 경우 정리 로직
-  //   super.dispose();
-  // }
 }
 
 // --- Provider 정의 ---

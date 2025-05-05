@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart'; // 상태 비교를 위한 패키지 (pubspec.yaml 추가 필요)
 import 'package:flutter/material.dart'; // WebViewController 사용 위해 필요할 수 있음
-import 'package:geolocator/geolocator.dart'; // Position 타입
+// import 'package:geolocator/geolocator.dart'; // Position 타입
 import 'package:webview_flutter/webview_flutter.dart'; // WebViewController
 
 // UI 모델 import
