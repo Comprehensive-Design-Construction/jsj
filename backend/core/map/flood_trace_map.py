@@ -94,6 +94,20 @@ def _fetch_flood_trace_html():
         ]
     ].copy()
 
+    try:
+        print("Simplifying geometry...")
+        # 예시 tolerance 값, 실제 데이터에 맞게 조정 필요
+        original_memory = gdf_cleaned.memory_usage(deep=True).sum()
+        gdf_cleaned["geometry"] = gdf_cleaned.geometry.simplify(
+            tolerance=0.0005, preserve_topology=True
+        )
+        simplified_memory = gdf_cleaned.memory_usage(deep=True).sum()
+        print(
+            f"Geometry simplified. Memory usage: {original_memory} -> {simplified_memory}"
+        )
+    except Exception as e:
+        print(f"Error simplifying geometry: {e}")
+
     # --- 3. Folium 지도 생성 ---
     try:
         min_lon, min_lat, max_lon, max_lat = gdf_cleaned.total_bounds
