@@ -8,7 +8,7 @@ from config.settings import settings
 import logging  # 로깅 추가
 
 logger = logging.getLogger(__name__)  # 로거 추가
-url = "https://api.openweathermap.org/data/2.5/weather"
+url = "https://api.openweathermap.org/data/3.0/onecall"
 
 
 async def fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
@@ -44,15 +44,14 @@ async def fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
                 data = await response.json()
 
                 # weather 정보 추출
-                weather_list = data.get("weather", [])
+                current_dict = data.get("current", {})
+                weather_list = current_dict.get("weather", [])
                 weather_info = weather_list[0] if weather_list else {}
-                main_weather = weather_info.get("main")
-                description = weather_info.get("description")
+                main_weather = weather_info.get("main", "")
+                description = weather_info.get("description", "")
 
-                # main 데이터 추출
-                main_data = data.get("main", {})
-                # wind 정보 추출
-                wind = data.get("wind", {})
+                daily_list = data.get("daily", {})
+                daily_dict = daily_list[0] if daily_list else {}
 
                 results = {
                     # 참고: 원본 코드와 동일한 구조 유지. 필요시 response_models.py 스키마 활용 가능
@@ -64,21 +63,17 @@ async def fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
                         ),  # 아이콘 정보 추가 (선택 사항)
                     },
                     "main": {
-                        "temp": main_data.get("temp"),
-                        "feels_like": main_data.get("feels_like"),
-                        "temp_min": main_data.get(
-                            "temp_min"
-                        ),  # API 필드명 확인: temp_min
-                        "temp_max": main_data.get(
-                            "temp_max"
-                        ),  # API 필드명 확인: temp_max
-                        "pressure": main_data.get("pressure"),
-                        "humidity": main_data.get("humidity"),
-                        "wind_speed": wind.get("speed"),
-                        "wind_deg": wind.get("deg"),  # 풍향 정보 추가 (선택 사항)
+                        "temp": current_dict.get("temp"),
+                        "feels_like": current_dict.get("feels_like"),
+                        "temp_min": daily_dict.get("temp", {}).get("min"),
+                        "temp_max": daily_dict.get("temp", {}).get("max"),
+                        "pressure": current_dict.get("pressure"),
+                        "humidity": current_dict.get("humidity"),
+                        "wind_speed": current_dict.get("wind_speed"),
+                        "wind_deg": current_dict.get(
+                            "wind_deg"
+                        ),  # 풍향 정보 추가 (선택 사항)
                     },
-                    "timestamp": data.get("dt"),  # 데이터 시간 추가 (선택 사항)
-                    "timezone": data.get("timezone"),  # 타임존 추가 (선택 사항)
                 }
 
                 # 필수 값 존재 여부 확인 (예시)
