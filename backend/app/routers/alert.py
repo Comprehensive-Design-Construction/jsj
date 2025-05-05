@@ -12,11 +12,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api")
 
 
-@router.get("/recommendation", response_model=RecommendationResponse)
+@router.post("/recommendation", response_model=RecommendationResponse)
 async def create_recommendation(request_data: RecommendationRequest = Body(...)):
     """
     지수 정보와 사용자 프로필을 받아 맞춤형 행동 요령을 생성하여 반환합니다.
     """
+    print(request_data)
     try:
         recommendation_text = get_recommendation_for_user(
             index_type=request_data.index_type,
@@ -26,7 +27,6 @@ async def create_recommendation(request_data: RecommendationRequest = Body(...))
             diseases=request_data.diseases,
             is_pregnant=request_data.is_pregnant,
         )
-        print(recommendation_text)
 
         if not recommendation_text or recommendation_text.startswith("❓"):
             # 매핑되는 조건이 없거나 알 수 없는 타입일 경우 기본 메시지 또는 에러 처리

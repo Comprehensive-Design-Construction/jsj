@@ -202,78 +202,78 @@ def _get_raw_recommendation(
                     f"✅ 현재 체감온도 '{index_level_str}' 단계입니다.\n"
                     "▪️ 온열질환에 주의하여 야외활동하기 바랍니다"
                 )
-    elif index_type == "미세먼지":
+    elif index_type == "미세먼지 지수":
 
         if condition == 1:  # 노인
             if index_level_str == "매우 높음":
                 response = (  # source: 118
-                    f"🚫 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"🚫 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출 시 건강 악화 위험이 매우 높습니다.\n"
                     "▪️ 가급적 외출을 삼가고 실내에 머무르기 바랍니다.\n"
                 )
             elif index_level_str == "높음":
                 response = (  # source: 117
-                    f"⚠️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"⚠️ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 기관지 자극으로 기침·호흡곤란을 유발할 수 있습니다.\n"
                     "▪️ 가급적 외출을 삼가고 실내에 머무르기 바랍니다.\n"
                 )
             elif index_level_str == "보통":
                 response = (  # source: 117
-                    f"ℹ️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"ℹ️ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 호흡이 불편할 수 있어 외출 시 주의가 필요합니다.\n"
                     "▪️ 혼자보다는 보호자와 동반하는 것을 권장합니다.\n"
                 )
             elif index_level_str == "낮음":
                 response = (  # source: 116
-                    f"✅ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"✅ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 가벼운 외출이나 산책을 권장합니다.\n"
                 )
 
         elif condition == 2:  # 어린이
             if index_level_str == "매우 높음":
                 response = (  # source: 115
-                    f"🚫 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"🚫 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출을 금지하고, 창문을 닫고 공기청정기 사용을 권장합니다.\n"
                 )
             elif index_level_str == "높음":
                 response = (  # source: 115
-                    f"⚠️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"⚠️ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출을 자제하고 실내 활동을 권장합니다.\n"
                     "▪️ 학교에서도 체육수업 제한하기 바랍니다.\n"
                 )
             elif index_level_str == "보통":
                 response = (  # source: 114
-                    f"ℹ️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"ℹ️ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 야외 활동 시 KF80 이상 마스크 착용 필요합니다.\n"
                     "▪️ 너무 과도한 야외활동은 자제하기 바랍니다.\n"
                 )
             elif index_level_str == "낮음":
                 response = (  # source: 114 # 오타 수정: 113은 일반인 위험
-                    f"✅ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"✅ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 야외활동을 통한 적당한 운동을 하기 바랍니다.\n"
                 )
 
         elif condition == 6:  # 임산부
             if index_level_str == "매우 높음":
                 response = (  # source: 128
-                    f"🚫 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"🚫 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출 절대 금지. 실내 공기청정기를 사용하고 호흡곤란, 어지럼증 발생 시 바로 병원 연락, 응급대비 체계 마련이 필요합니다.\n"
                 )
             elif index_level_str == "높음":
                 response = (  # source: 127, 128
-                    f"⚠️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"⚠️ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출은 꼭 필요한 경우에만 최소화하고, 외출 전 공기질 확인하기 바랍니다.\n"
                     "▪️ 호흡곤란, 두통 등 증상 발생 시 즉시 휴식하기 바랍니다.\n"
                 )
             elif index_level_str == "보통":
                 response = (  # source: 127
-                    f"ℹ️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"ℹ️ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출 시 반드시 KF80 이상 마스크 착용.\n"
                     "▪️ 장시간 외출은 삼가고 실내활동을 권장합니다.\n"  # PDF에 '실내활동을 권장.' 문구 추가
                 )
             elif index_level_str == "낮음":
                 response = (  # source: 126
-                    f"✅ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"✅ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출 및 가벼운 산책 가능하며 마스크 없이도 무방합니다.\n"
                     "▪️ 단 실내외 온도 차에는 주의 필요합니다.\n"
                 )
@@ -283,25 +283,25 @@ def _get_raw_recommendation(
             if index_level_str == "매우 높음":
                 # 호흡기: source 121, 심혈관: source 125
                 response = (
-                    f"🚫 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"🚫 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️공기질 악화가 심장에 부담을 줍니다. 흉통·가슴 답답함 발생 시 즉시 응급조치하기 바랍니다.\n"
                 )
             elif index_level_str == "높음":
                 # 호흡기: source 121, 심혈관: source 124
                 response = (
-                    f"⚠️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"⚠️ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️외출 시 흉통, 어지럼증 발생할 수 있어 위험. 실내에서 휴식하며 상태를 관찰하기 바랍니다.\n"
                 )
             elif index_level_str == "보통":
                 # 호흡기: source 120, 심혈관: source 123
                 response = (
-                    f"ℹ️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"ℹ️ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️과격한 활동은 피하고, 가슴 통증이 나타나면 즉시 휴식을 취하기 바랍니다.\n"
                 )
             elif index_level_str == "낮음":
                 # 호흡기: source 119, 심혈관: source 122
                 response = (
-                    f"✅ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"✅ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️외출 후 손씻기 등 개인 위생은 유지하고, 공사장 등 인적 먼지가 발생하는 곳은은 방문하지 않기 바랍니다.\n"
                 )
         elif condition == 9:  # 기저질환자 (호흡기/심혈관 질환자 기준 통합 또는 분리)
@@ -309,54 +309,54 @@ def _get_raw_recommendation(
             if index_level_str == "매우 높음":
                 # 호흡기: source 121, 심혈관: source 125
                 response = (
-                    f"🚫 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"🚫 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️호흡기 질환 증상 악화 가능성이 높아 외출 절대 금지. 증상 악화 시 병원 즉시 방문하기 바랍니다.\n"
                 )
 
             elif index_level_str == "높음":
                 # 호흡기: source 121, 심혈관: source 124
                 response = (
-                    f"⚠️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"⚠️ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출을 피하고 실내 공기청정기 사용을 권장합니다.\n"
                 )
             elif index_level_str == "보통":
                 # 호흡기: source 120, 심혈관: source 123
                 response = (
-                    f"ℹ️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"ℹ️ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️외출 시 반드시 마스크 착용하고 흡입기 소지, 무리한 활동은 자제하기 바랍니다.\n"
                 )
             elif index_level_str == "낮음":
                 # 호흡기: source 119, 심혈관: source 122
                 response = (
-                    f"✅ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"✅ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출 후 손씻기 등 개인 위생은 유지하고, 공사장 등 인적 먼지가 발생하는 곳은은 방문하지 않기 바랍니다.\n"
                 )
 
         else:  # 일반인
             if index_level_str == "매우 높음":
                 response = (  # source: 112
-                    f"🚫 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"🚫 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출을 자제하고, 실내활동을 권장합니다.\n"
                     "▪️ 또한 실내 공기질 개선을 위해 공기청정기 사용을 권장합니다.\n"
                 )
             elif index_level_str == "높음":
                 response = (  # source: 112
-                    f"⚠️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"⚠️ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출 자제하고, 불가피한 경우 KF94 이상 마스크 착용하기 바랍니다.\n"
                     "▪️ 실내활동을 권장합니다.\n"
                 )
             elif index_level_str == "보통":
                 response = (  # source: 111
-                    f"ℹ️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"ℹ️ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외부 활동 시 마스크 착용, 장시간 외출은 피하기 바랍니다.\n"
                 )
             elif index_level_str == "낮음":
                 response = (  # source: 111
-                    f"✅ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
+                    f"✅ 현재 미세먼지 지수 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출 및 가벼운 산책 가능하며 마스크 없이도 무방합니다.\n"
                 )
 
-    elif index_type == "심뇌혈관질환":
+    elif index_type == "심뇌혈관질환 지수":
         if condition == 1:  # 노인
             if index_level_str == "매우 높음":
                 response = (  # source: 7, 8
@@ -487,7 +487,7 @@ def _get_raw_recommendation(
                     "▪️ 평소 건강 관리에 유의하며, 적절한 음식 섭취와 가벼운 운동을 지속하기 바랍니다.\n"
                 )
 
-    elif index_type == "천식질환":
+    elif index_type == "천식질환 지수":
         if condition == 1:  # 노인
             if index_level_str == "매우 높음":
                 response = (  # source: 139
@@ -613,7 +613,7 @@ def _get_raw_recommendation(
                     "▪️ 천식 관련 영향 없음. 평상시와 동일하게 실내외 활동이 가능합니다.\n"
                 )
 
-    elif index_type == "감기가능":
+    elif index_type == "감기가능 지수":
         if condition == 1:  # 노인
             if index_level_str == "매우 높음":
                 response = (  # source: 51, 52
@@ -726,7 +726,7 @@ def _get_raw_recommendation(
                     "▪️ 평소 건강관리 유의하기 바랍니다.\n"
                 )
 
-    elif index_type == "식중독":
+    elif index_type == "식중독 지수":
         # PDF 파일에 식중독 지수 관련 내용 없음. 기존 코드 유지.
         if index_level_str == "매우 높음":
             response = (
@@ -755,7 +755,7 @@ def _get_raw_recommendation(
                 "▪️ 화장실 사용 후, 귀가 후, 조리 전에 손 씻기를 생활화하기 바랍니다.\n"
             )
 
-    elif index_type == "자외선":  # <<< 자외선 지수 처리 추가
+    elif index_type == "자외선 지수":  # <<< 자외선 지수 처리 추가
         if condition == 1:  # 노인
             if index_level_str == "위험":
                 response = (  # source: 33
