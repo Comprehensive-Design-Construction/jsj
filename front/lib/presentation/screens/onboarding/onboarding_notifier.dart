@@ -1,13 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/preferences_service.dart';
-import '../../screens/main/main_screen_notifier.dart'; // preferencesServiceProvider 사용 위해
+import '../../../data/services/api_service.dart'; // ApiService import
+import '../../screens/main/main_screen_notifier.dart'; // preferencesServiceProvider, apiServiceProvider 사용 위해
 import 'onboarding_state.dart';
 
 class OnboardingNotifier extends StateNotifier<OnboardingState> {
   final PreferencesService _prefsService;
+  final ApiService _apiService; // ApiService 의존성 추가
 
-  OnboardingNotifier(this._prefsService) : super(const OnboardingState());
+  OnboardingNotifier(this._prefsService, this._apiService) // 생성자 수정
+    : super(const OnboardingState()) {
+    _fetchGuData(); // Notifier 생성 시 구 목록 로드
+  }
 
   // --- 상태 업데이트 함수 ---
   void setBirthDate(DateTime date) {
@@ -24,6 +29,60 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     state = state.copyWith(userTypeSelection: currentSelection);
   }
 
+  // 구/동 선택 관련 함수 추가 (edit_profile_notifier.dart 와 유사)
+  Future<void> _fetchGuData() async {
+    state = state.copyWith(isLoadingLocationData: true);
+    try {
+      final gus = await _apiService.fetchGuList();
+      state = state.copyWith(guList: gus, isLoadingLocationData: false);
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: '구 목록 로드 실패: $e',
+        isLoadingLocationData: false,
+      );
+    }
+  }
+
+  Future<void> setSelectedGu(String? gu) async {
+    if (gu == state.selectedGu) return; // 변경 없으면 무시
+
+    if (gu == null) {
+      // 구 선택 해제
+      state = state.copyWith(
+        selectedGu: null,
+        selectedDong: null,
+        clearSelectedDong: true,
+        dongList: [],
+        errorMessage: null,
+        clearErrorMessage: true,
+      );
+      return;
+    }
+
+    state = state.copyWith(
+      selectedGu: gu,
+      selectedDong: null,
+      clearSelectedDong: true,
+      dongList: [],
+      isLoadingLocationData: true, // 동 로딩 시작
+      errorMessage: null,
+      clearErrorMessage: true,
+    );
+    try {
+      final dongs = await _apiService.fetchDongList(gu);
+      state = state.copyWith(dongList: dongs, isLoadingLocationData: false);
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: '$gu의 동 목록 로드 실패: $e',
+        isLoadingLocationData: false,
+      );
+    }
+  }
+
+  void setSelectedDong(String? dong) {
+    state = state.copyWith(selectedDong: dong, clearSelectedDong: dong == null);
+  }
+
   // --- 로직 함수 ---
 
   // 나이 계산 (기존 로직)
@@ -38,11 +97,19 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     return age > 0 ? age : 0;
   }
 
-  // "시작" 버튼 로직 (기존 로직 이전)
+  // "시작" 버튼 로직 수정 (구/동 정보 저장 추가)
   Future<void> startApp(String? name /* 이름 필요시 전달 */) async {
-    // 유효성 검사
+    // 유효성 검사 (생년월일, 구, 동 추가)
     if (state.selectedBirthDate == null) {
       state = state.copyWith(errorMessage: '생년월일을 선택해주세요.');
+      return;
+    }
+    if (state.selectedGu == null) {
+      state = state.copyWith(errorMessage: '거주 지역(구)을 선택해주세요.');
+      return;
+    }
+    if (state.selectedDong == null) {
+      state = state.copyWith(errorMessage: '거주 지역(동)을 선택해주세요.');
       return;
     }
 
@@ -59,23 +126,25 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
               .where((entry) => entry.value)
               .map((entry) => entry.key)
               .toList();
-      // TODO: 기저질환 리스트 가져오기
-      final List<String> diseaseParam = [...selectedTypes /*, ...diseases*/];
+      final List<String> diseaseParam = [...selectedTypes];
 
       // 로컬 저장소에 정보 저장
-      // TODO: 이름 저장 로직 추가 시 여기에 포함 (prefsService에 함수 추가 필요)
       await _prefsService.saveUserInfo(age: age, userTypes: diseaseParam);
+      // '내 정보'의 구/동 정보 저장 추가
+      await _prefsService.saveMyGuDong(state.selectedGu, state.selectedDong);
       await _prefsService.setOnboardingComplete(); // 온보딩 완료 플래그 설정
 
       state = state.copyWith(isSaving: false, onboardingProcessComplete: true);
-      print("OnboardingNotifier: Onboarding complete (with data).");
+      print(
+        "OnboardingNotifier: Onboarding complete (with data including location).",
+      );
     } catch (e) {
       print("OnboardingNotifier: Error starting app: $e");
       state = state.copyWith(isSaving: false, errorMessage: "처리 중 오류 발생: $e");
     }
   }
 
-  // "간편시작" 버튼 로직 (기존 로직 이전)
+  // "간편시작" 버튼 로직 (기존 로직 유지 - 구/동 정보 저장 안 함)
   Future<void> simpleStartApp() async {
     state = state.copyWith(
       isSaving: true,
@@ -85,6 +154,8 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     try {
       // 기본값(null)으로 정보 저장
       await _prefsService.saveUserInfo(age: null, userTypes: []);
+      // '내 정보' 구/동 정보는 저장하지 않음 (또는 명시적으로 null 저장)
+      await _prefsService.saveMyGuDong(null, null);
       await _prefsService.setOnboardingComplete(); // 온보딩 완료 플래그 설정
 
       state = state.copyWith(isSaving: false, onboardingProcessComplete: true);
@@ -100,8 +171,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 final onboardingNotifierProvider =
     StateNotifierProvider<OnboardingNotifier, OnboardingState>((ref) {
       return OnboardingNotifier(
-        ref.read(
-          preferencesServiceProvider,
-        ), // main_screen_notifier.dart의 Provider 재사용
+        ref.read(preferencesServiceProvider),
+        ref.read(apiServiceProvider), // ApiService 주입
       );
     });

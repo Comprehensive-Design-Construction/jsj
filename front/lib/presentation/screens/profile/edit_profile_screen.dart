@@ -4,8 +4,6 @@ import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart'
     as picker;
 import 'package:intl/intl.dart';
 
-// import '../../../core/constants/app_constants.dart'; // Notifier에서 사용
-// import '../../../core/utils/preferences_service.dart'; // Notifier에서 사용
 import 'edit_profile_notifier.dart'; // Notifier import
 import 'edit_profile_state.dart'; // State import
 
@@ -19,37 +17,44 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 
 // ConsumerState로 변경
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
-  // PreferencesService 인스턴스 제거 -> Notifier에서 관리
   final _nameController = TextEditingController(); // 이름은 로컬 상태로 유지
 
   // 로컬 상태: 사용자가 화면에서 수정하는 값들
   DateTime? _selectedBirthDate;
+  String? _selectedGu; // 로컬 상태 추가
+  String? _selectedDong; // 로컬 상태 추가
   Map<String, bool> _userTypeSelection = {
-    // 초기값은 Notifier에서 로드 후 설정
     '농촌': false,
     '비닐하우스': false,
     '실외작업자': false,
   };
 
-  // 로딩/저장 상태는 Riverpod State에서 관리 (_isLoading 제거)
-
   @override
   void initState() {
     super.initState();
-    // initState에서 데이터 로딩 로직 제거 -> Notifier 생성 시 처리
 
     // Notifier의 초기 데이터 로드가 완료되면 로컬 상태 업데이트
-    // 또는 build 메서드에서 초기값을 설정하거나, listener 사용
-    // 여기서는 listener를 사용하여 초기값 설정
     ref.listenManual<EditProfileState>(editProfileNotifierProvider, (
       previous,
       next,
     ) {
-      // 초기 데이터 로드 완료 시 로컬 상태 업데이트 (한 번만 실행되도록 조건 추가 가능)
-      if (previous?.isLoading == true && next.isLoading == false) {
+      // 초기 데이터 로드 완료 시 로컬 상태 업데이트
+      // isLoading과 isLoadingLocationData 모두 false일 때 UI 업데이트
+      if ((previous?.isLoading == true ||
+              previous?.isLoadingLocationData == true) &&
+          next.isLoading == false &&
+          next.isLoadingLocationData == false) {
         if (next.initialBirthDate != null) {
           setState(() {
             _selectedBirthDate = next.initialBirthDate;
+          });
+        }
+        // 구/동 초기값 설정 (Notifier의 selectedGu/Dong 사용)
+        if (next.selectedGu != null) {
+          // Notifier 상태를 로컬 상태로 동기화
+          setState(() {
+            _selectedGu = next.selectedGu;
+            _selectedDong = next.selectedDong;
           });
         }
         setState(() {
@@ -71,7 +76,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             duration: Duration(seconds: 2),
           ),
         );
-        Navigator.of(context).pop(); // 이전 화면으로 돌아가기
+        if (context.mounted) {
+          Navigator.of(context).pop(); // 이전 화면으로 돌아가기
+        }
       }
     }, fireImmediately: true); // 초기 상태도 listener가 받을 수 있도록 설정
   }
@@ -81,8 +88,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _nameController.dispose();
     super.dispose();
   }
-
-  // _loadUserData, _calculateAge, _saveProfile 함수 제거 -> Notifier로 이동
 
   // 생년월일 선택 DatePicker 표시 (로컬 상태 업데이트)
   void _presentDatePicker() {
@@ -120,6 +125,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final state = ref.watch(editProfileNotifierProvider);
     final notifier = ref.read(editProfileNotifierProvider.notifier);
 
+    // Notifier 로드 완료 후 로컬 상태 초기화 (initState에서 listenManual로 처리)
+    // if (!state.isLoading && !state.isLoadingLocationData && _selectedBirthDate == null && _selectedGu == null) {
+    //   _selectedBirthDate = state.initialBirthDate;
+    //   _selectedGu = state.selectedGu;
+    //   _selectedDong = state.selectedDong;
+    //   _userTypeSelection = Map.from(state.initialUserTypeSelection);
+    // }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('내 정보 수정'),
@@ -130,8 +143,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ),
       body: SafeArea(
         child:
-            state
-                    .isLoading // 초기 로딩 상태 확인
+            (state.isLoading ||
+                    (state.isLoadingLocationData &&
+                        state.guList.isEmpty)) // 초기 구 목록 로딩 중일 때도 인디케이터 표시
                 ? const Center(child: CircularProgressIndicator())
                 : SingleChildScrollView(
                   padding: const EdgeInsets.all(24.0),
@@ -189,6 +203,102 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       ),
                       const SizedBox(height: 24),
 
+                      // --- 지역 선택 UI 추가 (add_person_screen.dart 참고) ---
+                      Text(
+                        '거주 지역 *',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      // 구 선택 드롭다운
+                      DropdownButtonFormField<String>(
+                        value: _selectedGu, // 로컬 상태 사용
+                        hint: Text(
+                          state.isLoadingLocationData
+                              ? '불러오는 중...'
+                              : '구를 선택하세요',
+                        ),
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                        ),
+                        items:
+                            state.guList.map((String gu) {
+                              return DropdownMenuItem<String>(
+                                value: gu,
+                                child: Text(gu),
+                              );
+                            }).toList(),
+                        onChanged:
+                            state.isLoadingLocationData
+                                ? null
+                                : (String? newValue) {
+                                  // null 선택 시 처리 추가
+                                  setState(() {
+                                    _selectedGu = newValue;
+                                    _selectedDong = null; // 구 변경 시 동 로컬 상태 초기화
+                                  });
+                                  notifier.setSelectedGu(
+                                    newValue,
+                                  ); // Notifier 호출 (동 목록 로드 또는 초기화)
+                                },
+                        // validator는 Form 사용 시 필요
+                      ),
+                      const SizedBox(height: 12),
+                      // 동 선택 드롭다운
+                      DropdownButtonFormField<String>(
+                        value: _selectedDong, // 로컬 상태 사용
+                        hint: Text(
+                          state.isLoadingLocationData
+                              ? '불러오는 중...'
+                              : (_selectedGu == null
+                                  ? '구를 먼저 선택하세요'
+                                  : '동을 선택하세요'),
+                        ),
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                        ),
+                        // 구 선택 전에는 비활성화, 로딩 중 비활성화
+                        items:
+                            (state.isLoadingLocationData || _selectedGu == null)
+                                ? []
+                                : state.dongList.map((String dong) {
+                                  return DropdownMenuItem<String>(
+                                    value: dong,
+                                    child: Text(dong),
+                                  );
+                                }).toList(),
+                        onChanged:
+                            (state.isLoadingLocationData || _selectedGu == null)
+                                ? null
+                                : (String? newValue) {
+                                  // null 선택 시 처리 추가
+                                  setState(() {
+                                    _selectedDong = newValue;
+                                  }); // 로컬 상태 업데이트
+                                  notifier.setSelectedDong(
+                                    newValue,
+                                  ); // Notifier에도 반영 (선택적이지만 상태 동기화 위해 권장)
+                                },
+                      ),
+                      const SizedBox(height: 24),
+
                       // 사용자 특성 선택 (로컬 상태 _userTypeSelection 사용)
                       Text(
                         '사용자 특성 (중복 선택 가능)',
@@ -238,9 +348,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             state.isSaving
                                 ? null
                                 : () {
-                                  // Notifier의 saveProfile 함수 호출 시 로컬 상태 전달
+                                  // 로컬 상태를 Notifier의 saveProfile 함수로 전달
                                   notifier.saveProfile(
                                     birthDate: _selectedBirthDate,
+                                    selectedGu: _selectedGu, // 선택된 구 전달
+                                    selectedDong: _selectedDong, // 선택된 동 전달
                                     userTypeSelection: _userTypeSelection,
                                     // name: _nameController.text, // 이름 저장 필요 시
                                   );

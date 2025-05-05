@@ -35,7 +35,7 @@ class HealthIndexCard extends StatelessWidget {
       maxValue = 100.0;
     } // 범위 확인 필요
     else if (indexName == '미세먼지 지수') {
-      maxValue = 200.0;
+      maxValue = 150.0;
     } // API 응답 최대값 고려 (예: 150+ 매우나쁨)
     else if (indexName == '심뇌혈관질환 지수') {
       maxValue = 4.0;

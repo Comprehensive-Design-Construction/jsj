@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
+// import 'package:geolocator/geolocator.dart'; // 이제 직접 사용 안 함
 import 'package:webview_flutter/webview_flutter.dart';
 import 'dart:async';
 
@@ -23,7 +23,7 @@ import '../../../data/models/ui/current_weather.dart';
 import '../../../data/models/ui/feels_like_data.dart';
 import '../../../data/models/ui/health_index.dart';
 import '../../../data/services/api_service.dart';
-import '../../../data/services/location_service.dart';
+// import '../../../data/services/location_service.dart'; // 이제 직접 사용 안 함
 
 // API 호출 파라미터를 묶기 위한 레코드 타입 정의 (Dart 3 이상)
 typedef _ApiParams =
@@ -54,7 +54,8 @@ typedef _ProcessedData =
 
 // Notifier 클래스 정의
 class MainScreenNotifier extends StateNotifier<MainScreenState> {
-  final LocationService _locationService;
+  // LocationService 제거
+  // final LocationService _locationService;
   final ApiService _apiService;
   final PreferencesService _prefsService;
 
@@ -73,7 +74,7 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
   };
 
   MainScreenNotifier(
-    this._locationService,
+    // this._locationService, // 제거
     this._apiService,
     this._prefsService,
   ) : super(const MainScreenState()) {
@@ -122,40 +123,59 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
     state = state.copyWith(selectedDisasterType: mapType);
   }
 
-  // --- 데이터 로드 메인 함수 (이제 내부 로직 호출 역할) ---
+  /// 특정 사용자를 목록에서 삭제합니다. (ID 기준)
+  Future<void> deletePerson(String personId) async {
+    if (personId == myInfoId) {
+      print("Cannot delete 'My Info'.");
+      return;
+    }
+    try {
+      await _prefsService.deletePerson(personId);
+      print("Deleted person with ID: $personId");
+      await refreshAddedPeople();
+      if (state.selectedPersonId == personId) {
+        print("Deleted person was selected. Switching to 'My Info'.");
+        setSelectedPersonId(myInfoId);
+      }
+    } catch (e) {
+      print("Error deleting person: $e");
+      state = state.copyWith(errorMessage: "사용자 삭제 중 오류 발생: $e");
+    }
+  }
+
+  // --- 데이터 로드 메인 함수 ---
   Future<void> loadDataForSelectedPerson({bool refresh = false}) async {
-    // 1. 로딩 상태 및 오류 메시지 초기화
     if (!refresh) {
       state = state.copyWith(isLoading: true);
     }
+    // 에러 메시지 초기화는 여기서 한 번만 수행
     state = state.copyWith(errorMessage: null, clearErrorMessage: true);
 
     try {
-      // 2. API 호출 파라미터 결정
       final params = await _determineApiParams();
-
-      // 3. 결정된 파라미터로 병렬 API 호출
       final apiResults = await _fetchApiDataInParallel(params);
-
-      // 4. API 결과 처리 및 UI 데이터/컨트롤러 생성
       final processedData = _processApiResults(apiResults);
 
-      // 5. 최종 상태 업데이트
+      // 최종 상태 업데이트 (기존 errorMessage와 processedData.errorMessage 병합 또는 선택)
+      // 여기서는 processedData.errorMessage 를 우선 사용
       state = state.copyWith(
         isLoading: false,
-        errorMessage: processedData.errorMessage, // 처리된 에러 메시지 사용
-        clearErrorMessage: processedData.errorMessage == null,
+        errorMessage:
+            processedData.errorMessage ??
+            state.errorMessage, // 기존 에러 유지 또는 새 에러 표시
+        clearErrorMessage:
+            processedData.errorMessage != null ||
+            state.errorMessage == null, // 에러 메시지 유무에 따라 clear 설정
         weatherDataUI: processedData.weatherUI,
         feelsLikeDataUI: processedData.feelsLikeUI,
         healthIndicesUI: processedData.healthIndicesUI,
         envMapControllers: processedData.envMapControllers,
         shelterMapControllers: processedData.shelterMapControllers,
-        lastLoadedLatitude: params.latitude, // 사용된 좌표 저장
+        lastLoadedLatitude: params.latitude,
         lastLoadedLongitude: params.longitude,
       );
       print("Data loaded for selected person.");
     } catch (e, stacktrace) {
-      // _determineApiParams 등에서 발생할 수 있는 예외 처리
       print('Error loading data preparation: $e\n$stacktrace');
       state = state.copyWith(errorMessage: '데이터 준비 중 오류: $e', isLoading: false);
     }
@@ -169,22 +189,55 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
     double? longitude;
     int? age;
     List<String>? userTypes;
+    String? determinedErrorMessage; // 여기서 발생한 에러 메시지 임시 저장
 
     if (state.selectedPersonId == myInfoId) {
       try {
-        final position = await _locationService.determinePosition();
-        latitude = position.latitude;
-        longitude = position.longitude;
+        // 저장된 '내 정보'의 구, 동 정보 가져오기
+        final (myGu, myDong) = await _prefsService.getMyGuDong();
+
+        if (myGu != null && myDong != null) {
+          // 저장된 구/동 정보가 있으면 좌표 조회
+          print('Using saved My Location: $myGu $myDong');
+          try {
+            final coords = await _apiService.fetchCoordinates(myGu, myDong);
+            latitude = coords.latitude;
+            longitude = coords.longitude;
+          } catch (e) {
+            print(
+              'Failed to fetch coordinates for saved location ($myGu $myDong): $e. Using default.',
+            );
+            latitude = defaultLatitude;
+            longitude = defaultLongitude;
+            determinedErrorMessage =
+                '저장된 지역($myGu $myDong)의 좌표를 찾을 수 없어 기본 위치로 조회합니다.'; // 에러 메시지 설정
+          }
+        } else {
+          // 저장된 정보 없으면 기본값 사용 (예: 서울시청 좌표)
+          print(
+            'No saved My Location found. Using default location (Seoul City Hall).',
+          );
+          latitude = defaultLatitude; // app_constants.dart의 기본값
+          longitude = defaultLongitude;
+          // 사용자에게 지역 설정 유도 메시지 표시 (상태 업데이트는 loadDataForSelectedPerson 완료 후)
+          determinedErrorMessage = '기본 지역이 설정되지 않았습니다. 메뉴 > 내 정보 수정에서 설정해주세요.';
+        }
+
+        // 사용자 정보(나이, 타입)는 기존대로 가져옴
         age = await _prefsService.getUserAge();
         userTypes = await _prefsService.getUserTypes() ?? [];
-        print('Determined params for: MY INFO');
+        print(
+          'Determined params for: MY INFO (using specified or default location)',
+        );
       } catch (e) {
-        print('Failed to load location/settings for MY INFO: $e');
-        throw Exception(
-          "내 정보를 위한 위치/설정 로드 실패: $e",
-        ); // 여기서 예외 발생시켜 loadDataForSelectedPerson에서 처리
+        print('Error determining params for MY INFO: $e');
+        // 예외 발생 시에도 기본값 사용 시도
+        latitude ??= defaultLatitude;
+        longitude ??= defaultLongitude;
+        determinedErrorMessage = '내 정보 처리 중 오류 발생: $e'; // 에러 메시지 설정
       }
     } else {
+      // 추가된 사람 선택 시 기존 로직 유지
       final selectedPerson = state.addedPeopleList.firstWhere(
         (p) => p.id == state.selectedPersonId,
         orElse: () => AddedPerson(id: '', name: 'Unknown'),
@@ -198,13 +251,33 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
         userTypes = selectedPerson.userTypes ?? [];
         print('Determined params for: ${selectedPerson.name}');
       } else {
+        // 선택된 사람 정보 오류 시 에러 throw
         throw Exception("선택된 사람의 위치 정보가 유효하지 않습니다.");
       }
     }
 
-    // 위경도 null 체크 강화
+    // 위경도 null 체크 강화 (모든 경로에서 위경도가 설정되도록 보장)
     if (latitude == null || longitude == null) {
-      throw Exception("위치 정보를 가져올 수 없습니다.");
+      // 이 경우는 거의 발생하지 않아야 하지만, 방어 코드
+      latitude = defaultLatitude;
+      longitude = defaultLongitude;
+      print(
+        "Critical Error: Could not determine final coordinates, using default as last resort.",
+      );
+      determinedErrorMessage =
+          determinedErrorMessage ?? '위치 정보를 최종 결정할 수 없어 기본 위치로 조회합니다.';
+      // throw Exception("최종 위치 정보를 결정할 수 없습니다."); // 앱 중단 대신 기본값 사용
+    }
+
+    // _determineApiParams 에서 발생한 에러 메시지가 있으면 상태에 반영
+    // loadDataForSelectedPerson 완료 시점에 반영되도록 Future.microtask 사용 고려 가능
+    // 또는 여기서 바로 상태 업데이트 (주의: API 호출 전에 에러 메시지가 표시될 수 있음)
+    if (determinedErrorMessage != null &&
+        determinedErrorMessage != state.errorMessage) {
+      // 비동기적으로 상태 업데이트 예약 (UI 빌드 사이클 간섭 방지)
+      Future.microtask(
+        () => state = state.copyWith(errorMessage: determinedErrorMessage),
+      );
     }
 
     return (
@@ -217,52 +290,93 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
 
   /// 2. 결정된 파라미터로 필요한 API 병렬 호출
   Future<_ApiRawResults> _fetchApiDataInParallel(_ApiParams params) async {
-    List<Future<dynamic>> apiFutures = [
-      _apiService.fetchWeather(params.latitude, params.longitude),
-      _apiService.fetchHealthIndex(
+    WeatherDetailResponse? weatherResult;
+    HealthIndexResponse? healthIndexResult;
+    SingleRegionUvResponse? uvResult;
+    SingleRegionFineDustResponse? fineDustResult;
+    final envMapResults = <String, EnvMapApiResponse?>{};
+    final shelterMapResults = <String, MapApiResponse?>{};
+    final errors = <dynamic>[]; // 오류 저장 리스트
+
+    // 각 API 호출을 개별 try-catch로 감싸서 실행
+    try {
+      weatherResult = await _apiService.fetchWeather(
+        params.latitude,
+        params.longitude,
+      );
+    } catch (e) {
+      print('Failed to fetch weather: $e');
+      errors.add(e); // 오류 리스트에 추가
+    }
+
+    try {
+      healthIndexResult = await _apiService.fetchHealthIndex(
         params.latitude,
         params.longitude,
         age: params.age,
         disease: params.userTypes,
-      ),
-      _apiService.fetchUv(params.latitude, params.longitude),
-      _apiService.fetchFineDust(params.latitude, params.longitude),
-      ..._envMapTypes.keys.map((type) => _apiService.fetchEnvMap(type)),
-      ..._disasterTypes.keys.map(
-        (type) => _apiService.fetchShelterMap(
-          params.latitude,
-          params.longitude,
-          type,
-        ),
-      ),
-    ];
-
-    // Future.wait는 첫번째 에러 발생 시 즉시 에러를 반환 (eagerError: true 기본값)
-    // 모든 Future가 완료되고 결과를 받으려면 (성공/실패 포함) Completer 등을 사용하거나,
-    // 각 Future를 try-catch로 감싸서 null 또는 에러 객체를 반환하도록 ApiService 수정 필요.
-    // 여기서는 일단 eagerError: false 사용하여 모든 Future가 완료될 때까지 기다림.
-    final results = await Future.wait(apiFutures, eagerError: false);
-
-    // 결과 파싱 (순서 주의!)
-    int currentIndex = 0;
-    final weatherResult = results[currentIndex++] as WeatherDetailResponse?;
-    final healthIndexResult = results[currentIndex++] as HealthIndexResponse?;
-    final uvResult = results[currentIndex++] as SingleRegionUvResponse?;
-    final fineDustResult =
-        results[currentIndex++] as SingleRegionFineDustResponse?;
-
-    final envMapResults = <String, EnvMapApiResponse?>{};
-    for (var type in _envMapTypes.keys) {
-      envMapResults[type] = results[currentIndex++] as EnvMapApiResponse?;
+      );
+    } catch (e) {
+      print('Failed to fetch health index: $e');
+      errors.add(e);
     }
 
-    final shelterMapResults = <String, MapApiResponse?>{};
-    for (var type in _disasterTypes.keys) {
-      shelterMapResults[type] = results[currentIndex++] as MapApiResponse?;
+    try {
+      uvResult = await _apiService.fetchUv(params.latitude, params.longitude);
+    } catch (e) {
+      print('Failed to fetch UV: $e');
+      errors.add(e);
     }
 
-    // 오류 집계 (Exception 또는 null인 경우)
-    final errors = results.where((r) => r == null || r is Exception).toList();
+    try {
+      fineDustResult = await _apiService.fetchFineDust(
+        params.latitude,
+        params.longitude,
+      );
+    } catch (e) {
+      print('Failed to fetch fine dust: $e');
+      errors.add(e);
+    }
+
+    // 환경 지도 병렬 호출 (기존 Future.wait 유지 또는 개별 호출)
+    // 여기서는 병렬 호출 후 개별 결과 처리 예시
+    final envMapFutures =
+        _envMapTypes.keys.map((type) async {
+          try {
+            return MapEntry(type, await _apiService.fetchEnvMap(type));
+          } catch (e) {
+            print('Failed to fetch env map ($type): $e');
+            errors.add(e);
+            return MapEntry(type, null); // 에러 시 null 반환
+          }
+        }).toList();
+    final envMapEntries = await Future.wait(envMapFutures);
+    for (var entry in envMapEntries) {
+      envMapResults[entry.key] = entry.value;
+    }
+
+    // 대피소 지도 병렬 호출
+    final shelterMapFutures =
+        _disasterTypes.keys.map((type) async {
+          try {
+            return MapEntry(
+              type,
+              await _apiService.fetchShelterMap(
+                params.latitude,
+                params.longitude,
+                type,
+              ),
+            );
+          } catch (e) {
+            print('Failed to fetch shelter map ($type): $e');
+            errors.add(e);
+            return MapEntry(type, null);
+          }
+        }).toList();
+    final shelterMapEntries = await Future.wait(shelterMapFutures);
+    for (var entry in shelterMapEntries) {
+      shelterMapResults[entry.key] = entry.value;
+    }
 
     return (
       weather: weatherResult,
@@ -271,7 +385,7 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
       fineDust: fineDustResult,
       envMaps: envMapResults,
       shelterMaps: shelterMapResults,
-      errors: errors,
+      errors: errors, // 수집된 오류 목록 반환
     );
   }
 
@@ -280,47 +394,83 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
     CurrentWeather? weatherDataUI;
     FeelsLikeData? feelsLikeDataUI;
     List<HealthIndex> healthIndicesUI = [];
+    String? processingErrorMessage; // 여기서 발생한 에러 메시지
 
     // 데이터 매핑 (주요 데이터 없으면 일부만 표시될 수 있음)
     if (rawResults.weather != null && rawResults.healthIndex != null) {
-      weatherDataUI = DataMapper.mapWeatherResponseToUI(
-        rawResults.weather!,
-        rawResults.healthIndex!.region, // RegionInfo 전달
-      );
-      feelsLikeDataUI = DataMapper.mapFeelsLikeResponseToUI(
-        rawResults.healthIndex!,
-      );
-      // HealthIndex 매핑 시 UV, FineDust 데이터도 함께 전달
-      healthIndicesUI = DataMapper.mapHealthIndicesResponseToUI(
-        rawResults.healthIndex, // Nullable 전달
-        rawResults.uv, // Nullable 전달
-        rawResults.fineDust, // Nullable 전달
-      );
+      try {
+        weatherDataUI = DataMapper.mapWeatherResponseToUI(
+          rawResults.weather!,
+          rawResults.healthIndex!.region, // RegionInfo 전달
+        );
+      } catch (e) {
+        print("Error mapping weather data: $e");
+        processingErrorMessage =
+            (processingErrorMessage ?? "") + "날씨 정보 처리 오류\n";
+      }
+      try {
+        feelsLikeDataUI = DataMapper.mapFeelsLikeResponseToUI(
+          rawResults.healthIndex!,
+        );
+      } catch (e) {
+        print("Error mapping feels like data: $e");
+        processingErrorMessage =
+            (processingErrorMessage ?? "") + "체감온도 정보 처리 오류\n";
+      }
+      try {
+        // HealthIndex 매핑 시 UV, FineDust 데이터도 함께 전달
+        healthIndicesUI = DataMapper.mapHealthIndicesResponseToUI(
+          rawResults.healthIndex, // Nullable 전달
+          rawResults.uv, // Nullable 전달
+          rawResults.fineDust, // Nullable 전달
+        );
+      } catch (e) {
+        print("Error mapping health indices: $e");
+        processingErrorMessage =
+            (processingErrorMessage ?? "") + "건강지수 정보 처리 오류\n";
+      }
     } else {
       // 날씨 또는 건강지수 핵심 데이터 로드 실패 시, 다른 데이터라도 매핑 시도
-      // 예: UV, 미세먼지만이라도 표시하기 위함 (DataMapper 수정 필요할 수 있음)
-      healthIndicesUI = DataMapper.mapHealthIndicesResponseToUI(
-        rawResults.healthIndex,
-        rawResults.uv,
-        rawResults.fineDust,
-      );
+      try {
+        healthIndicesUI = DataMapper.mapHealthIndicesResponseToUI(
+          rawResults.healthIndex,
+          rawResults.uv,
+          rawResults.fineDust,
+        );
+      } catch (e) {
+        print("Error mapping partial health indices: $e");
+        processingErrorMessage =
+            (processingErrorMessage ?? "") + "부분 건강지수 정보 처리 오류\n";
+      }
       print(
         "Warning: Core weather or health index data is missing. Mapping partial data.",
       );
+      // 핵심 데이터 누락 시 에러 메시지 추가
+      processingErrorMessage =
+          (processingErrorMessage ?? "") + "날씨 또는 핵심 건강지수 로드 실패\n";
     }
 
     // WebView 컨트롤러 초기화
     final newEnvMapControllers = <String, WebViewController?>{};
     final newShelterMapControllers = <String, WebViewController?>{};
-    _initializeWebViews(
-      rawResults.envMaps,
-      rawResults.shelterMaps,
-      newEnvMapControllers,
-      newShelterMapControllers,
-    );
+    try {
+      _initializeWebViews(
+        rawResults.envMaps,
+        rawResults.shelterMaps,
+        newEnvMapControllers,
+        newShelterMapControllers,
+      );
+    } catch (e) {
+      print("Error initializing webviews: $e");
+      processingErrorMessage = (processingErrorMessage ?? "") + "지도 초기화 오류\n";
+    }
 
-    // 오류 메시지 생성
-    final String? finalErrorMessage = _handleApiErrors(rawResults.errors);
+    // API 호출 오류 메시지 결합
+    final String? apiErrorMessage = _handleApiErrors(rawResults.errors);
+    final String? finalErrorMessage =
+        [apiErrorMessage, processingErrorMessage]
+            .where((msg) => msg != null && msg.isNotEmpty)
+            .join(); // null과 빈 문자열 제외하고 합침
 
     return (
       weatherUI: weatherDataUI,
@@ -328,24 +478,23 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
       healthIndicesUI: healthIndicesUI,
       envMapControllers: newEnvMapControllers,
       shelterMapControllers: newShelterMapControllers,
-      errorMessage: finalErrorMessage,
+      errorMessage: finalErrorMessage?.trim(), // 양 끝 공백 제거
     );
   }
 
-  /// 4. API 호출 중 발생한 오류 목록을 최종 에러 메시지 문자열로 변환
+  /// 4. API 호출 중 발생한 오류 목록(null 리스트)을 최종 에러 메시지 문자열로 변환
   String? _handleApiErrors(List<dynamic> errors) {
     if (errors.isEmpty) return null;
 
-    // TODO: 오류 메시지를 좀 더 사용자 친화적으로 만들거나, 특정 API 실패 정보를 명확히 표시
+    // 각 에러 객체를 문자열로 변환하여 결합
     return errors
         .map((e) {
           if (e is Exception) {
             // Exception 종류에 따라 다른 메시지 반환 가능
+            // 예: if (e is TimeoutException) return 'API 요청 시간 초과';
             return e.toString();
-          } else if (e == null) {
-            return '알 수 없는 API 응답 (null)';
           } else {
-            return e.toString(); // 예상치 못한 타입
+            return e?.toString() ?? '알 수 없는 오류'; // 예상치 못한 타입 처리
           }
         })
         .join('\n'); // 여러 오류 발생 시 줄바꿈으로 구분
@@ -367,13 +516,14 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
                 ..setJavaScriptMode(JavaScriptMode.unrestricted)
                 ..loadHtmlString(
                   mapData.envMapHtml!,
-                  baseUrl: null,
-                ); // baseUrl 필요시 설정
+                  baseUrl: null, // baseUrl 필요시 설정
+                );
         } catch (e) {
           print("Error initializing Env WebView for $type: $e");
           envControllersTarget[type] = null;
         }
       } else {
+        print("Env map HTML is null or empty for type: $type"); // 로그 추가
         envControllersTarget[type] = null;
       }
     });
@@ -390,16 +540,18 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
           shelterControllersTarget[type] = null;
         }
       } else {
+        print("Shelter map HTML is null or empty for type: $type"); // 로그 추가
         shelterControllersTarget[type] = null;
       }
     });
   }
 } // End of Notifier class
 
-// --- Provider 정의 (기존 코드 유지) ---
-final locationServiceProvider = Provider<LocationService>(
-  (ref) => LocationService(),
-);
+// --- Provider 정의 ---
+// LocationService Provider 제거
+// final locationServiceProvider = Provider<LocationService>(
+//   (ref) => LocationService(),
+// );
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
 final preferencesServiceProvider = Provider<PreferencesService>(
   (ref) => PreferencesService(),
@@ -408,7 +560,7 @@ final preferencesServiceProvider = Provider<PreferencesService>(
 final mainScreenNotifierProvider =
     StateNotifierProvider<MainScreenNotifier, MainScreenState>((ref) {
       return MainScreenNotifier(
-        ref.read(locationServiceProvider),
+        // ref.read(locationServiceProvider), // 제거
         ref.read(apiServiceProvider),
         ref.read(preferencesServiceProvider),
       );

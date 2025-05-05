@@ -9,7 +9,6 @@ import 'main_screen_state.dart';
 // 서비스, 모델, 유틸리티, 위젯 import
 import '../../../core/constants/app_constants.dart';
 import '../../../data/models/added_person.dart';
-// UI 모델 import는 섹션 위젯에서 처리
 
 // 섹션 위젯 import
 import 'widgets/location_info_widget.dart';
@@ -25,6 +24,8 @@ import '../../widgets/main_screen/health_index_info_dialog.dart';
 import '../../widgets/main_screen/person_selection_dialog.dart';
 import '../menu/menu_screen.dart';
 import '../add_person/add_person_screen.dart';
+// EditProfileScreen import 추가
+import '../profile/edit_profile_screen.dart';
 
 // --- ConsumerStatefulWidget으로 변경 ---
 class MainScreen extends ConsumerStatefulWidget {
@@ -66,7 +67,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   // --- 하단 네비게이션 탭 처리 로직 (스크롤 기능 추가) ---
-  void _onItemTapped(int index) {
+  void _onItemTapped(int index) async {
+    // async 추가 (Navigator.push 결과 기다리기 위함)
     final notifier = ref.read(mainScreenNotifierProvider.notifier);
 
     // 특정 섹션으로 스크롤하는 로직
@@ -89,15 +91,27 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       targetKey = _shelterSectionKey;
     } else if (index == 4) {
       // 메뉴 (기존 index 3 -> 4로 변경됨)
-      // 스크롤 없이 메뉴 화면으로 이동
-      Navigator.push(
+      // 스크롤 없이 메뉴 화면으로 이동 + 결과 처리 로직 추가
+      final result = await Navigator.push<bool?>(
+        // 결과 타입 명시 (bool?)
         context,
         MaterialPageRoute(builder: (context) => const MenuScreen()),
-      ).then((_) {
-        print("Returned from MenuScreen, reloading visible indices...");
-        // MenuScreen에서 변경된 사항(보이는 지수)을 MainScreenNotifier가 다시 로드하도록 함
-        notifier.reloadVisibleIndices();
-      });
+      );
+
+      print("Returned from MenuScreen with result: $result");
+      // MenuScreen에서 변경된 사항(보이는 지수)을 MainScreenNotifier가 다시 로드하도록 함
+      await notifier.reloadVisibleIndices(); // await 추가
+
+      // EditProfileScreen에서 변경사항이 있었을 경우 (true 반환 시) 데이터 새로고침
+      // MenuScreen을 통해 EditProfileScreen으로 갔다가 돌아온 경우를 처리하기 위함
+      // MenuScreen 자체에서 pop 할 때 결과를 전달하거나, 다른 방식 사용 필요
+      // 여기서는 MenuScreen에서 pop할 때 결과 전달이 안되므로, 다른 방법 고려
+      // 예: MenuScreen에서 visibleIndices 변경 시 mainNotifierProvider를 직접 refresh? (주의)
+      // **일단 MenuScreen에서 돌아오면 무조건 새로고침하는 방식으로 수정 (가장 간단)**
+      // 또는 MenuScreen에서 pop 시 결과를 전달하도록 수정 필요
+      print("Reloading data after returning from MenuScreen...");
+      await notifier.loadDataForSelectedPerson(refresh: true); // await 추가
+
       // 메뉴 탭 시에는 _selectedIndex 업데이트하지 않고 바로 리턴 (선택사항)
       // 또는 메뉴 화면 이동 후 돌아왔을 때 이전 탭이 선택된 상태로 두려면 업데이트 X
       return; // 아래 setState 실행 방지
@@ -142,18 +156,24 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        // 배경색과 그림자 제거 (이미지와 유사하게)
+        backgroundColor: Colors.grey[50], // 또는 Colors.grey[50] 등 원하는 밝은 색
+        elevation: 0, // 그림자 제거
         title: Row(
           children: [
-            // 사용자 선택 드롭다운운
-            Expanded(child: _buildPersonSelectorDropdown(context, ref)),
+            // Expanded로 감싸서 왼쪽 정렬 효과 및 공간 확보
+            Expanded(
+              child: _buildPersonSelectorDropdown(context, ref), // 수정된 함수 호출
+            ),
+            // 오른쪽 앱 로고
             Padding(
               padding: const EdgeInsets.only(left: 8.0),
               child: Center(
                 child: Image.asset(
-                  'assets/images/welogo.png',
-                  height: 28,
+                  'assets/images/welogo.png', // 로고 경로 확인!
+                  height: 24, // 이미지에 맞게 높이 조정
                   errorBuilder:
-                      (context, error, StackTrace) => SizedBox.shrink(),
+                      (context, error, stackTrace) => SizedBox.shrink(),
                 ),
               ),
             ),
@@ -220,14 +240,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
-  // --- AppBar 사용자 선택 드롭다운 빌더 (기존 코드 유지) ---
+  // --- AppBar 사용자 선택 드롭다운 빌더 ---
   Widget _buildPersonSelectorDropdown(BuildContext context, WidgetRef ref) {
     final state = ref.watch(mainScreenNotifierProvider);
     final notifier = ref.read(mainScreenNotifierProvider.notifier);
 
     String currentPersonName = "내 정보";
-    IconData currentPersonIcon = Icons.person_pin_circle_outlined;
-    Color currentPersonIconColor = Colors.blueAccent;
+    IconData currentPersonIconData = Icons.person_rounded;
+    Color currentPersonIconBgColor = Colors.deepPurple.shade300;
 
     if (state.selectedPersonId != myInfoId) {
       final person = state.addedPeopleList.firstWhere(
@@ -235,26 +255,113 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         orElse: () => AddedPerson(id: '', name: '???'),
       );
       currentPersonName = person.name;
-      currentPersonIcon = Icons.person_outline;
-      currentPersonIconColor = Colors.deepPurpleAccent;
+      currentPersonIconData = Icons.person_outline;
+      currentPersonIconBgColor = Colors.deepPurpleAccent;
     }
+    // 현재 선택된 사람 데이터 찾기 (Dialog에 전달하기 위함)
+    final AddedPerson? currentPersonData =
+        (state.selectedPersonId != myInfoId)
+            ? state.addedPeopleList.firstWhere(
+              (p) => p.id == state.selectedPersonId,
+              orElse: () => AddedPerson(id: '', name: '알 수 없음'),
+            )
+            : null;
+    // AppBar의 위치와 높이를 알기 위한 GlobalKey
+    // (AppBar 자체에 key를 할당하거나, AppBar를 감싸는 위젯에 할당 필요)
+    // 여기서는 AppBar 높이를 대략적으로 가정하여 위치 계산 (정확하지 않을 수 있음)
+    final appBarHeight = AppBar().preferredSize.height;
+    final statusBarHeight = MediaQuery.of(context).padding.top;
 
     return InkWell(
       onTap:
           state.isLoadingPeople || state.isLoading
               ? null
               : () async {
-                final result = await showDialog<String>(
+                print("AppBar title tapped. Opening Person Selection Dialog.");
+
+                // --- showGeneralDialog 호출 (독립적인 창 효과) ---
+                final result = await showGeneralDialog<String>(
                   context: context,
-                  builder: (BuildContext dialogContext) {
-                    return PersonSelectionDialog(
-                      currentSelectedPersonId: state.selectedPersonId,
-                      addedPeople: state.addedPeopleList,
+                  barrierDismissible: true,
+                  barrierLabel:
+                      MaterialLocalizations.of(
+                        context,
+                      ).modalBarrierDismissLabel,
+                  barrierColor: Colors.black.withOpacity(0.3), // 배경 어둡게 처리 개선
+                  transitionDuration: const Duration(milliseconds: 200),
+
+                  pageBuilder: (buildContext, animation, secondaryAnimation) {
+                    return Material(
+                      type: MaterialType.transparency,
+                      child: Column(
+                        // Column을 사용하여 상단에만 배치
+                        crossAxisAlignment:
+                            CrossAxisAlignment.stretch, // 좌우 꽉 채우도록
+                        children: [
+                          // 다이얼로그 내용물 (AppBar 아래 + 여백 위치)
+                          // Container 등으로 감싸서 좌우 마진을 줄 수도 있음
+                          Padding(
+                            padding: EdgeInsets.only(
+                              top:
+                                  appBarHeight +
+                                  statusBarHeight +
+                                  4.0, // AppBar 아래 + 약간의 간격
+                              // left: 16.0, // 필요시 좌우 패딩 추가
+                              // right: 16.0,
+                            ),
+                            child: PersonSelectionDialogContent(
+                              currentSelectedPersonId: state.selectedPersonId,
+                              addedPeople: state.addedPeopleList,
+                            ),
+                          ),
+                          // 나머지 영역은 터치 시 닫히도록 Expanded + GestureDetector (선택 사항)
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => Navigator.of(buildContext).pop(),
+                              behavior: HitTestBehavior.opaque, // 빈 영역 터치 감지
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+
+                  transitionBuilder: (
+                    context,
+                    animation,
+                    secondaryAnimation,
+                    child,
+                  ) {
+                    // 위에서 아래로 내려오는 애니메이션
+                    return FadeTransition(
+                      // Fade 효과 추가
+                      opacity: CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOut,
+                      ),
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, -0.02), // 시작 위치 조금 더 위로
+                          end: Offset.zero,
+                        ).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOut,
+                          ),
+                        ),
+                        child: child,
+                      ),
                     );
                   },
                 );
+                // ---------------------------
+
+                print("Dialog closed with result: $result");
+
+                // --- 다이얼로그 결과 처리 로직 ---
                 if (result != null) {
                   if (result == 'ADD_NEW') {
+                    // '+ 추가' 선택 시 AddPersonScreen으로 이동
                     if (context.mounted) {
                       final added = await Navigator.push<bool?>(
                         context,
@@ -266,30 +373,88 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                         await notifier.refreshAddedPeople();
                       }
                     }
+                  } else if (result.startsWith('DELETE:')) {
+                    final personIdToDelete = result.split(':').last;
+                    await notifier.deletePerson(personIdToDelete);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('사용자가 삭제되었습니다.'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
                   } else {
+                    // 특정 사람 ID 선택 시 Notifier 상태 업데이트
                     notifier.setSelectedPersonId(result);
                   }
                 }
+                // result가 null이면 사용자가 다이얼로그 밖을 탭하여 닫은 경우 (별도 처리 없음)
+                // ------------------------------------
               },
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+        padding: const EdgeInsets.symmetric(vertical: 4.0),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(currentPersonIcon, size: 22, color: currentPersonIconColor),
-            const SizedBox(width: 8),
+            Stack(
+              clipBehavior: Clip.none, // 점이 아바타 밖으로 나가도 보이도록
+              children: [
+                CircleAvatar(
+                  radius: 20, // 이미지 크기에 맞게 조절
+                  backgroundColor: currentPersonIconBgColor,
+                  child: Icon(
+                    currentPersonIconData,
+                    size: 24, // 아이콘 크기 조절
+                    color: Colors.white, // 아이콘 색상 흰색
+                  ),
+                ),
+                // 온라인 상태 표시 점 (Positioned 사용)
+                Positioned(
+                  bottom: -2, // 위치 조정
+                  right: -2, // 위치 조정
+                  child: Container(
+                    width: 10, // 점 크기
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: Colors.greenAccent.shade400, // 녹색 점
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white,
+                        width: 1.5,
+                      ), // 흰색 테두리
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            // ------------------------------------
+            const SizedBox(width: 10), // 아이콘과 이름 사이 간격
+            // --- 이름 ---
             Flexible(
               child: Text(
                 currentPersonName,
-                style: Theme.of(context).appBarTheme.titleTextStyle,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  // 텍스트 스타일 조정
+                  fontWeight: FontWeight.bold, // 볼드 처리
+                  fontSize: 18, // 폰트 크기 조정
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: Colors.grey[700],
-              size: 22,
+            // -----------
+            const SizedBox(width: 4), // 이름과 화살표 사이 간격
+            // --- 드롭다운 화살표 (CircleAvatar 배경 추가) ---
+            CircleAvatar(
+              radius: 12, // 원 크기
+              backgroundColor: Colors.grey.shade200, // 회색 배경
+              child: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 18, // 아이콘 크기
+                color: Colors.grey.shade700, // 아이콘 색상
+              ),
             ),
+            // ------------------------------------
           ],
         ),
       ),
@@ -304,7 +469,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     if (state.isLoading && state.weatherDataUI == null) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (state.errorMessage != null && state.weatherDataUI == null) {
+    // 에러 메시지가 있고, 날씨 데이터가 없을 때만 전체 에러 화면 표시
+    if (state.errorMessage != null &&
+        state.errorMessage!.isNotEmpty &&
+        state.weatherDataUI == null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -313,7 +481,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             children: [
               Icon(Icons.error_outline, color: Colors.red, size: 48),
               SizedBox(height: 16),
-              Text('데이터 로드 실패', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                '데이터 로드 중 오류 발생',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               SizedBox(height: 8),
               Text(
                 state.errorMessage!,
@@ -350,14 +521,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  // 선택된 사람 이름 표시 (기존과 동일)
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Text(
-                    "${_getCurrentPersonName(ref)}님의 현재 정보",
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
+                // Padding(
+                //   // 선택된 사람 이름 표시 (기존과 동일)
+                //   padding: const EdgeInsets.only(bottom: 8.0),
+                //   child: Text(
+                //     "${_getCurrentPersonName(ref)}님의 현재 정보",
+                //     style: Theme.of(context).textTheme.bodySmall,
+                //   ),
+                // ),
                 const LocationInfoWidget(), // 위치 정보 위젯
                 const WeatherSectionWidget(), // 날씨 섹션 위젯
                 FeelsLikeSectionWidget(
@@ -457,6 +628,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     bool showInfoIcon = false,
   }) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title, style: Theme.of(context).textTheme.titleMedium),
         if (showInfoIcon) ...[

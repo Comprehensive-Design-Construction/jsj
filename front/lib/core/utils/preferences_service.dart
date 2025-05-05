@@ -9,6 +9,8 @@ class PreferencesService {
   static const String _userTypesKey = 'user_types'; // 사용자 특성 (disease 파라미터용)
   static const String _visibleIndicesKey = 'visible_health_indices';
   static const String _addedPeopleKey = 'added_people_list'; // 추가된 사람 목록 키
+  static const String _myGuKey = 'my_gu'; // 내 정보의 구
+  static const String _myDongKey = 'my_dong'; // 내 정보의 동
 
   // SharedPreferences 인스턴스 가져오기
   Future<SharedPreferences> _getPrefs() async {
@@ -53,6 +55,30 @@ class PreferencesService {
   Future<List<String>?> getUserTypes() async {
     final prefs = await _getPrefs();
     return prefs.getStringList(_userTypesKey); // 저장된 값 없으면 null 반환
+  }
+
+  Future<void> saveMyGuDong(String? gu, String? dong) async {
+    final prefs = await _getPrefs();
+    if (gu != null) {
+      await prefs.setString(_myGuKey, gu);
+    } else {
+      await prefs.remove(_myGuKey);
+    }
+    if (dong != null) {
+      await prefs.setString(_myDongKey, dong);
+    } else {
+      await prefs.remove(_myDongKey);
+    }
+    print('Saved My Location: gu=$gu, dong=$dong');
+  }
+
+  /// 저장된 '내 정보'의 구와 동 정보를 불러옵니다.
+  /// 반환값: (String? gu, String? dong) 튜플
+  Future<(String?, String?)> getMyGuDong() async {
+    final prefs = await _getPrefs();
+    final String? gu = prefs.getString(_myGuKey);
+    final String? dong = prefs.getString(_myDongKey);
+    return (gu, dong);
   }
 
   // (참고) 모든 저장된 정보 삭제 (테스트용)
