@@ -292,6 +292,7 @@ def calculate_apparent_temp_ali(
         user_types = []
         age = user_input.get("age")
         diseases = user_input.get("disease", [])
+        print(user_input)
         # if age is not None:
         #     if age >= 65:
         #         user_types.append("노인")
