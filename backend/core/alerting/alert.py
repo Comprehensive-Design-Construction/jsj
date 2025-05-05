@@ -52,14 +52,14 @@ def _get_raw_recommendation(
     # 지수 유형별 응답
     if index_type == "체감온도":
         if condition == 1:  # 노인
-            if index_level_str == "위험":
+            if index_level_str == "매우 높음":
                 response = (  # source: 55, 56, 57
                     f"🚫 현재 체감온도 '{index_level_str}' 단계입니다.\n"
                     "▪️ 온열질환 발생 가능성이 매우 높으니 외출을 자제하고, 실내 또는 시원한 곳에서 쉬시기 바랍니다.\n"
                     "▪️ 독거노인 등은 온열질환 발생 가능성이 매우 높으니 안부전화 등 수시로 상태 점검하기 바랍니다.\n"
                     "▪️ 온열질환 발생 가능성이 매우 높으니 열사병 증상(구토, 고열 등) 나타나면 119에 신고하기 바랍니다.\n"
                 )
-            elif index_level_str == "경고":
+            elif index_level_str == "높음":
                 response = (  # source: 58, 59, 60, 61, 62, 63
                     f"⚠️ 현재 체감온도 '{index_level_str}' 단계입니다.\n"
                     "▪️ 온열질환 발생 가능성이 높으니 냉방장치를 틀거나, 더위를 피할 수 있는 곳에서 쉬시기 바랍니다.\n"
@@ -67,7 +67,7 @@ def _get_raw_recommendation(
                     "▪️ 노약자는 온열질환 발생 가능성이 높으니 외출을 자제하고 휴식을 취하기 바랍니다.\n"
                     "▪️ 수분과 염분을 섭취하고 현기증, 메스꺼움 등을 느끼면 주변에 도움을 요청하기 바랍니다.\n"
                 )
-            elif index_level_str == "주의":
+            elif index_level_str == "보통":
                 response = (  # source: 64, 65, 66, 67
                     f"ℹ️ 현재 체감온도 '{index_level_str}' 단계입니다.\n"
                     "▪️ 노약자는 온열질환에 걸리기 쉬우니 건강관리에 유의하기 바랍니다.\n"
@@ -75,7 +75,7 @@ def _get_raw_recommendation(
                     "▪️ 독거노인, 신체가 약한 사람 등은 온열질환에 걸리기 쉬우니 안부전화 등으로 상태 점검하기 바랍니다.\n"
                     "▪️ 온열질환에 걸리기 쉬우니 무더위쉼터와 같은 더위를 피할 수 있는 곳에서 쉬시기 바랍니다.\n"
                 )
-            elif index_level_str == "관심":
+            elif index_level_str == "낮음":
                 response = (  # source: 68, 69, 70
                     f"✅ 현재 체감온도 '{index_level_str}' 단계입니다.\n"
                     "▪️ 온열질환에 취약한 노약자는 30분 간격으로 쉬면서 야외 활동하기 바랍니다.\n"
@@ -83,13 +83,13 @@ def _get_raw_recommendation(
                     "▪️ 온열질환에 취약한 노약자는 야외 활동 시간을 줄이고, 수시로 상태 확인하기 바랍니다.\n"
                 )
         elif condition == 2:  # 어린이
-            if index_level_str == "위험":
+            if index_level_str == "매우 높음":
                 response = (  # source: 71, 72, 73
                     f"🚫 현재 체감온도 '{index_level_str}' 단계입니다.\n"
                     "▪️ 온열질환 발생 가능성이 매우 높으니 외출을 자제하고, 실내 또는 시원한 곳에서 쉬기 바랍니다.\n"
                     "▪️ 온열질환 발생 가능성이 매우 높으니 열사병 증상(구토, 고열 등) 나타나면 119에 신고하기 바랍니다.\n"
                 )
-            elif index_level_str == "경고":
+            elif index_level_str == "높음":
                 response = (  # source: 74, 75, 76, 77, 78, 79
                     f"⚠️ 현재 체감온도 '{index_level_str}' 단계입니다.\n"
                     "▪️ 온열질환 발생 가능성이 높으니 냉방장치를 틀거나, 더위를 피할 수 있는 곳에서 쉬기 바랍니다.\n"
@@ -97,7 +97,7 @@ def _get_raw_recommendation(
                     "▪️ 수분과 염분을 섭취하고 현기증, 메스꺼움 등을 느끼면 주변에 도움을 요청하기 바랍니다.\n"
                     "▪️ 온열질환 발생 가능성이 높으니 열사병 증상(구토, 고열 등) 나타나면 119에 바로 신고하기 바랍니다.\n"
                 )
-            elif index_level_str == "주의":
+            elif index_level_str == "보통":
                 response = (  # source: 80, 81, 82, 83
                     f"ℹ️ 현재 체감온도 '{index_level_str}' 단계입니다.\n"
                     "▪️ 영유아는 온열질환에 걸리기 쉬우니 건강관리에 유의하기 바랍니다.\n"
@@ -105,7 +105,7 @@ def _get_raw_recommendation(
                     "▪️ 신체가 약한 사람 등은 온열질환에 걸리기 쉬우니 안부전화 등으로 상태 점검하기 바랍니다.\n"
                     "▪️ 온열질환에 걸리기 쉬우니 무더위쉼터와 같은 더위를 피할 수 있는 곳에서 쉬기 바랍니다.\n"
                 )
-            elif index_level_str == "관심":
+            elif index_level_str == "낮음":
                 response = (  # source: 84, 85, 86
                     f"✅ 현재 체감온도 '{index_level_str}' 단계입니다.\n"
                     "▪️ 온열질환에 취약한 영유아는 30분 간격으로 쉬면서 야외 활동하기 바랍니다.\n"
@@ -114,29 +114,29 @@ def _get_raw_recommendation(
                 )
 
         elif condition in [3, 4]:  # 농촌, 비닐하우스
-            if index_level_str == "위험":
+            if index_level_str == "매우 높음":
                 response = (  # source: 87
                     f"🚫 현재 체감온도 '{index_level_str}' 단계입니다. \n"
                     "▪️ 온열질환 발생 가능성이 매우 높으니 한낮에는 모든 작업을 멈추고 충분히 쉬시기 바랍니다.\n"
                 )
-            elif index_level_str == "경고":
+            elif index_level_str == "높음":
                 response = (  # source: 88
                     f"⚠️ 현재 체감온도 '{index_level_str}' 단계입니다. \n"
                     "▪️ 온열질환에 걸리기 쉬우니 아침·저녁에만 일하고, 충분한 휴식을 취하기 바랍니다.\n"
                 )
-            elif index_level_str == "주의":
+            elif index_level_str == "보통":
                 response = (  # source: 89
                     f"ℹ️ 현재 체감온도 '{index_level_str}' 단계입니다. \n"
                     "▪️ 온열질환에 걸리기 쉬우니 수시로 수분 섭취, 장시간 농작업·나홀로 작업은 자제하기 바랍니다.\n"
                 )
-            elif index_level_str == "관심":
+            elif index_level_str == "낮음":
                 response = (  # source: 90
                     f"✅ 현재 체감온도 '{index_level_str}' 단계입니다. \n"
                     "▪️ 온열질환에 대비하여 통기성이 좋은 작업복 착용, 수분 섭취, 그늘에서 쉬시기 바랍니다.\n"
                 )
 
         elif condition == 5:  # 실외 작업자
-            if index_level_str == "위험":
+            if index_level_str == "매우 높음":
                 response = (  # source: 91, 92, 93, 94, 95
                     f"🚫 현재 체감온도 '{index_level_str}' 단계입니다. \n"
                     "▪️ 시원하고 깨끗한 물을 제공하고 한 시간마다 15분 이상씩 그늘에서 휴식하기 바랍니다.\n"
@@ -148,7 +148,7 @@ def _get_raw_recommendation(
                     "▪️ 집중력 저하로 인한 떨어짐·넘어짐 등 안전사고에 유의하기 바랍니다.\n"
                     "▪️ 작업자들끼리 서로 온열질환 증상 나타나는지 확인하고 응급상황 시 신속히 조치하기 바랍니다.\n"
                 )
-            elif index_level_str == "경고":
+            elif index_level_str == "높음":
                 response = (  # source: 96, 97, 98, 99, 100, 101, 102
                     f"⚠️ 현재 체감온도 '{index_level_str}' 단계입니다. \n"
                     "▪️ 시원하고 깨끗한 물을 제공하고 한 시간마다 15분씩 그늘에서 휴식하기 바랍니다.\n"
@@ -160,7 +160,7 @@ def _get_raw_recommendation(
                     "▪️ 집중력 저하로 인한 떨어짐·넘어짐 등 안전사고에 유의 바랍니다.\n"
                     "▪️ 열사병 등 온열질환에 취약한 사람에게는 옥외작업을 제한함을 권장합니다.\n"
                 )
-            elif index_level_str == "주의":
+            elif index_level_str == "보통":
                 response = (  # source: 103, 104, 105, 106, 107, 108
                     f"ℹ️ 현재 체감온도 '{index_level_str}' 단계입니다. \n"
                     "▪️ 시원하고 깨끗한 물을 제공하고 한 시간마다 10분씩 그늘에서 휴식하기 바랍니다.\n"
@@ -171,7 +171,7 @@ def _get_raw_recommendation(
                     "▪️ 더워도 안전모 안전대 등 개인 보호 장구 착용에 소홀하지 않도록 유의하기 바랍니다.\n"
                     "▪️ 집중력 저하로 인한 떨어짐·넘어짐 등 안전사고에 유의하기 바랍니다.\n"
                 )
-            elif index_level_str == "관심":
+            elif index_level_str == "낮음":
                 response = (  # source: 109, 110
                     f"✅ 현재 체감온도 '{index_level_str}' 단계입니다. \n"
                     "▪️ 시원하고 깨끗한 물을 마련하여 충분히 물을 마실 수 있게 하고, 쉴 수 있는 그늘 준비하기 바랍니다.\n"
@@ -179,25 +179,25 @@ def _get_raw_recommendation(
                 )
 
         else:
-            if index_level_str == "위험":
+            if index_level_str == "매우 높음":
                 response = (  # source: 71, 72, 73
                     f"🚫 현재 체감온도 '{index_level_str}' 단계입니다.\n"
                     "▪️ 온열질환 발생 가능성이 매우 높으니 외출을 자제하고, 실내 또는 시원한 곳에서 쉬기 바랍니다.\n"
                     "▪️ 온열질환 발생 가능성이 매우 높으니 열사병 증상(구토, 고열 등) 나타나면 119에 신고하기 바랍니다.\n"
                 )
-            elif index_level_str == "경고":
+            elif index_level_str == "높음":
                 response = (  # source: 74, 75, 76, 77, 78, 79
                     f"⚠️ 현재 체감온도 '{index_level_str}' 단계입니다.\n"
                     "▪️ 온열질환 발생 가능성이 높으니 냉방장치를 틀거나, 더위를 피할 수 있는 곳에서 쉬기 바랍니다.\n"
                     "▪️ 수분과 염분을 섭취하고 현기증, 메스꺼움 등을 느끼면 주변에 도움을 요청하기 바랍니다.\n"
                 )
-            elif index_level_str == "주의":
+            elif index_level_str == "보통":
                 response = (  # source: 80, 81, 82, 83
                     f"ℹ️ 현재 체감온도 '{index_level_str}' 단계입니다.\n"
                     "▪️ 신체가 약한 사람 등은 온열질환에 걸리기 쉬우니 안부전화 등으로 상태 점검하기 바랍니다.\n"
                     "▪️ 온열질환에 걸리기 쉬우니 무더위쉼터와 같은 더위를 피할 수 있는 곳에서 쉬기 바랍니다.\n"
                 )
-            elif index_level_str == "관심":
+            elif index_level_str == "낮음":
                 response = (  # source: 84, 85, 86
                     f"✅ 현재 체감온도 '{index_level_str}' 단계입니다.\n"
                     "▪️ 온열질환에 주의하여 야외활동하기 바랍니다"
@@ -205,13 +205,13 @@ def _get_raw_recommendation(
     elif index_type == "미세먼지":
 
         if condition == 1:  # 노인
-            if index_level_str == "매우 나쁨":
+            if index_level_str == "매우 높음":
                 response = (  # source: 118
                     f"🚫 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출 시 건강 악화 위험이 매우 높습니다.\n"
                     "▪️ 가급적 외출을 삼가고 실내에 머무르기 바랍니다.\n"
                 )
-            elif index_level_str == "나쁨":
+            elif index_level_str == "높음":
                 response = (  # source: 117
                     f"⚠️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
                     "▪️ 기관지 자극으로 기침·호흡곤란을 유발할 수 있습니다.\n"
@@ -223,19 +223,19 @@ def _get_raw_recommendation(
                     "▪️ 호흡이 불편할 수 있어 외출 시 주의가 필요합니다.\n"
                     "▪️ 혼자보다는 보호자와 동반하는 것을 권장합니다.\n"
                 )
-            elif index_level_str == "좋음":
+            elif index_level_str == "낮음":
                 response = (  # source: 116
                     f"✅ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
                     "▪️ 가벼운 외출이나 산책을 권장합니다.\n"
                 )
 
         elif condition == 2:  # 어린이
-            if index_level_str == "매우 나쁨":
+            if index_level_str == "매우 높음":
                 response = (  # source: 115
                     f"🚫 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출을 금지하고, 창문을 닫고 공기청정기 사용을 권장합니다.\n"
                 )
-            elif index_level_str == "나쁨":
+            elif index_level_str == "높음":
                 response = (  # source: 115
                     f"⚠️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출을 자제하고 실내 활동을 권장합니다.\n"
@@ -247,19 +247,19 @@ def _get_raw_recommendation(
                     "▪️ 야외 활동 시 KF80 이상 마스크 착용 필요합니다.\n"
                     "▪️ 너무 과도한 야외활동은 자제하기 바랍니다.\n"
                 )
-            elif index_level_str == "좋음":
+            elif index_level_str == "낮음":
                 response = (  # source: 114 # 오타 수정: 113은 일반인 위험
                     f"✅ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
                     "▪️ 야외활동을 통한 적당한 운동을 하기 바랍니다.\n"
                 )
 
         elif condition == 6:  # 임산부
-            if index_level_str == "매우 나쁨":
+            if index_level_str == "매우 높음":
                 response = (  # source: 128
                     f"🚫 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출 절대 금지. 실내 공기청정기를 사용하고 호흡곤란, 어지럼증 발생 시 바로 병원 연락, 응급대비 체계 마련이 필요합니다.\n"
                 )
-            elif index_level_str == "나쁨":
+            elif index_level_str == "높음":
                 response = (  # source: 127, 128
                     f"⚠️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출은 꼭 필요한 경우에만 최소화하고, 외출 전 공기질 확인하기 바랍니다.\n"
@@ -271,7 +271,7 @@ def _get_raw_recommendation(
                     "▪️ 외출 시 반드시 KF80 이상 마스크 착용.\n"
                     "▪️ 장시간 외출은 삼가고 실내활동을 권장합니다.\n"  # PDF에 '실내활동을 권장.' 문구 추가
                 )
-            elif index_level_str == "좋음":
+            elif index_level_str == "낮음":
                 response = (  # source: 126
                     f"✅ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출 및 가벼운 산책 가능하며 마스크 없이도 무방합니다.\n"
@@ -280,13 +280,13 @@ def _get_raw_recommendation(
 
         elif condition == 8:  # 기저질환자 (호흡기/심혈관 질환자 기준 통합 또는 분리)
             # 호흡기 질환자 기준으로 우선 적용
-            if index_level_str == "매우 나쁨":
+            if index_level_str == "매우 높음":
                 # 호흡기: source 121, 심혈관: source 125
                 response = (
                     f"🚫 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
                     "▪️공기질 악화가 심장에 부담을 줍니다. 흉통·가슴 답답함 발생 시 즉시 응급조치하기 바랍니다.\n"
                 )
-            elif index_level_str == "나쁨":
+            elif index_level_str == "높음":
                 # 호흡기: source 121, 심혈관: source 124
                 response = (
                     f"⚠️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
@@ -298,7 +298,7 @@ def _get_raw_recommendation(
                     f"ℹ️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
                     "▪️과격한 활동은 피하고, 가슴 통증이 나타나면 즉시 휴식을 취하기 바랍니다.\n"
                 )
-            elif index_level_str == "좋음":
+            elif index_level_str == "낮음":
                 # 호흡기: source 119, 심혈관: source 122
                 response = (
                     f"✅ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
@@ -306,14 +306,14 @@ def _get_raw_recommendation(
                 )
         elif condition == 9:  # 기저질환자 (호흡기/심혈관 질환자 기준 통합 또는 분리)
             # 호흡기 질환자 기준으로 우선 적용
-            if index_level_str == "매우 나쁨":
+            if index_level_str == "매우 높음":
                 # 호흡기: source 121, 심혈관: source 125
                 response = (
                     f"🚫 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
                     "▪️호흡기 질환 증상 악화 가능성이 높아 외출 절대 금지. 증상 악화 시 병원 즉시 방문하기 바랍니다.\n"
                 )
 
-            elif index_level_str == "나쁨":
+            elif index_level_str == "높음":
                 # 호흡기: source 121, 심혈관: source 124
                 response = (
                     f"⚠️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
@@ -325,7 +325,7 @@ def _get_raw_recommendation(
                     f"ℹ️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
                     "▪️외출 시 반드시 마스크 착용하고 흡입기 소지, 무리한 활동은 자제하기 바랍니다.\n"
                 )
-            elif index_level_str == "좋음":
+            elif index_level_str == "낮음":
                 # 호흡기: source 119, 심혈관: source 122
                 response = (
                     f"✅ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
@@ -333,13 +333,13 @@ def _get_raw_recommendation(
                 )
 
         else:  # 일반인
-            if index_level_str == "매우 나쁨":
+            if index_level_str == "매우 높음":
                 response = (  # source: 112
                     f"🚫 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출을 자제하고, 실내활동을 권장합니다.\n"
                     "▪️ 또한 실내 공기질 개선을 위해 공기청정기 사용을 권장합니다.\n"
                 )
-            elif index_level_str == "나쁨":
+            elif index_level_str == "높음":
                 response = (  # source: 112
                     f"⚠️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출 자제하고, 불가피한 경우 KF94 이상 마스크 착용하기 바랍니다.\n"
@@ -350,7 +350,7 @@ def _get_raw_recommendation(
                     f"ℹ️ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외부 활동 시 마스크 착용, 장시간 외출은 피하기 바랍니다.\n"
                 )
-            elif index_level_str == "좋음":
+            elif index_level_str == "낮음":
                 response = (  # source: 111
                     f"✅ 현재 미세먼지 '{index_level_str}' 단계입니다. \n"
                     "▪️ 외출 및 가벼운 산책 가능하며 마스크 없이도 무방합니다.\n"
@@ -728,26 +728,26 @@ def _get_raw_recommendation(
 
     elif index_type == "식중독":
         # PDF 파일에 식중독 지수 관련 내용 없음. 기존 코드 유지.
-        if index_level_str == "위험":
+        if index_level_str == "매우 높음":
             response = (
                 f"🚫 현재 식중독 발생 가능성이 '{index_level_str}' 단계입니다. \n"
                 "▪️ 식중독 발생가능성이 매우 높으므로 식중독 예방에 각별한 경계가 요망됩니다.\n"  # 어투 수정
                 "▪️ 설사, 구토 등 식중독 의심 증상이 있으면 의료기관을 방문하여 의사 지시에 따르기 바랍니다.\n"
                 "▪️ 식중독 의심 환자는 식품 조리 참여에 즉시 중단하여야 합니다.\n"
             )
-        elif index_level_str == "경고":
+        elif index_level_str == "높음":
             response = (
                 f"⚠️ 현재 식중독 발생 가능성이 '{index_level_str}' 단계입니다. \n"
                 "▪️ 식중독 발생가능성이 높으므로 식중독 예방에 경계가 요망됩니다.\n"  # 어투 수정
                 "▪️ 조리도구는 세척, 소독 등을 거쳐 세균오염을 방지하고 유통 기한, 보관방법 등을 확인하여 음식물 조리. 보관에 각별히 주의하여야 합니다다.\n"
             )
-        elif index_level_str == "주의":
+        elif index_level_str == "보통":
             response = (
                 f"ℹ️ 현재 식중독 발생 가능성이 '{index_level_str}' 단계입니다. \n"
                 "▪️ 식중독 발생가능성이 중간 단계이므로 식중독예방에 주의가 요망됩니다.\n"  # 어투 수정
                 "▪️ 조리음식은 중심부까지 75℃(어패류 85℃)로 1분 이상 완전히 익히고 외부로 운반할 때에는 가급적 아이스박스 등을 이용하여 10℃이하에서 보관 및 운반하기 바랍니다.\n"
             )
-        elif index_level_str == "관심":
+        elif index_level_str == "낮음":
 
             response = (
                 f"✅ 현재 식중독 발생 가능성이 '{index_level_str}' 단계입니다. \n"

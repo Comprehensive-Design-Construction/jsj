@@ -26,6 +26,7 @@ async def create_recommendation(request_data: RecommendationRequest = Body(...))
             diseases=request_data.diseases,
             is_pregnant=request_data.is_pregnant,
         )
+        print(recommendation_text)
 
         if not recommendation_text or recommendation_text.startswith("❓"):
             # 매핑되는 조건이 없거나 알 수 없는 타입일 경우 기본 메시지 또는 에러 처리
