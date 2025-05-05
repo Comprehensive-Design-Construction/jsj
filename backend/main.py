@@ -206,7 +206,7 @@ async def shutdown_event():
 
 
 # 라우터 등록
-from app.routers import index, map, env_map, weather, environment, coord
+from app.routers import index, map, env_map, weather, environment, coord, alert
 
 app.include_router(index.router)
 app.include_router(map.router)
@@ -214,6 +214,7 @@ app.include_router(env_map.router)
 app.include_router(weather.router)
 app.include_router(environment.router)
 app.include_router(coord.router)
+app.include_router(alert.router)
 
 
 @app.get("/")
