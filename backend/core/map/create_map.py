@@ -137,6 +137,7 @@ def fetch_air_quality_map(
         min_lon, min_lat, max_lon, max_lat = gdf.total_bounds
         # fit_bounds에 전달할 경계 좌표를 생성합니다: [[남서쪽_lat, 남서쪽_lon], [북동쪽_lat, 북동쪽_lon]]
         bounds = [[min_lat, min_lon], [max_lat, max_lon]]
+        print(bounds)
         m.fit_bounds(bounds)
         # 필요하다면 경계에 약간의 여백(padding)을 줄 수 있습니다.
         # 예: m.fit_bounds(bounds, padding=(0.01, 0.01)) # 상하좌우 1% 여백
