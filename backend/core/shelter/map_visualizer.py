@@ -99,13 +99,13 @@ def create_shelter_map(
             # radius_km 기반으로 Zoom 레벨 추정 (휴리스틱)
             # 이 값들은 실제 테스트를 통해 조정해야 합니다.
             if radius_km <= 1.0:
-                zoom_level = 14
+                zoom_level = 15
             elif radius_km <= 2.0:
-                zoom_level = 13
+                zoom_level = 14
             elif radius_km <= 5.0:
-                zoom_level = 12
+                zoom_level = 13
             else:
-                zoom_level = 11  # 반경이 매우 클 경우
+                zoom_level = 12  # 반경이 매우 클 경우
             logger.info(
                 f"Calculated map center: {map_center}, Estimated zoom: {zoom_level} based on radius {radius_km}km"
             )
