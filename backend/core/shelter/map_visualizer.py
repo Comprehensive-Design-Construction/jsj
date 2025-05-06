@@ -4,8 +4,11 @@ import pandas as pd
 from shapely.geometry import Point
 from typing import Optional, Dict, Any, List
 import branca
+import logging
 
 from core.map.common_functions import add_zoom_control_style
+
+logger = logging.getLogger(__name__)
 
 # 재난 유형별 아이콘 스타일 정의
 DISASTER_ICON_STYLES: Dict[str, Dict[str, str]] = {
@@ -52,19 +55,74 @@ def _get_shelter_popup_html(row: pd.Series, disaster_type: str) -> str:
     return f"<div style='font-family: sans-serif; font-size: 13px; min-width: 200px;'>{''.join(content)}</div>"
 
 
-# 변경됨: 파라미터 단순화 (closest_shelter_row, min_distance_m, min_time_sec, route_coordinates 제거)
+# 함수 시그니처에 radius_km 추가
 def create_shelter_map(
-    shelter_gdf: Optional[gpd.GeoDataFrame],  # 필터링된 GDF
+    shelter_gdf: Optional[gpd.GeoDataFrame],
     user_location: Point,
     disaster_type: str,
+    radius_km: float,  # <-- 파라미터 추가
 ) -> folium.Map:
     """
-    Folium 지도를 생성하여 반환합니다. (반경 내 대피소 표시, 경로 미포함)
+    Folium 지도를 생성하여 반환합니다. (사용자 위치 및 반경 내 대피소 표시, fit_bounds 미사용)
     """
-    print(f"지도 생성 시작: {disaster_type} (반경 내 대피소 표시)")
+    print(f"지도 생성 시작 (fit_bounds 미사용): {disaster_type} (반경: {radius_km}km)")
+
+    # --- 중심점 및 Zoom 레벨 계산 로직 추가 ---
+    map_center = (user_location.y, user_location.x)  # 기본값: 사용자 위치
+    zoom_level = 15  # 기본값 (대피소 없을 시)
+
+    bounds_points = [(user_location.y, user_location.x)]
+    if shelter_gdf is not None and not shelter_gdf.empty:
+        valid_points_gdf = shelter_gdf[
+            shelter_gdf.geometry.is_valid & (shelter_gdf.geometry.geom_type == "Point")
+        ]
+        if not valid_points_gdf.empty:
+            shelter_coords = valid_points_gdf.geometry.apply(
+                lambda p: (p.y, p.x)
+            ).tolist()
+            bounds_points.extend(shelter_coords)
+
+    # 표시할 점이 2개 이상일 경우 (사용자 위치 + 대피소 1개 이상)
+    if len(bounds_points) >= 2:
+        try:
+            # 경계 상자 계산
+            min_lat = min(p[0] for p in bounds_points)
+            min_lon = min(p[1] for p in bounds_points)
+            max_lat = max(p[0] for p in bounds_points)
+            max_lon = max(p[1] for p in bounds_points)
+
+            # 중심점 계산
+            center_lat = (min_lat + max_lat) / 2
+            center_lon = (min_lon + max_lon) / 2
+            map_center = [center_lat, center_lon]
+
+            # radius_km 기반으로 Zoom 레벨 추정 (휴리스틱)
+            # 이 값들은 실제 테스트를 통해 조정해야 합니다.
+            if radius_km <= 1.0:
+                zoom_level = 14
+            elif radius_km <= 2.0:
+                zoom_level = 13
+            elif radius_km <= 5.0:
+                zoom_level = 12
+            else:
+                zoom_level = 11  # 반경이 매우 클 경우
+            logger.info(
+                f"Calculated map center: {map_center}, Estimated zoom: {zoom_level} based on radius {radius_km}km"
+            )
+
+        except Exception as e:
+            logger.error(
+                f"Error calculating center/zoom: {e}. Using default center/zoom."
+            )
+            # 오류 발생 시 기본값 사용 (사용자 위치 중심, zoom 15)
+            map_center = (user_location.y, user_location.x)
+            zoom_level = 15
+    # --- 중심점 및 Zoom 레벨 계산 로직 끝 ---
+
+    # 계산된 중심점과 zoom_level 사용
     fmap = folium.Map(
-        location=(user_location.y, user_location.x),
-        zoom_start=15,
+        location=map_center,
+        zoom_start=zoom_level,  # 계산된 zoom_level 사용
         tiles="CartoDB positron",
     )
 
@@ -76,8 +134,8 @@ def create_shelter_map(
         tooltip="현재 위치",
     ).add_to(fmap)
 
-    # 지도에 표시할 대피소 목록은 전달받은 shelter_gdf (이미 필터링됨)
-    display_gdf = shelter_gdf  # 이름 변경 (명확성 위해)
+    # 대피소 마커 추가 (기존 코드 유지)
+    display_gdf = shelter_gdf
 
     # 대피소 마커 추가
     if display_gdf is not None and not display_gdf.empty:
@@ -131,25 +189,25 @@ def create_shelter_map(
     # if route_coordinates: ...
 
     # 지도 범위 자동 조절 (fit_bounds) - 필터링된 대피소 기준으로 조정 (기존 로직 개선하여 유지)
-    try:
-        bounds_points = [(user_location.y, user_location.x)]
-        if display_gdf is not None and not display_gdf.empty:
-            # 유효한 Point 객체만 추출하여 좌표 리스트 생성
-            valid_points_gdf = display_gdf[
-                display_gdf.geometry.is_valid
-                & (display_gdf.geometry.geom_type == "Point")
-            ]
-            if not valid_points_gdf.empty:
-                shelter_coords = valid_points_gdf.geometry.apply(
-                    lambda p: (p.y, p.x)
-                ).tolist()
-                bounds_points.extend(shelter_coords)
+    # try:
+    #     bounds_points = [(user_location.y, user_location.x)]
+    #     if display_gdf is not None and not display_gdf.empty:
+    #         # 유효한 Point 객체만 추출하여 좌표 리스트 생성
+    #         valid_points_gdf = display_gdf[
+    #             display_gdf.geometry.is_valid
+    #             & (display_gdf.geometry.geom_type == "Point")
+    #         ]
+    #         if not valid_points_gdf.empty:
+    #             shelter_coords = valid_points_gdf.geometry.apply(
+    #                 lambda p: (p.y, p.x)
+    #             ).tolist()
+    #             bounds_points.extend(shelter_coords)
 
-        if len(bounds_points) >= 2:  # 시작점과 최소 1개 이상의 대피소 좌표가 있어야 함
-            fmap.fit_bounds(bounds=bounds_points, padding=(0.005, 0.005))
-        # else: 대피소가 하나도 없으면 사용자 위치 중심으로 기본 zoom 유지됨
-    except Exception as e:
-        print(f"지도 범위 자동 조절(fit_bounds) 중 오류 발생: {e}")
+    #     if len(bounds_points) >= 2:  # 시작점과 최소 1개 이상의 대피소 좌표가 있어야 함
+    #         fmap.fit_bounds(bounds=bounds_points, padding=(0.005, 0.005))
+    #     # else: 대피소가 하나도 없으면 사용자 위치 중심으로 기본 zoom 유지됨
+    # except Exception as e:
+    #     print(f"지도 범위 자동 조절(fit_bounds) 중 오류 발생: {e}")
 
     fmap = add_zoom_control_style(fmap)
     print(f"지도 생성 완료: {disaster_type}")

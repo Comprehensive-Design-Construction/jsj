@@ -36,6 +36,7 @@ async def _generate_single_map_html(
                 shelter_gdf=None,  # 변경됨: 필터링된 GDF 없음
                 user_location=user_location,
                 disaster_type=disaster_type,
+                radius_km=radius_km,
             )
 
             # 지도에 대피소 없음을 알리는 메시지 추가 (선택 사항)
@@ -82,6 +83,7 @@ async def _generate_single_map_html(
             shelter_gdf=shelter_gdf_filtered,  # 변경됨: 필터링된 대피소 GDF 전달
             user_location=user_location,
             disaster_type=disaster_type,
+            radius_km=radius_km,
             # 제거됨: closest_shelter_row, min_distance_m, min_time_sec, route_coordinates 인자 제거
         )
         fmap.save("asd.html")  # 필요 시 디버깅용 저장
@@ -90,14 +92,18 @@ async def _generate_single_map_html(
     except ValueError as ve:  # load_shelter_by_type 등에서 발생
         print(f"오류 ({disaster_type}): {ve}")
         # 오류 발생 시 기본 지도 반환
-        fmap = create_shelter_map(None, user_location, disaster_type)
+        fmap = create_shelter_map(
+            None, user_location, disaster_type, radius_km=radius_km
+        )
         folium.map.Popup(f"오류: {disaster_type} 지도 생성 실패 ({ve})").add_to(fmap)
         map_html = fmap._repr_html_()
     except Exception as e:
         print(f"예상치 못한 오류 ({disaster_type}): {e}")
         traceback.print_exc()  # 개발 시 상세 로그 확인
         # 오류 발생 시 기본 지도 반환
-        fmap = create_shelter_map(None, user_location, disaster_type)
+        fmap = create_shelter_map(
+            None, user_location, disaster_type, radius_km=radius_km
+        )
         folium.map.Popup(f"오류: {disaster_type} 지도 생성 중 문제 발생").add_to(fmap)
         map_html = fmap._repr_html_()
 
