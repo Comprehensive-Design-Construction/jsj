@@ -210,9 +210,9 @@ def add_zoom_control_style(folium_map):
     .leaflet-control-zoom a {
         /* 원하는 크기로 값 조정 */
         font-size: 1.4em !important;
-        line-height: 28px !important;
-        width: 28px !important;
-        height: 28px !important;
+        line-height: 44px !important;
+        width: 44px !important;
+        height: 44px !important;
     }
     </style>
     """
