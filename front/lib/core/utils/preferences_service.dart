@@ -34,35 +34,36 @@ class PreferencesService {
   // 사용자 정보 저장 (나이, 특성 리스트)
   Future<void> saveUserInfo({
     int? age,
-    // List<String>? userTypes, // <<< 제거
-    String? userType, // <<< 추가: 단일 특성 파라미터
+    String? userType,
     String? gender,
   }) async {
     final prefs = await _getPrefs();
+    print('[Prefs][SAVE] --- Saving User Info START ---'); // 저장 시작 로그
+    print(
+      '[Prefs][SAVE] Attempting to save: age=$age, type=$userType, gender=$gender',
+    ); // 저장하려는 값 로그
     if (age != null) {
       await prefs.setInt(_userAgeKey, age);
+      print('[Prefs][SAVE] - age saved: $age'); // 저장 직후 값 확인 로그
     } else {
       await prefs.remove(_userAgeKey);
+      print('[Prefs][SAVE] - age removed.');
     }
-    /* // <<< 기존 List 저장 로직 제거
-    if (userTypes != null) {
-      await prefs.setStringList(_userTypesKey, userTypes);
-    } else {
-      await prefs.remove(_userTypesKey);
-    }
-    */
     if (userType != null) {
-      // <<< 단일 특성 저장 로직 추가
       await prefs.setString(_userTypeKey, userType);
+      print('[Prefs][SAVE] - type saved: $userType');
     } else {
-      await prefs.remove(_userTypeKey); // null이면 삭제
+      await prefs.remove(_userTypeKey);
+      print('[Prefs][SAVE] - type removed.');
     }
     if (gender != null) {
       await prefs.setString(_userGenderKey, gender);
+      print('[Prefs][SAVE] - gender saved: $gender');
     } else {
       await prefs.remove(_userGenderKey);
+      print('[Prefs][SAVE] - gender removed.');
     }
-    print('Saved User Info: age=$age, type=$userType, gender=$gender'); // 로그 수정
+    print('[Prefs][SAVE] --- Saving User Info END ---'); // 저장 종료 로그
   }
 
   // 사용자 나이 불러오기
@@ -78,12 +79,11 @@ class PreferencesService {
   }
 
   Future<String?> getUserGender() async {
-    // <<< 내 정보 성별 로드 메서드 추가
+    print('[Prefs] Getting User Gender...'); // 읽기 시작 로그
     final prefs = await _getPrefs();
-    // 저장된 값이 없으면 기본값(male) 반환 또는 null 반환 후 호출부에서 처리
-    return prefs.getString(
-      _userGenderKey,
-    ); // ?? Gender.male; // 기본값을 여기서 설정할 수도 있음
+    final gender = prefs.getString(_userGenderKey); // 읽기 직전
+    print('[Prefs] Get User Gender: $gender'); // 읽은 후 로그
+    return gender;
   }
 
   // --- '내 정보' 임산부 여부 저장/로드 함수 추가 ---
@@ -129,7 +129,7 @@ class PreferencesService {
     } else {
       await prefs.remove(_myDongKey);
     }
-    print('Saved My Location: gu=$gu, dong=$dong');
+    print('[Prefs] Saved My Location: gu=$gu, dong=$dong');
   }
 
   /// 저장된 '내 정보'의 구와 동 정보를 불러옵니다.
@@ -138,6 +138,7 @@ class PreferencesService {
     final prefs = await _getPrefs();
     final String? gu = prefs.getString(_myGuKey);
     final String? dong = prefs.getString(_myDongKey);
+    print('[Prefs] Get My Location: gu=$gu, dong=$dong');
     return (gu, dong);
   }
 

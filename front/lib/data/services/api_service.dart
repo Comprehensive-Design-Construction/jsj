@@ -56,51 +56,67 @@ class ApiService {
     String endpoint,
     Map<String, dynamic> queryParameters, {
     Duration? timeout,
-    Duration? cacheTTL, // 캐시 TTL 파라미터 추가
-    bool forceRefresh = false, // 캐시 무시 옵션
+    Duration? cacheTTL,
+    bool forceRefresh = false,
   }) async {
     final cacheKey = _generateCacheKey(endpoint, queryParameters);
+    print(
+      '[API] GET $endpoint cacheKey: $cacheKey (forceRefresh: $forceRefresh)',
+    ); // 시작 로그
 
-    // 1. 캐시 확인 (forceRefresh가 아니고, TTL이 지정된 경우)
+    // 1. 캐시 확인
     if (!forceRefresh && cacheTTL != null && _cache.containsKey(cacheKey)) {
       final entry = _cache[cacheKey]!;
       if (entry.isValid) {
-        print('Cache HIT: $cacheKey');
+        print('[API] Cache HIT: $cacheKey');
         return entry.data; // 유효한 캐시 반환
       } else {
-        print('Cache EXPIRED: $cacheKey');
+        print('[API] Cache EXPIRED: $cacheKey. Removing.');
         _cache.remove(cacheKey); // 만료된 캐시 제거
       }
     } else if (cacheTTL != null) {
-      print('Cache MISS: $cacheKey (ForceRefresh: $forceRefresh)');
+      print('[API] Cache MISS or ForceRefresh: $cacheKey');
+    } else {
+      print('[API] Cache DISABLED for: $cacheKey'); // TTL이 없는 경우 로그
     }
 
     // 2. 네트워크 요청
-    final uri = _buildUriWithListParams('$_baseUrl$endpoint', queryParameters);
-    print('Requesting API: $uri');
+    final uri = _buildUriWithListParams(
+      '$_baseUrl$endpoint',
+      queryParameters,
+    ); // 여기서 이미 로그 출력
     try {
       final response = await http.get(uri).timeout(timeout ?? _defaultTimeout);
+      print(
+        '[API] Response received for $endpoint. Status: ${response.statusCode}',
+      ); // 응답 상태 로그
 
       if (response.statusCode == 200) {
         final decodedData = jsonDecode(utf8.decode(response.bodyBytes));
+        print('[API] Successfully decoded response for $endpoint.');
 
-        // 3. 성공 시 캐시 저장 (TTL이 지정된 경우)
+        // 3. 성공 시 캐시 저장
         if (cacheTTL != null) {
           final expiryTime = DateTime.now().add(cacheTTL);
           _cache[cacheKey] = _CacheEntry(
             data: decodedData,
             expiryTime: expiryTime,
           );
-          print('Cached response for: $cacheKey until $expiryTime');
+          print('[API] Cached response for: $cacheKey until $expiryTime');
         }
         return decodedData;
       } else {
+        final errorBody = utf8.decode(response.bodyBytes);
+        print(
+          '[API] Error Response for $endpoint: ${response.statusCode}, Body: $errorBody',
+        ); // 에러 응답 로그
         throw Exception(
-          'API Error ($endpoint): ${response.statusCode}, Body: ${utf8.decode(response.bodyBytes)}',
+          'API Error ($endpoint): ${response.statusCode}, Body: $errorBody',
         );
       }
-    } catch (e) {
-      print('Error requesting $endpoint: $e');
+    } catch (e, s) {
+      print('[API] Exception during $endpoint request: $e'); // 예외 발생 로그
+      print('[API] Stacktrace for $endpoint error: $s'); // 스택 트레이스 로그
       throw Exception('Failed to connect to API ($endpoint): $e');
     }
   }
@@ -108,53 +124,61 @@ class ApiService {
   // --- URI 수동 구성 헬퍼 (List 파라미터 처리) ---
   Uri _buildUriWithListParams(String url, Map<String, dynamic> params) {
     final queryParts = <String>[];
-    print("[DEBUG] Building URI for $url with params: $params"); // 함수 시작 로그
+    print(
+      "[API][DEBUG] Building URI for $url with params: $params",
+    ); // 함수 시작 로그
     params.forEach((key, value) {
-      // <<< 각 파라미터 타입과 값 확인 로그 >>>
       print(
-        "[DEBUG] _buildUri: Processing key='$key', value='$value', type=${value.runtimeType}",
-      );
-      // ------------------------------------
+        "[API][DEBUG] _buildUri: Processing key='$key', value='$value', type=${value.runtimeType}",
+      ); // 각 파라미터 타입과 값 확인 로그
       try {
-        // 혹시 모를 예외 처리 추가
         if (value is List) {
-          print("  - Value is List. Iterating..."); // 리스트 처리 시작 로그
+          print(
+            "[API][DEBUG] _buildUri: Value for '$key' is List. Iterating...",
+          ); // 리스트 처리 시작 로그
           if (value.isEmpty) {
             print(
-              "  - List is empty. Skipping parameter '$key'.",
+              "[API][DEBUG] _buildUri: List for '$key' is empty. Skipping parameter.",
             ); // 빈 리스트 처리 로그
-            // 빈 리스트는 쿼리 파라미터에 포함하지 않거나, 특정 방식으로 처리 (백엔드 협의 필요)
-            // 예: queryParts.add('${Uri.encodeComponent(key)}='); // 빈 값으로 추가?
+            // 백엔드가 빈 리스트 파라미터를 어떻게 처리하는지에 따라 빈 값으로 추가할 수도 있습니다.
+            // 예: queryParts.add('${Uri.encodeComponent(key)}=');
           } else {
             for (var item in value) {
-              // 여기서 int에 대한 오류가 발생한다고 의심됨
+              // <<< 이 부분 수정: 리스트 항목별로 key=value 쌍을 추가 >>>
               queryParts.add(
                 '${Uri.encodeComponent(key)}=${Uri.encodeComponent(item.toString())}',
               );
+              print(
+                "[API][DEBUG] _buildUri: Added list item for '$key': ${item.toString()}",
+              ); // 항목별 추가 로그
             }
-            print("  - Added list items for '$key'."); // 리스트 처리 완료 로그
           }
         } else if (value != null) {
-          print("  - Value is not List. Adding directly."); // 단일 값 처리 로그
+          print(
+            "[API][DEBUG] _buildUri: Value for '$key' is not List and not null. Adding directly.",
+          ); // 단일 값 처리 로그
           queryParts.add(
             '${Uri.encodeComponent(key)}=${Uri.encodeComponent(value.toString())}',
           );
         } else {
-          print("  - Value is null for key '$key'. Skipping."); // null 값 처리 로그
+          print(
+            "[API][DEBUG] _buildUri: Value is null for key '$key'. Skipping.",
+          ); // null 값 처리 로그
         }
       } catch (e, s) {
-        // 루프 내에서 예외 발생 시 로그 출력
         print(
-          "[ERROR] Exception during URI param processing for key='$key', value='$value': $e",
-        );
-        print("  - Stacktrace: $s");
+          "[API][ERROR] Exception during URI param processing for key='$key', value='$value': $e",
+        ); // 루프 내 예외 로그
+        print("[API][ERROR] Stacktrace: $s");
+        // 오류 발생 시 해당 파라미터는 제외하고 진행 (아니면 전체 예외 발생?)
+        // 여기서는 예외가 발생해도 다음 파라미터를 처리하도록 rethrow하지 않습니다.
       }
     });
     final queryString = queryParts.join('&');
     final finalUri = Uri.parse(
       '$url${queryString.isNotEmpty ? '?' : ''}$queryString',
     );
-    print("[DEBUG] Built URI: $finalUri"); // 최종 생성된 URI 로그
+    print("[API][DEBUG] Built URI: $finalUri"); // 최종 생성된 URI 로그
     return finalUri;
   }
 

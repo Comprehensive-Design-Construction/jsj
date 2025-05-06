@@ -84,18 +84,19 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
     this._apiService,
     this._prefsService,
   ) : super(const MainScreenState()) {
+    print('[MainScreenNotifier] Created.');
     _initializeScreen();
   }
 
   Future<void> _initializeScreen() async {
-    // 초기화 시 여러 비동기 작업 병렬 실행
+    print('[MainScreenNotifier] Initializing screen...');
     await Future.wait([_loadAddedPeople(), _loadVisibleIndicesFromPrefs()]);
-
-    // `mounted` 확인: Future.wait 이후 Notifier가 여전히 활성 상태인지 확인
     if (!mounted) return;
-
-    // 초기 데이터 로드
-    await loadDataForSelectedPerson();
+    print(
+      '[MainScreenNotifier] Initial setup complete. Loading data for selected person.',
+    );
+    await loadDataForSelectedPerson(); // 이 호출 전후에 로그 추가
+    print('[MainScreenNotifier] Initial data load complete.');
   }
 
   Future<void> _loadAddedPeople() async {
@@ -208,37 +209,44 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
 
   // --- 데이터 로드 메인 함수 ---
   Future<void> loadDataForSelectedPerson({bool refresh = false}) async {
-    // 함수 시작 시점에서도 mounted 확인 (더 안전)
     if (!mounted) return;
-
-    // 새로고침이 아닐 경우에만 로딩 상태 true로 설정
+    print(
+      '[MainScreenNotifier] loadDataForSelectedPerson called (refresh: $refresh). selectedPersonId: ${state.selectedPersonId}',
+    );
     if (!refresh) {
-      state = state.copyWith(isLoading: true);
+      state = state.copyWith(isLoading: true); // 이 부분 전후에 로그 추가
+      print('[MainScreenNotifier] loadData: isLoading = true (not refresh)');
     }
-    // 에러 메시지 초기화
     state = state.copyWith(errorMessage: null, clearErrorMessage: true);
+    print('[MainScreenNotifier] loadData: Error message cleared.');
 
     try {
-      final params = await _determineApiParams();
-      // `mounted` 확인: 파라미터 결정 후 (내부 await 포함)
+      print('[MainScreenNotifier] loadData: Determining API params...');
+      final params = await _determineApiParams(); // 이 호출 전후에 로그 추가
+      print('[MainScreenNotifier] loadData: API params determined: $params');
       if (!mounted) return;
 
-      final apiResults = await _fetchApiDataInParallel(params);
-      // `mounted` 확인: API 데이터 병렬 호출 후 (내부 await 포함)
+      print('[MainScreenNotifier] loadData: Fetching API data in parallel...');
+      final apiResults = await _fetchApiDataInParallel(
+        params,
+      ); // 이 호출 전후에 로그 추가
+      print('[MainScreenNotifier] loadData: API data fetch complete.');
       if (!mounted) return;
 
+      print('[MainScreenNotifier] loadData: Processing API results...');
       final _ProcessedData processedData = await _processApiResults(
         apiResults,
         params,
+      ); // 이 호출 전후에 로그 추가
+      print(
+        '[MainScreenNotifier] loadData: API results processed. errorMessage: ${processedData.errorMessage}',
       );
-      // `mounted` 확인: API 결과 처리 후 (내부 await 포함)
       if (!mounted) return;
 
-      // 최종 상태 업데이트
+      print('[MainScreenNotifier] loadData: Final state update...');
       state = state.copyWith(
-        isLoading: false, // 로딩 완료
-        errorMessage:
-            processedData.errorMessage ?? state.errorMessage, // 기존 에러 메시지와 병합
+        isLoading: false, // 이 부분 전후에 로그 추가
+        errorMessage: processedData.errorMessage ?? state.errorMessage,
         clearErrorMessage:
             processedData.errorMessage != null || state.errorMessage == null,
         weatherDataUI: processedData.weatherUI,
@@ -249,27 +257,30 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
         lastLoadedLatitude: params.latitude,
         lastLoadedLongitude: params.longitude,
       );
-      print("Data loaded for selected person.");
+      print(
+        '[MainScreenNotifier] loadData: Final state updated. isLoading=false',
+      );
     } catch (e, stacktrace) {
-      print('Error during data loading process: $e\n$stacktrace');
-      // `mounted` 확인: 최종 에러 처리 전
+      print(
+        '[MainScreenNotifier] Error during data loading process: $e\n$stacktrace',
+      );
       if (mounted) {
         state = state.copyWith(
           errorMessage: '데이터 로드 중 오류 발생: $e',
-          isLoading: false, // 에러 발생 시에도 로딩 상태는 false로
+          isLoading: false,
+        ); // 이 부분 전후에 로그 추가
+        print(
+          '[MainScreenNotifier] loadData: Error state updated. isLoading=false',
         );
       }
     }
-    // finally 블록은 상태 업데이트 로직이 없으므로 mounted 체크 불필요
   }
 
   // --- Helper 함수들 ---
 
   /// 1. API 호출에 필요한 파라미터(위경도, 나이, 타입) 결정
   Future<_ApiParams> _determineApiParams() async {
-    // 이 함수 내부의 상태 접근은 await 이전에 발생하므로 mounted 체크는 불필요.
-    // 하지만 await 이후 로직이 추가된다면 체크 필요.
-    // 에러 발생 시 Future.microtask 로 상태 업데이트 하는 부분은 이미 mounted 체크가 되어있음.
+    print('[MainScreenNotifier] _determineApiParams started.');
 
     double? latitude;
     double? longitude;
@@ -281,131 +292,135 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
     if (state.selectedPersonId == myInfoId) {
       try {
         final (myGu, myDong) = await _prefsService.getMyGuDong();
-        // `mounted` 확인: await 이후
-        if (!mounted)
-          throw Exception("Notifier disposed during param determination (1)");
+        // <<< 로그 추가 >>>
+        print(
+          "[_determineApiParams] Loaded My Location: gu=$myGu, dong=$myDong",
+        );
+        print('[_determineApiParams] Calling getUserGender...');
+        final savedGender = await _prefsService.getUserGender();
+        print(
+          '[_determineApiParams] Received from getUserGender: $savedGender',
+        );
 
         if (myGu != null && myDong != null) {
           try {
+            // <<< 로그 추가 >>>
+            print(
+              "[_determineApiParams] Fetching coordinates for My Location: $myGu, $myDong",
+            );
             final coords = await _apiService.fetchCoordinates(myGu, myDong);
-            // `mounted` 확인: await 이후
-            if (!mounted)
-              throw Exception(
-                "Notifier disposed during param determination (2)",
-              );
             latitude = coords.latitude;
             longitude = coords.longitude;
+            // <<< 로그 추가 >>>
+            print(
+              "[_determineApiParams] Fetched coordinates: lat=$latitude, lon=$longitude",
+            );
           } catch (e) {
-            latitude = defaultLatitude;
-            longitude = defaultLongitude;
+            // <<< 로그 추가 >>>
+            print(
+              "[_determineApiParams] Failed to fetch coordinates for My Location: $e",
+            );
+            // <<< 중요: 여기서 바로 기본 좌표 설정 제거! >>>
+            // latitude = defaultLatitude;
+            // longitude = defaultLongitude;
             determinedErrorMessage =
-                '저장된 지역($myGu $myDong)의 좌표를 찾을 수 없어 기본 위치로 조회합니다.';
+                '저장된 지역($myGu $myDong)의 좌표 조회 실패'; // 오류 메시지만 설정
           }
         } else {
-          latitude = defaultLatitude;
-          longitude = defaultLongitude;
+          // <<< 로그 추가 >>>
+          print("[_determineApiParams] My Location (Gu/Dong) not set.");
           determinedErrorMessage = '기본 지역이 설정되지 않았습니다. 메뉴 > 내 정보 수정에서 설정해주세요.';
+          // <<< 중요: 여기서 바로 기본 좌표 설정 제거! >>>
         }
-        // 사용자 정보 로드
+        // ... (나이, 질병, 타입 로드 - 기존 코드 유지) ...
         age = await _prefsService.getUserAge();
-        if (!mounted)
-          throw Exception("Notifier disposed during param determination (3)");
         userDiseases = await _prefsService.getUserDiseases() ?? [];
-        if (!mounted)
-          throw Exception("Notifier disposed during param determination (4)");
         userType = await _prefsService.getUserType();
-        print('Determined params for: MY INFO');
+        print(
+          '[_determineApiParams] Loaded user info (age, diseases, type): age=$age, diseases=$userDiseases, type=$userType',
+        );
       } catch (e) {
-        // 에러 발생 시 Fallback 처리
-        print('Error determining params for MY INFO: $e');
-        latitude ??= defaultLatitude;
-        longitude ??= defaultLongitude;
-        // Fallback 시에도 SharedPreferences 접근 시 await 사용하므로 mounted 체크 필요
-        try {
-          if (age == null) age = await _prefsService.getUserAge();
-          if (!mounted)
-            throw Exception(
-              "Notifier disposed during param determination (fallback 1)",
-            );
-          if (userDiseases == null)
-            userDiseases = await _prefsService.getUserDiseases() ?? [];
-          if (!mounted)
-            throw Exception(
-              "Notifier disposed during param determination (fallback 2)",
-            );
-          if (userType == null) userType = await _prefsService.getUserType();
-        } catch (fallbackError) {
-          print("Error during fallback preference access: $fallbackError");
-          // 필요한 경우 추가 에러 처리
-        }
+        // getMyGuDong 등 다른 SharedPreferences 오류 처리
+        print('Error determining params for MY INFO (outer try): $e');
         determinedErrorMessage = '내 정보 처리 중 오류 발생: $e';
+        // 필요한 경우 여기서도 기본 사용자 정보 로드 시도 (기존 로직 유지)
       }
     } else {
-      // 추가된 사람 처리 로직 (상태 접근은 await 전에 발생)
+      // 추가된 사용자 처리 로직 (기존과 동일, 필요시 유사 로그 추가)
       final selectedPerson = state.addedPeopleList.firstWhere(
         (p) => p.id == state.selectedPersonId,
         orElse: () => AddedPerson(id: '', name: 'Unknown'),
       );
 
       if (selectedPerson.id.isNotEmpty &&
-          selectedPerson.latitude != null &&
+          selectedPerson.latitude != null && // <<< 추가된 사람은 좌표 직접 사용 >>>
           selectedPerson.longitude != null) {
         latitude = selectedPerson.latitude;
         longitude = selectedPerson.longitude;
         age = selectedPerson.age;
         userDiseases = selectedPerson.diseases ?? [];
         userType = selectedPerson.workingType;
-        print('Determined params for: ${selectedPerson.name}');
-      } else {
-        // Fallback to My Info/Defaults
         print(
-          "Warning: Could not find valid AddedPerson data for ID: ${state.selectedPersonId}. Falling back to My Info/Defaults.",
+          'Determined params for Added Person: ${selectedPerson.name} (using saved coords)',
         );
+      } else {
+        // 추가된 사람 정보가 부적절하거나 좌표가 없는 경우 Fallback (My Info/Defaults 사용)
+        print(
+          "Warning: Could not find valid AddedPerson data or coords for ID: ${state.selectedPersonId}. Falling back to My Info/Defaults.",
+        );
+        determinedErrorMessage = "선택된 사용자 정보를 찾을 수 없어 기본 정보로 조회합니다.";
+        // My Info 기준 데이터 다시 로드 (age, diseases, userType) - 필요시 추가
         try {
           age = await _prefsService.getUserAge();
-          if (!mounted)
-            throw Exception(
-              "Notifier disposed during param determination (fallback 3)",
-            );
           userDiseases = await _prefsService.getUserDiseases() ?? [];
-          if (!mounted)
-            throw Exception(
-              "Notifier disposed during param determination (fallback 4)",
-            );
           userType = await _prefsService.getUserType();
         } catch (fallbackError) {
-          print("Error during fallback preference access: $fallbackError");
+          print(
+            "Error during AddedPerson fallback preference access: $fallbackError",
+          );
         }
-        latitude = defaultLatitude;
-        longitude = defaultLongitude;
-        determinedErrorMessage = "선택된 사용자 정보를 찾을 수 없어 기본 정보로 조회합니다.";
+        // <<< 중요: 여기서 바로 기본 좌표 설정 제거! >>>
       }
     }
 
-    // 최종 위경도 null 체크
+    // --- 최종 좌표 Fallback 로직 ---
     if (latitude == null || longitude == null) {
+      // <<< 로그 추가 >>>
+      print(
+        "[_determineApiParams] Coordinates are null, triggering final fallback to default coordinates.",
+      );
       latitude = defaultLatitude;
       longitude = defaultLongitude;
-      print(
-        "Critical Error: Could not determine final coordinates, using default as last resort.",
-      );
-      determinedErrorMessage =
-          determinedErrorMessage ?? '위치 정보를 최종 결정할 수 없어 기본 위치로 조회합니다.';
+      // 오류 메시지 업데이트 (기존 메시지에 덧붙이거나 새로 설정)
+      if (determinedErrorMessage == null || determinedErrorMessage.isEmpty) {
+        determinedErrorMessage = '위치 좌표를 결정할 수 없어 기본 위치로 조회합니다.';
+      } else if (!determinedErrorMessage.contains('기본 위치')) {
+        // 기존 오류 메시지가 있고 '기본 위치' 언급이 없다면 추가
+        determinedErrorMessage +=
+            '\n기본 위치(${defaultLatitude.toStringAsFixed(4)}, ${defaultLongitude.toStringAsFixed(4)})로 조회합니다.';
+      }
     }
+    // --- --------------------- ---
 
-    // 에러 메시지 상태 업데이트 (microtask 내에서 mounted 체크됨)
+    // 에러 메시지 상태 업데이트 (기존 microtask 방식 유지)
     if (determinedErrorMessage != null &&
         determinedErrorMessage != state.errorMessage) {
       Future.microtask(() {
         if (mounted) {
+          // 여기에 mounted 체크 추가
           state = state.copyWith(errorMessage: determinedErrorMessage);
+          print('[_determineApiParams] Microtask updated state with error.');
+        } else {
+          print(
+            '[_determineApiParams] Microtask tried to update state but Notifier is not mounted.',
+          );
         }
       });
     }
 
     return (
-      latitude: latitude!,
-      longitude: longitude!,
+      latitude: latitude!, // 이제 non-null 보장
+      longitude: longitude!, // 이제 non-null 보장
       age: age,
       diseases: userDiseases,
       userType: userType,

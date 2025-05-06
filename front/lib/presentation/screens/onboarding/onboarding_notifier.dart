@@ -12,12 +12,13 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
   OnboardingNotifier(this._prefsService, this._apiService)
     : super(const OnboardingState()) {
+    print('[OnboardingNotifier] Created.');
     _fetchGuData(); // Notifier 생성 시 구 목록 로드
   }
 
   // --- 상태 업데이트 함수 (대부분 동기 작업) ---
   void setBirthDate(DateTime date) {
-    if (!mounted) return;
+    // if (!mounted) return;
     state = state.copyWith(
       selectedBirthDate: date,
       errorMessage: null, // 생년월일 선택 시 에러 메시지 초기화
@@ -26,22 +27,22 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   }
 
   void setUserType(String? type) {
-    if (!mounted) return;
+    // if (!mounted) return;
     state = state.copyWith(selectedUserType: type);
   }
 
   void setGender(String? gender) {
-    if (!mounted) return;
+    // if (!mounted) return;
     state = state.copyWith(selectedGender: gender);
   }
 
   void setIsPregnant(bool? value) {
-    if (!mounted) return;
+    // if (!mounted) return;
     state = state.copyWith(selectedIsPregnant: value);
   }
 
   void toggleDiseaseSelection(String diseaseName) {
-    if (!mounted) return;
+    // if (!mounted) return;
     final currentSelection = Set<String>.from(state.selectedDiseases);
     if (currentSelection.contains(diseaseName)) {
       currentSelection.remove(diseaseName);
@@ -53,15 +54,14 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
   void setSelectedDiseases(Set<String> newSelection) {
     if (state.selectedDiseases != newSelection) {
-      if (!mounted) return;
+      // if (!mounted) return;
       state = state.copyWith(selectedDiseases: newSelection);
     }
   }
 
   // --- 비동기 작업 포함 함수 ---
   Future<void> _fetchGuData() async {
-    if (!mounted) return;
-    // 로딩 시작 시 locationErrorText 초기화
+    print('[OnboardingNotifier] Fetching Gu data...');
     state = state.copyWith(
       isLoadingLocationData: true,
       locationErrorText: null,
@@ -70,9 +70,10 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     try {
       final gus = await _apiService.fetchGuList();
       if (!mounted) return;
+      print('[OnboardingNotifier] Fetched Gu data: ${gus.length} items.');
       state = state.copyWith(guList: gus, isLoadingLocationData: false);
     } catch (e) {
-      print("Error fetching Gu list in Onboarding: $e");
+      print("[OnboardingNotifier] Error fetching Gu list in Onboarding: $e");
       if (!mounted) return;
       // errorMessage 대신 locationErrorText 설정
       state = state.copyWith(
@@ -84,7 +85,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
   Future<void> setSelectedGu(String? gu) async {
     if (gu == state.selectedGu) return;
-    if (!mounted) return;
+    // if (!mounted) return;
 
     if (gu == null) {
       state = state.copyWith(
@@ -111,11 +112,11 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
     try {
       final dongs = await _apiService.fetchDongList(gu);
-      if (!mounted) return;
+      // if (!mounted) return;
       state = state.copyWith(dongList: dongs, isLoadingLocationData: false);
     } catch (e) {
       print("Error fetching Dong list for $gu in Onboarding: $e");
-      if (!mounted) return;
+      // if (!mounted) return;
       // errorMessage 대신 locationErrorText 설정
       state = state.copyWith(
         locationErrorText: '$gu 동 목록 로드 실패',
@@ -126,7 +127,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
   void setSelectedDong(String? dong) {
     // `mounted` 확인: 동기 상태 변경이지만, 일관성을 위해 추가 가능
-    if (!mounted) return;
+    // if (!mounted) return;
     state = state.copyWith(selectedDong: dong, clearSelectedDong: dong == null);
   }
 
@@ -145,77 +146,111 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
   // "시작" 버튼 로직 (정보 저장 및 완료 처리)
   Future<void> startApp(String? name) async {
-    // 유효성 검사: 실패 시 errorMessage 설정 (SnackBar 용도)
-    if (state.selectedBirthDate == null) {
-      if (!mounted) return;
-      state = state.copyWith(errorMessage: '생년월일을 선택해주세요.');
-      return;
-    }
-    if (state.selectedGu == null) {
-      if (!mounted) return;
-      state = state.copyWith(errorMessage: '거주 지역(구)을 선택해주세요.');
-      return;
-    }
-    if (state.selectedDong == null) {
-      if (!mounted) return;
-      state = state.copyWith(errorMessage: '거주 지역(동)을 선택해주세요.');
-      return;
-    }
-    if (state.selectedGender == null) {
-      if (!mounted) return;
-      state = state.copyWith(errorMessage: '성별을 선택해주세요.');
-      return;
-    }
-
-    // 저장 시작 상태 (errorMessage 초기화)
-    if (!mounted) return;
+    print('[OnboardingNotifier] startApp called.');
     state = state.copyWith(
-      isSaving: true,
+      isSaving: true, // 이 부분 전후에 로그 추가
       errorMessage: null,
       clearErrorMessage: true,
       locationErrorText: null,
       clearLocationErrorText: true,
-    ); // 모든 에러 초기화
+    );
+    // 유효성 검사 통과 후, 저장 로직 시작 직전에 현재 Notifier 상태 값 로그
+    print(
+      '[OnboardingNotifier] startApp: Values from current state before saving:',
+    );
+    print('  - selectedBirthDate: ${state.selectedBirthDate}');
+    print('  - selectedUserType: ${state.selectedUserType}');
+    print('  - selectedGender: ${state.selectedGender}');
+    print('  - selectedIsPregnant: ${state.selectedIsPregnant}');
+    print('  - selectedGu: ${state.selectedGu}');
+    print('  - selectedDong: ${state.selectedDong}');
+    print('  - selectedDiseases: ${state.selectedDiseases}');
+
+    // 유효성 검사: 실패 시 errorMessage 설정 (SnackBar 용도)
+    if (state.selectedBirthDate == null) {
+      // if (!mounted) return;
+      state = state.copyWith(errorMessage: '생년월일을 선택해주세요.');
+      return;
+    }
+
+    // 저장 시작 상태 (errorMessage 초기화)
+    // if (!mounted) return;
+    state = state.copyWith(isSaving: true); // 모든 에러 초기화
 
     try {
       // 저장 로직 (기존과 동일, await Future.wait 사용)
       final age = _calculateAge(state.selectedBirthDate);
       final String? selectedType = state.selectedUserType;
       final List<String> selectedDiseasesList = state.selectedDiseases.toList();
-      await Future.wait([/* ... SharedPreferences 저장 ... */]);
+
+      print(
+        '[OnboardingNotifier] startApp: Calling PreferenceService save functions...',
+      );
+
+      await Future.wait([
+        _prefsService.saveUserInfo(
+          // 이 호출에서 위에서 추가한 saveUserInfo 로그가 찍힐 것입니다.
+          age: age,
+          userType: selectedType == '없음' ? null : selectedType,
+          gender: state.selectedGender,
+        ),
+        _prefsService.saveUserDiseases(
+          selectedDiseasesList,
+        ), // 이 호출에서 saveUserDiseases 로그가 찍힐 것입니다.
+        _prefsService.saveMyGuDong(
+          state.selectedGu,
+          state.selectedDong,
+        ), // 이 호출에서 saveMyGuDong 로그가 찍힐 것입니다.
+        _prefsService.saveIsPregnant(
+          state.selectedIsPregnant,
+        ), // 이 호출에서 saveIsPregnant 로그가 찍힐 것입니다.
+        // AddedPerson 객체 저장은 AddPersonNotifier에만 있고 OnboardingNotifier에는 없으므로 여기서는 제외
+      ]);
+
+      print(
+        '[OnboardingNotifier] startApp: All PreferenceService save calls awaited.',
+      );
 
       if (!mounted) return;
       state = state.copyWith(isSaving: false, onboardingProcessComplete: true);
       print("OnboardingNotifier: Onboarding complete (with data).");
     } catch (e) {
       print("OnboardingNotifier: Error starting app: $e");
-      if (!mounted) return;
+      // if (!mounted) return;
       // 저장 실패 시 errorMessage 설정 (SnackBar 용도)
       state = state.copyWith(isSaving: false, errorMessage: "처리 중 오류 발생: $e");
     }
   }
 
   Future<void> simpleStartApp() async {
-    // 저장 시작 상태 (errorMessage 초기화)
-    if (!mounted) return;
+    print('[OnboardingNotifier] simpleStartApp called.');
     state = state.copyWith(
-      isSaving: true,
+      isSaving: true, // 이 부분 전후에 로그 추가
       errorMessage: null,
       clearErrorMessage: true,
       locationErrorText: null,
       clearLocationErrorText: true,
     );
+    print('[OnboardingNotifier] simpleStartApp: isSaving = true');
 
     try {
       // 저장 로직 (기존과 동일, await Future.wait 사용)
       await Future.wait([/* ... SharedPreferences 저장 (기본값) ... */]);
 
-      if (!mounted) return;
-      state = state.copyWith(isSaving: false, onboardingProcessComplete: true);
-      print("OnboardingNotifier: Onboarding complete (simple start).");
+      // if (!mounted) return;
+      print(
+        '[OnboardingNotifier] simpleStartApp: Saving complete. Setting onboardingProcessComplete = true',
+      );
+      state = state.copyWith(
+        isSaving: false,
+        onboardingProcessComplete: true,
+      ); // 이 부분 전후에 로그 추가
+      print(
+        '[OnboardingNotifier] simpleStartApp: isSaving = false, onboardingProcessComplete = true',
+      );
     } catch (e) {
       print("OnboardingNotifier: Error simple starting app: $e");
-      if (!mounted) return;
+      // if (!mounted) return;
       // 저장 실패 시 errorMessage 설정 (SnackBar 용도)
       state = state.copyWith(isSaving: false, errorMessage: "처리 중 오류 발생: $e");
     }
@@ -224,9 +259,14 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
 // --- Provider 정의 ---
 final onboardingNotifierProvider =
-    StateNotifierProvider<OnboardingNotifier, OnboardingState>((ref) {
+    StateNotifierProvider.autoDispose<OnboardingNotifier, OnboardingState>((
+      ref,
+    ) {
+      // ref.keepAlive(); // 필요 시 Provider 상태를 유지할 수 있지만, 여기서는 자동 폐기가 목적
       return OnboardingNotifier(
-        ref.read(preferencesServiceProvider),
+        ref.read(
+          preferencesServiceProvider,
+        ), // apiServiceProvider 등 다른 의존성도 read 사용
         ref.read(apiServiceProvider),
       );
     });

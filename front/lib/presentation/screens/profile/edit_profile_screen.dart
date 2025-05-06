@@ -64,11 +64,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   void _showErrorSnackBar(String message) {
-    /* 기존과 동일 */
-    ScaffoldMessenger.of(context).removeCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
-    );
+    // 현재 빌드 프레임이 완료된 후 다음 프레임에서 실행되도록 지연
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) return; // 위젯이 마운트 해제되지 않았는지 다시 확인
+
+      ScaffoldMessenger.of(context).removeCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+      );
+    });
   }
 
   @override

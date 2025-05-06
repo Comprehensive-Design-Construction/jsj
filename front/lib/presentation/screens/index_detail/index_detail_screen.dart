@@ -111,6 +111,7 @@ class IndexDetailPage extends ConsumerWidget {
           children: [
             // --- 상단 카드 (score2.dart 유사하게) ---
             Card(
+              color: Colors.white,
               elevation: 2,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -180,6 +181,7 @@ class IndexDetailPage extends ConsumerWidget {
 
             // --- 지수 설명 카드 ---
             Card(
+              color: Colors.white,
               elevation: 1,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -208,6 +210,7 @@ class IndexDetailPage extends ConsumerWidget {
 
             // --- 행동 요령 카드 ---
             Card(
+              color: Colors.white,
               elevation: 1,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),

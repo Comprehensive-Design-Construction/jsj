@@ -1,0 +1,2 @@
+C:/Users/anseh/WorkSpace/jsj/front/android/app/.cxx/Debug/4u4j616y/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/anseh/WorkSpace/jsj/front/android/app/.cxx/Debug/4u4j616y/arm64-v8a/CMakeFiles/rebuild_cache.dir
