@@ -2,6 +2,10 @@ import folium
 import pandas as pd
 import os
 import geopandas as gpd
+import logging
+from shapely.errors import TopologicalError  # TopologicalError 임포트 추가
+
+logger = logging.getLogger(__name__)
 
 
 def _load_geojson_and_calculate_centroids(geojson_path: str) -> gpd.GeoDataFrame | None:
@@ -64,6 +68,29 @@ def _load_geojson_and_calculate_centroids(geojson_path: str) -> gpd.GeoDataFrame
         if gdf.crs and gdf.crs.to_epsg() != 4326:
             print(f"Converting CRS from {gdf.crs} to EPSG:4326")
             gdf = gdf.to_crs(epsg=4326)
+
+        try:
+            # tolerance 값은 실험적으로 조정해야 합니다. (값이 클수록 더 많이 단순화)
+            # 예: 0.0001, 0.0005, 0.001 등
+            tolerance = 0.0005  # <--- 이 값을 조정해보세요
+            original_memory = gdf.memory_usage(deep=True).sum()
+            # preserve_topology=True 옵션은 폴리곤의 위상 관계를 유지하려 시도합니다.
+            gdf["geometry"] = gdf.geometry.simplify(
+                tolerance=tolerance, preserve_topology=True
+            )
+            simplified_memory = gdf.memory_usage(deep=True).sum()
+            logger.info(
+                f"Simplified GeoJSON geometry with tolerance {tolerance}. Memory usage: {original_memory} -> {simplified_memory}"
+            )
+        except TopologicalError as te:
+            logger.warning(
+                f"Could not simplify geometry due to topological error: {te}. Using original geometry."
+            )
+        except Exception as e:
+            logger.error(
+                f"Error during geometry simplification: {e}. Using original geometry."
+            )
+        # --- Geometry 단순화 코드 끝 ---
 
         # 중심점 계산
         print("Calculating centroids...")
