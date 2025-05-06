@@ -190,7 +190,7 @@ def _add_centroid_labels_and_popups(
         centroid_coords = [row["centroid"].y, row["centroid"].x]
 
         # DivIcon 라벨
-        icon_html = f'<div style="font-size: 10px; font-weight: bold; color: black; text-align: center; width: 80px; background-color: rgba(255, 255, 255, 0.5); border-radius: 3px; padding: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{gu_name}</div>'
+        icon_html = f'<div style="font-size: 10px; font-weight: bold; color: black; text-align: center; background-color: transparent; text-shadow: 0px 0px 2px #FFFFFF, 0px 0px 4px #FFFFFF;">{gu_name}</div>'
         icon = folium.DivIcon(icon_size=(80, 20), icon_anchor=(40, 10), html=icon_html)
 
         # 팝업 생성
