@@ -3,6 +3,9 @@ import folium
 import geopandas as gpd
 import branca
 import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def convert_to_hex_color(color_value, default_color="#808080"):
@@ -151,7 +154,22 @@ def _fetch_flood_trace_html():
     legend_html += "</div>"
     m.get_root().html.add_child(folium.Element(legend_html))
 
-    return m._repr_html_()
+    # <<< 로깅 코드 추가 시작 >>>
+    try:
+        map_html_content = m._repr_html_()
+        html_size_bytes = len(map_html_content.encode("utf-8"))
+        html_size_mb = html_size_bytes / (1024 * 1024)
+        logger.info(
+            f"Generated Flood Trace Map HTML size: {html_size_mb:.2f} MB"
+        )  # 크기를 MB 단위로 로깅
+        return map_html_content
+    except Exception as e:
+        logger.error(f"Error generating or logging Flood Trace map HTML: {e}")
+        return  # 또는 오류 상황에 맞는 값 반환
+    # <<< 로깅 코드 추가 끝 >>>
+
+    # 기존 return 문은 위 try 블록 안으로 이동했으므로 삭제하거나 주석 처리
+    # return m._repr_html_()
 
 
 if __name__ == "__main__":

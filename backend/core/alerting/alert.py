@@ -29,7 +29,11 @@ def _map_user_profile_to_condition(
             return 3
         if working_type == "비닐하우스":
             return 4
-        if working_type == "실외작업자":
+        if working_type in [
+            "실외작업자_도로",
+            "실외작업자_건설현장",
+            "실외작업자_조선소",
+        ]:
             return 5
 
     # 4. 기저 질환 체크 (질환 간 우선순위는 alarm.py 내부 로직 순서 따름 - 여기선 단순 존재 여부 확인)

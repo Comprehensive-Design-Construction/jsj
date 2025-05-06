@@ -6,6 +6,9 @@ from core.map.common_functions import (
     _add_choropleth,
     _add_centroid_labels_and_popups,
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def _create_air_quality_popup_html(gu_name_lookup: str, data_dict: dict) -> str:
@@ -127,7 +130,18 @@ def fetch_air_quality_map(
 
     # 6. 레이어 컨트롤 추가 및 HTML 반환
     folium.LayerControl().add_to(m)
-    return m._repr_html_()
+
+    try:
+        map_html_content = m._repr_html_()
+        html_size_bytes = len(map_html_content.encode("utf-8"))
+        html_size_mb = html_size_bytes / (1024 * 1024)
+        logger.info(
+            f"Generated Fine Dust Map HTML size: {html_size_mb:.2f} MB"
+        )  # 크기를 MB 단위로 로깅
+        return map_html_content
+    except Exception as e:
+        logger.error(f"Error generating or logging Fine Dust map HTML: {e}")
+        return "Error generating map HTML."  # 오류 발생 시 대체 문자열 반환
 
 
 def fetch_uv_map(uv_data: dict, geojson_path: str = None) -> str | None:
@@ -198,7 +212,18 @@ def fetch_uv_map(uv_data: dict, geojson_path: str = None) -> str | None:
 
     # 6. 레이어 컨트롤 추가 및 HTML 반환
     folium.LayerControl().add_to(m)
-    return m._repr_html_()
+
+    try:
+        map_html_content = m._repr_html_()
+        html_size_bytes = len(map_html_content.encode("utf-8"))
+        html_size_mb = html_size_bytes / (1024 * 1024)
+        logger.info(
+            f"Generated UV Map HTML size: {html_size_mb:.2f} MB"
+        )  # 크기를 MB 단위로 로깅
+        return map_html_content
+    except Exception as e:
+        logger.error(f"Error generating or logging UV map HTML: {e}")
+        return "Error generating map HTML."
 
 
 # --- 사용 예시 ---
