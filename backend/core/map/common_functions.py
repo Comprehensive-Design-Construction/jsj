@@ -4,6 +4,7 @@ import os
 import geopandas as gpd
 import logging
 from shapely.errors import TopologicalError  # TopologicalError 임포트 추가
+import branca
 
 logger = logging.getLogger(__name__)
 
@@ -200,3 +201,21 @@ def _add_centroid_labels_and_popups(
 
         # 마커 추가
         folium.Marker(location=centroid_coords, icon=icon, popup=popup).add_to(m)
+
+
+def add_zoom_control_style(folium_map):
+    """Folium 지도 객체에 확대/축소 버튼 크기 조절 CSS를 추가합니다."""
+    css = """
+    <style>
+    .leaflet-control-zoom a {
+        /* 원하는 크기로 값 조정 */
+        font-size: 1.4em !important;
+        line-height: 28px !important;
+        width: 28px !important;
+        height: 28px !important;
+    }
+    </style>
+    """
+    style_element = branca.element.Element(css)
+    folium_map.get_root().html.add_child(style_element)
+    return folium_map  # 필요시 맵 객체 다시 반환

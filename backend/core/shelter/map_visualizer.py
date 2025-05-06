@@ -3,6 +3,9 @@ import geopandas as gpd
 import pandas as pd
 from shapely.geometry import Point
 from typing import Optional, Dict, Any, List
+import branca
+
+from core.map.common_functions import add_zoom_control_style
 
 # 재난 유형별 아이콘 스타일 정의
 DISASTER_ICON_STYLES: Dict[str, Dict[str, str]] = {
@@ -148,5 +151,6 @@ def create_shelter_map(
     except Exception as e:
         print(f"지도 범위 자동 조절(fit_bounds) 중 오류 발생: {e}")
 
+    fmap = add_zoom_control_style(fmap)
     print(f"지도 생성 완료: {disaster_type}")
     return fmap

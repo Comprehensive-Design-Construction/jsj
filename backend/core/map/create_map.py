@@ -5,6 +5,7 @@ from core.map.common_functions import (
     _create_base_map,
     _add_choropleth,
     _add_centroid_labels_and_popups,
+    add_zoom_control_style,
 )
 import logging
 
@@ -148,6 +149,7 @@ def fetch_air_quality_map(
 
     # 6. 레이어 컨트롤 추가 및 HTML 반환
     folium.LayerControl().add_to(m)
+    m = add_zoom_control_style(m)
 
     try:
         map_html_content = m._repr_html_()
@@ -245,6 +247,7 @@ def fetch_uv_map(uv_data: dict, geojson_path: str = None) -> str | None:
 
     # 6. 레이어 컨트롤 추가 및 HTML 반환
     folium.LayerControl().add_to(m)
+    m = add_zoom_control_style(m)
 
     try:
         map_html_content = m._repr_html_()
