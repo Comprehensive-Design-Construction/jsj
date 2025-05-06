@@ -4,17 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../data/models/ui/health_index.dart';
 import '../../../widgets/main_screen/health_index_card.dart'; // 기존 위젯 사용
 import '../main_screen_notifier.dart'; // mainScreenNotifierProvider 사용
+// --- 공용 위젯 import ---
+import '../../../widgets/common/section_title_widget.dart';
+import '../../../widgets/common/data_error_placeholder_widget.dart';
+// ---------------------
 
 class AllHealthIndicesWidget extends ConsumerWidget {
-  const AllHealthIndicesWidget({
-    super.key,
-    required this.buildSectionTitle, // MainScreen의 함수를 전달받음
-    required this.buildDataErrorPlaceholder, // MainScreen의 함수를 전달받음
-  });
+  const AllHealthIndicesWidget({super.key});
 
-  final Widget Function(BuildContext, String, {bool showInfoIcon})
-  buildSectionTitle;
-  final Widget Function(String) buildDataErrorPlaceholder;
+  // --- buildSectionTitle, buildDataErrorPlaceholder 파라미터 제거 ---
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,14 +29,12 @@ class AllHealthIndicesWidget extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        buildSectionTitle(
-          context,
-          '전체 건강 지수',
-          showInfoIcon: false,
-        ), // INFO 아이콘 필요 여부 확인
+        // --- 공용 위젯 사용 ---
+        const SectionTitleWidget(title: '전체 건강 지수'),
         const SizedBox(height: 10),
         if (filteredHealthIndices.isEmpty)
-          buildDataErrorPlaceholder('표시할 건강 지수가 선택되지 않았습니다.')
+          // --- 공용 위젯 사용 ---
+          const DataErrorPlaceholderWidget(message: '표시할 건강 지수가 선택되지 않았습니다.')
         else
           ListView.separated(
             shrinkWrap: true,
@@ -47,7 +43,7 @@ class AllHealthIndicesWidget extends ConsumerWidget {
             itemBuilder: (context, index) {
               return HealthIndexCard(
                 healthIndex: filteredHealthIndices[index],
-                showProgressBar: false, // 전체 목록에서는 프로그레스 바 숨김
+                showProgressBar: false,
               );
             },
             separatorBuilder: (context, index) => const SizedBox(height: 12),

@@ -13,6 +13,7 @@ class PreferencesService {
   static const String _myGuKey = 'my_gu';
   static const String _myDongKey = 'my_dong';
   static const String _userDiseasesKey = 'user_diseases';
+  static const String _userIsPregnantKey = 'user_is_pregnant';
 
   Future<SharedPreferences> _getPrefs() async {
     return await SharedPreferences.getInstance();
@@ -83,6 +84,22 @@ class PreferencesService {
     return prefs.getString(
       _userGenderKey,
     ); // ?? Gender.male; // 기본값을 여기서 설정할 수도 있음
+  }
+
+  // --- '내 정보' 임산부 여부 저장/로드 함수 추가 ---
+  Future<void> saveIsPregnant(bool? isPregnant) async {
+    final prefs = await _getPrefs();
+    if (isPregnant != null) {
+      await prefs.setBool(_userIsPregnantKey, isPregnant);
+    } else {
+      await prefs.remove(_userIsPregnantKey); // null이면 삭제
+    }
+    print('Saved Is Pregnant: $isPregnant');
+  }
+
+  Future<bool?> getIsPregnant() async {
+    final prefs = await _getPrefs();
+    return prefs.getBool(_userIsPregnantKey); // 없으면 null 반환
   }
 
   Future<void> saveUserDiseases(List<String>? diseases) async {

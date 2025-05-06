@@ -148,7 +148,12 @@ def test_index_api():
     print("\n=== 건강 지수 API 테스트 ===")
 
     # 테스트 좌표 (서울 강남구)
-    params = {"latitude": 37.498095, "longitude": 127.027610, "age": 30}
+    params = {
+        "latitude": 37.498095,
+        "longitude": 127.027610,
+        "age": 100,
+        "user_type": ["비닐하우스"],
+    }
 
     url = f"{BASE_URL}/index"
     print(f"요청 URL: {url}")
@@ -405,7 +410,7 @@ if __name__ == "__main__":
         "index": test_index_api,
         # "env_map": test_env_map_api,  # 기존 환경 지도 테스트
         # "map": test_map_api,
-        "weather": test_weather_api,  # 신규 상세 날씨 테스트
+        # "weather": test_weather_api,  # 신규 상세 날씨 테스트
         # "uv": test_environment_uv_api,  # 신규 UV 테스트
         # "dust": test_environment_fine_dust_api,  # 신규 미세먼지 테스트
         # "district": test_districts_api,

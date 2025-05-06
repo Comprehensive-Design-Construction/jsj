@@ -3,19 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../widgets/main_screen/feels_like_card.dart'; // 기존 위젯 사용
 import '../main_screen_notifier.dart'; // mainScreenNotifierProvider 사용
-// import '../main_screen.dart'; // _buildSectionTitle, _buildDataErrorPlaceholder 사용 위해
+// --- 공용 위젯 import ---
+import '../../../widgets/common/section_title_widget.dart';
+import '../../../widgets/common/data_error_placeholder_widget.dart';
+// ---------------------
 
 class FeelsLikeSectionWidget extends ConsumerWidget {
-  const FeelsLikeSectionWidget({
-    super.key,
-    required this.buildSectionTitle, // MainScreen의 함수를 전달받음
-    required this.buildDataErrorPlaceholder, // MainScreen의 함수를 전달받음
-  });
+  const FeelsLikeSectionWidget({super.key});
 
-  // MainScreen에서 정의된 함수들을 전달받기 위한 final 변수
-  final Widget Function(BuildContext, String, {bool showInfoIcon})
-  buildSectionTitle;
-  final Widget Function(String) buildDataErrorPlaceholder;
+  // --- buildSectionTitle, buildDataErrorPlaceholder 파라미터 제거 ---
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,12 +21,14 @@ class FeelsLikeSectionWidget extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        buildSectionTitle(context, '체감온도'), // 전달받은 함수 사용
+        // --- 공용 위젯 사용 ---
+        const SectionTitleWidget(title: '체감온도'),
         const SizedBox(height: 10),
         if (feelsLikeDataUI != null)
           FeelsLikeCard(feelsLikeData: feelsLikeDataUI)
         else
-          buildDataErrorPlaceholder('체감온도 정보를 불러올 수 없습니다.'), // 전달받은 함수 사용
+          // --- 공용 위젯 사용 ---
+          const DataErrorPlaceholderWidget(message: '체감온도 정보를 불러올 수 없습니다.'),
         const SizedBox(height: 24),
       ],
     );

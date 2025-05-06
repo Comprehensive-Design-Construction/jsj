@@ -11,12 +11,16 @@ class EditProfileState extends Equatable {
   final String? initialUserType; // <<< 추가: 로드된 초기 사용자 특성
 
   final DateTime? initialBirthDate;
+  final bool? initialIsPregnant;
+  final bool? selectedIsPregnant;
   final DateTime? selectedBirthDate;
   // final Map<String, bool> selectedUserTypeSelection; // <<< 제거
   final String? selectedUserType; // <<< 추가: UI에서 선택된 사용자 특성
   final String? selectedGender;
   final String? selectedGu;
   final String? selectedDong;
+  final Set<String> initialDiseases; // <<< 추가: 로드된 초기 기저 질환
+  final Set<String> selectedDiseases; // <<< 추가: UI에서 선택된 기저 질환
 
   final String? errorMessage;
   final List<String> guList;
@@ -38,6 +42,10 @@ class EditProfileState extends Equatable {
     this.isLoading = true,
     this.isSaving = false,
     this.initialBirthDate,
+    this.initialIsPregnant,
+    this.selectedIsPregnant,
+    this.initialDiseases = const {}, // <<< 추가
+    this.selectedDiseases = const {}, // <<< 추가
     // this.initialUserTypeSelection = const { ... }, // <<< 제거
     this.initialUserType, // <<< 추가
     this.selectedBirthDate,
@@ -57,6 +65,10 @@ class EditProfileState extends Equatable {
     bool? isLoading,
     bool? isSaving,
     DateTime? initialBirthDate,
+    bool? initialIsPregnant,
+    bool? selectedIsPregnant,
+    Set<String>? initialDiseases, // <<< 추가
+    Set<String>? selectedDiseases, // <<< 추가
     // Map<String, bool>? initialUserTypeSelection, // <<< 제거
     String? initialUserType, // <<< 추가
     DateTime? selectedBirthDate,
@@ -79,6 +91,10 @@ class EditProfileState extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       isSaving: isSaving ?? this.isSaving,
       initialBirthDate: initialBirthDate ?? this.initialBirthDate,
+      initialIsPregnant: initialIsPregnant ?? this.initialIsPregnant,
+      selectedIsPregnant: selectedIsPregnant ?? this.selectedIsPregnant,
+      initialDiseases: initialDiseases ?? this.initialDiseases, // <<< 추가
+      selectedDiseases: selectedDiseases ?? this.selectedDiseases, // <<< 추가
       // initialUserTypeSelection: initialUserTypeSelection ?? this.initialUserTypeSelection, // <<< 제거
       initialUserType: initialUserType ?? this.initialUserType, // <<< 추가
       selectedBirthDate: selectedBirthDate ?? this.selectedBirthDate,
@@ -106,6 +122,10 @@ class EditProfileState extends Equatable {
     isLoading,
     isSaving,
     initialBirthDate,
+    initialIsPregnant,
+    selectedIsPregnant,
+    initialDiseases, // <<< 추가
+    selectedDiseases, // <<< 추가
     // initialUserTypeSelection, // <<< 제거
     initialUserType, // <<< 추가
     selectedBirthDate,

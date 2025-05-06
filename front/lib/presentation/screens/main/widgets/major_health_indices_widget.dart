@@ -5,17 +5,15 @@ import '../../../../core/constants/app_constants.dart'; // defaultMajorIndices �
 import '../../../../data/models/ui/health_index.dart';
 import '../../../widgets/main_screen/health_index_card.dart'; // 기존 위젯 사용
 import '../main_screen_notifier.dart'; // mainScreenNotifierProvider 사용
+// --- 공용 위젯 import ---
+import '../../../widgets/common/section_title_widget.dart';
+import '../../../widgets/common/data_error_placeholder_widget.dart';
+// ---------------------
 
 class MajorHealthIndicesWidget extends ConsumerWidget {
-  const MajorHealthIndicesWidget({
-    super.key,
-    required this.buildSectionTitle, // MainScreen의 함수를 전달받음
-    required this.buildDataErrorPlaceholder, // MainScreen의 함수를 전달받음
-  });
+  const MajorHealthIndicesWidget({super.key});
 
-  final Widget Function(BuildContext, String, {bool showInfoIcon})
-  buildSectionTitle;
-  final Widget Function(String) buildDataErrorPlaceholder;
+  // --- buildSectionTitle, buildDataErrorPlaceholder 파라미터 제거 ---
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,10 +34,14 @@ class MajorHealthIndicesWidget extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        buildSectionTitle(context, '주요 건강 지수', showInfoIcon: true),
+        // --- 공용 위젯 사용 (showInfoIcon: true 전달) ---
+        const SectionTitleWidget(title: '주요 건강 지수', showInfoIcon: true),
         const SizedBox(height: 10),
         if (visibleMajorIndices.isEmpty)
-          buildDataErrorPlaceholder('표시할 주요 건강 지수가 없거나\n선택된 지수가 없습니다.')
+          // --- 공용 위젯 사용 ---
+          const DataErrorPlaceholderWidget(
+            message: '표시할 주요 건강 지수가 없거나\n선택된 지수가 없습니다.',
+          )
         else
           ListView.separated(
             shrinkWrap: true,
@@ -48,7 +50,7 @@ class MajorHealthIndicesWidget extends ConsumerWidget {
             itemBuilder: (context, index) {
               return HealthIndexCard(
                 healthIndex: visibleMajorIndices[index],
-                showProgressBar: true, // 주요 지수는 프로그레스 바 표시
+                showProgressBar: true,
               );
             },
             separatorBuilder: (context, index) => const SizedBox(height: 12),

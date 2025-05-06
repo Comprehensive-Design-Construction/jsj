@@ -133,3 +133,8 @@ class CoordinatesReponse(BaseModel):
     latitude: float
     longitude: float
     # error: Optional[str] = None
+
+
+class RecommendationResponse(BaseModel):
+    recommendation: str = Field(..., description="생성된 행동 요령 텍스트")
+    error: Optional[str] = None  # 오류 발생 시 메시지 전달용

@@ -1,33 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod import
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants/app_constants.dart';
-// import '../../../core/utils/preferences_service.dart'; // Notifier에서 사용
+import '../../../core/constants/app_constants.dart'; // availableHealthIndices 사용
 import '../profile/edit_profile_screen.dart';
-import 'menu_notifier.dart'; // Notifier import
-// import 'menu_state.dart'; // State import는 Notifier 파일에서 처리
+import 'menu_notifier.dart';
+// import 'menu_state.dart'; // 사용 안 함
 
-// ConsumerWidget으로 변경
 class MenuScreen extends ConsumerWidget {
+  // StatelessWidget -> ConsumerWidget
   const MenuScreen({super.key});
-
-  // 상태 변수 및 함수 제거 -> Notifier/Riverpod으로 이동
-  // Set<String> _visibleIndices = {};
-  // bool _isLoading = true;
-  // final PreferencesService _prefsService = PreferencesService();
-  // initState, _loadVisibleIndices, _toggleIndexVisibility 함수 제거
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // WidgetRef 추가
     // 상태 구독
     final state = ref.watch(menuNotifierProvider);
-    final notifier = ref.read(menuNotifierProvider.notifier);
+    // Notifier는 콜백에서 사용하므로 read 사용 (빌드 시점에서는 필요 없음)
+    // final notifier = ref.read(menuNotifierProvider.notifier);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9F9),
+      backgroundColor: const Color(0xFFF9F9F9), // 테마에서 가져오도록 개선 가능
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.white, // 테마 사용 권장
         elevation: 1,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -36,7 +30,7 @@ class MenuScreen extends ConsumerWidget {
         title: const Text(
           '메뉴',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
+        ), // 테마 사용 권장
       ),
       body:
           state
@@ -51,6 +45,7 @@ class MenuScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 16),
+                    // 사용자 정보 변경 섹션
                     Text(
                       '사용자 정보 변경',
                       style: Theme.of(context).textTheme.titleMedium,
@@ -62,12 +57,12 @@ class MenuScreen extends ConsumerWidget {
                       ),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
+                        // EditProfileScreen 이동 (결과 처리는 MainScreen에서 함)
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const EditProfileScreen(),
                           ),
-                          // TODO: EditProfileScreen에서 정보 변경 시 MenuScreen 또는 MainScreen 상태 갱신 로직 필요할 수 있음
                         );
                       },
                       contentPadding: EdgeInsets.zero,
@@ -86,8 +81,10 @@ class MenuScreen extends ConsumerWidget {
                           final String indexName =
                               availableHealthIndices[index];
                           // 상태에서 보이는지 여부 확인
-                          final bool isVisible = state.visibleIndices.contains(
-                            indexName,
+                          final bool isVisible = ref.watch(
+                            menuNotifierProvider.select(
+                              (s) => s.visibleIndices.contains(indexName),
+                            ),
                           );
 
                           return Padding(
@@ -117,10 +114,12 @@ class MenuScreen extends ConsumerWidget {
                                     color: Colors.orangeAccent,
                                     size: 28,
                                   ),
-                                  onPressed: () {
-                                    // Notifier 함수 호출
-                                    notifier.toggleIndexVisibility(indexName);
-                                  },
+                                  onPressed:
+                                      () =>
+                                      // Notifier 함수 호출
+                                      ref
+                                          .read(menuNotifierProvider.notifier)
+                                          .toggleIndexVisibility(indexName),
                                   tooltip:
                                       isVisible
                                           ? '$indexName 숨기기'
