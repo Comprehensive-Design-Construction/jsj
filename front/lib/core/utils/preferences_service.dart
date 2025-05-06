@@ -172,42 +172,86 @@ class PreferencesService {
   Future<List<AddedPerson>> getAddedPeople() async {
     final prefs = await _getPrefs();
     final List<String>? jsonStringList = prefs.getStringList(_addedPeopleKey);
+    print(
+      "[PrefsService] getAddedPeople: Raw JSON list from prefs: $jsonStringList",
+    );
 
     if (jsonStringList == null) {
-      return []; // 저장된 목록 없으면 빈 리스트 반환
+      print(
+        "[PrefsService] getAddedPeople: No saved list found. Returning empty list.",
+      );
+      return [];
     }
-
     try {
-      // JSON 문자열 리스트를 AddedPerson 객체 리스트로 변환
-      return jsonStringList
-          .map((jsonString) => AddedPerson.fromJson(jsonDecode(jsonString)))
-          .toList();
+      final decodedList =
+          jsonStringList
+              .map((jsonString) {
+                try {
+                  return AddedPerson.fromJson(jsonDecode(jsonString));
+                } catch (e) {
+                  print(
+                    "[PrefsService] getAddedPeople: Error decoding JSON string '$jsonString': $e",
+                  );
+                  return null; // 오류 발생 시 null 반환
+                }
+              })
+              .whereType<AddedPerson>()
+              .toList(); // null이 아닌 것만 리스트로 만듦
+      print(
+        "[PrefsService] getAddedPeople: Decoded ${decodedList.length} people.",
+      );
+      return decodedList;
     } catch (e) {
-      print("Error decoding added people list: $e");
-      return []; // 디코딩 오류 시 빈 리스트 반환
+      print(
+        "[PrefsService] getAddedPeople: General error decoding added people list: $e",
+      );
+      return [];
     }
   }
 
   /// 추가된 사람 목록 전체를 저장합니다. (기존 목록 덮어쓰기)
   Future<void> saveAddedPeople(List<AddedPerson> people) async {
     final prefs = await _getPrefs();
-    // AddedPerson 객체 리스트를 JSON 문자열 리스트로 변환
     final List<String> jsonStringList =
-        people.map((person) => jsonEncode(person.toJson())).toList();
+        people
+            .map((person) {
+              try {
+                return jsonEncode(person.toJson());
+              } catch (e) {
+                print(
+                  "[PrefsService] saveAddedPeople: Error encoding person ${person.name} to JSON: $e",
+                );
+                return null; // 오류 발생 시 null 반환
+              }
+            })
+            .whereType<String>()
+            .toList(); // null이 아닌 것만 리스트로 만듦
+
+    if (people.length != jsonStringList.length) {
+      print(
+        "[PrefsService] saveAddedPeople: Some people could not be encoded to JSON. Original count: ${people.length}, Encoded count: ${jsonStringList.length}",
+      );
+    }
     await prefs.setStringList(_addedPeopleKey, jsonStringList);
-    print("Saved Added People: ${people.length} items");
+    print(
+      "[PrefsService] saveAddedPeople: Saved ${jsonStringList.length} people. Raw JSON list: $jsonStringList",
+    );
   }
 
   /// 새 사람을 목록에 추가합니다.
   Future<void> addPerson(AddedPerson person) async {
     final List<AddedPerson> currentList = await getAddedPeople();
-    // ID 중복 체크 (선택 사항)
     if (currentList.any((p) => p.id == person.id)) {
-      print("Person with ID ${person.id} already exists. Not adding.");
-      return; // 또는 업데이트 로직
+      print(
+        "[PrefsService] addPerson: Person with ID ${person.id} already exists. Not adding.",
+      );
+      return;
     }
     currentList.add(person);
-    await saveAddedPeople(currentList);
+    print(
+      "[PrefsService] addPerson: Adding person ${person.name}. Current list size before save: ${currentList.length}",
+    );
+    await saveAddedPeople(currentList); // saveAddedPeople 내부 로그도 확인
   }
 
   /// 특정 사람 정보를 업데이트합니다. (ID 기준)

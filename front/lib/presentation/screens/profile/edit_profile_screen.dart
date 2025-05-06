@@ -136,7 +136,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 title: const Text('임산부'),
                 value: state.selectedIsPregnant ?? false,
                 onChanged:
-                    state.isSaving ? null : (v) => notifier.setIsPregnant(v),
+                    // --- 수정 시작 ---
+                    state.selectedGender ==
+                            Gender
+                                .male // 선택된 성별이 남성이면
+                        ? null // onChanged를 null로 만들어 비활성화
+                        : (v) => notifier.setIsPregnant(
+                          v,
+                        ), // 여성이거나 선택되지 않았으면 Notifier 함수 호출
+                // --- 수정 종료 ---
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,
               ),

@@ -29,20 +29,51 @@ class _AddPersonScreenState extends ConsumerState<AddPersonScreen> {
   @override
   void initState() {
     super.initState();
+    // 화면이 빌드된 후 첫 프레임에서 상태 초기화
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        // 위젯이 여전히 마운트 상태인지 확인
+        ref.read(addPersonNotifierProvider.notifier).resetState();
+      }
+    });
     // Listener 등록 (기존과 동일)
     ref.listenManual(addPersonNotifierProvider, (previous, next) {
+      final prevSaved = previous?.savedSuccessfully ?? false;
+      final nextSaved = next.savedSuccessfully;
+      print(
+        "[AddPersonScreen Listener] State changed. Previous.savedSuccessfully: $prevSaved, Next.savedSuccessfully: $nextSaved, mounted: $mounted",
+      );
+
       if (next.errorMessage != null &&
           next.errorMessage != previous?.errorMessage) {
-        _showErrorSnackBar(next.errorMessage!);
+        if (mounted) {
+          // 스낵바 표시 전에도 mounted 확인
+          _showErrorSnackBar(next.errorMessage!);
+        }
       }
-      if (next.savedSuccessfully) {
-        Navigator.of(context).pop(true); // 저장 성공 시 true 반환하며 닫기
+
+      if (nextSaved && !prevSaved) {
+        print(
+          "[AddPersonScreen Listener] savedSuccessfully is true AND was previously false.",
+        );
+        if (mounted) {
+          // Pop 전에 mounted 확인!
+          print(
+            "[AddPersonScreen Listener] Widget is mounted. Popping screen with result: true",
+          );
+          Navigator.of(context).pop(true);
+        } else {
+          print(
+            "[AddPersonScreen Listener] Widget is NOT mounted. Cannot pop screen.",
+          );
+        }
       }
     });
   }
 
   @override
   void dispose() {
+    print("[AddPersonScreen] dispose() called."); // 로그 추가
     _nameController.dispose();
     super.dispose();
   }
@@ -146,7 +177,15 @@ class _AddPersonScreenState extends ConsumerState<AddPersonScreen> {
                 title: const Text('임산부'),
                 value: state.selectedIsPregnant ?? false,
                 onChanged:
-                    state.isSaving ? null : (v) => notifier.setIsPregnant(v),
+                    // --- 수정 시작 ---
+                    state.selectedGender ==
+                            Gender
+                                .male // 선택된 성별이 남성이면
+                        ? null // onChanged를 null로 만들어 비활성화
+                        : (v) => notifier.setIsPregnant(
+                          v,
+                        ), // 여성이거나 선택되지 않았으면 Notifier 함수 호출
+                // --- 수정 종료 ---
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,
               ),
@@ -258,12 +297,44 @@ class _AddPersonScreenState extends ConsumerState<AddPersonScreen> {
                     state.isSaving
                         ? null
                         : () {
-                          if (_formKey.currentState?.validate() ?? false) {
-                            // 지역 로딩 에러 체크
+                          print(
+                            "[AddPersonScreen Button] '추가하기' pressed. isSaving: ${state.isSaving}",
+                          );
+                          final formIsValid =
+                              _formKey.currentState?.validate() ?? false;
+                          print(
+                            "[AddPersonScreen Button] Form validation result: $formIsValid",
+                          );
+                          print(
+                            "[AddPersonScreen Button] state.locationErrorText: ${state.locationErrorText}",
+                          );
+
+                          if (formIsValid) {
                             if (state.locationErrorText == null) {
+                              print(
+                                "[AddPersonScreen Button] Form valid and no location error. Calling notifier.addPerson().",
+                              );
                               notifier.addPerson(_nameController.text);
                             } else {
-                              _showErrorSnackBar('지역 정보를 확인해주세요.');
+                              print(
+                                "[AddPersonScreen Button] Form valid BUT location error exists. Showing snackbar.",
+                              );
+                              if (mounted) {
+                                // 스낵바 표시 전 mounted 확인
+                                _showErrorSnackBar(
+                                  '지역 정보를 불러오는 중 오류가 발생했습니다. 지역을 다시 선택해주세요.',
+                                );
+                              }
+                            }
+                          } else {
+                            print(
+                              "[AddPersonScreen Button] Form invalid. Showing snackbar.",
+                            );
+                            if (mounted) {
+                              // 스낵바 표시 전 mounted 확인
+                              _showErrorSnackBar(
+                                '입력값을 확인해주세요. 필수 항목을 모두 올바르게 입력해야 합니다.',
+                              );
                             }
                           }
                         },

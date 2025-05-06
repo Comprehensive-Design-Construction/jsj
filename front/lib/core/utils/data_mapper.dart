@@ -62,6 +62,24 @@ class DataMapper {
   };
   // --------------------------------------
 
+  static const Map<String, String> _weatherDescriptionMap = {
+    'Clear': '맑음',
+    'Clouds': '흐림', // 또는 '구름'
+    'Rain': '비',
+    'Drizzle': '이슬비',
+    'Snow': '눈',
+    'Thunderstorm': '뇌우',
+    'Mist': '옅은 안개',
+    'Smoke': '연기',
+    'Haze': '실안개',
+    'Dust': '먼지',
+    'Fog': '안개',
+    'Sand': '황사', // 모래바람
+    'Ash': '화산재',
+    'Squall': '돌풍', // 스콜
+    'Tornado': '토네이도',
+  };
+
   // --- 날씨 정보 매핑 (아이콘 매핑 로직 수정) ---
   static CurrentWeather mapWeatherResponseToUI(
     WeatherDetailResponse apiData,
@@ -126,13 +144,31 @@ class DataMapper {
     final iconInfo = _weatherIconMap[lookupKey] ?? _weatherIconMap['Default']!;
     // ------------------------------------------
 
+    String mainWeatherKey = apiData.weatherCondition?.main ?? "";
+    if (mainWeatherKey.isNotEmpty) {
+      // _weatherDescriptionMap의 키와 일치시키기 위해 첫 글자 대문자로
+      mainWeatherKey =
+          mainWeatherKey[0].toUpperCase() +
+          mainWeatherKey.substring(1).toLowerCase();
+    }
+
+    String displayDescription =
+        _weatherDescriptionMap[mainWeatherKey] ?? // 매핑된 한글 설명
+        apiData.weatherCondition?.description ?? // 기존 상세 설명 (fallback 1)
+        mainWeatherKey; // 영어 main 값 (fallback 2)
+
+    if (displayDescription.isEmpty ||
+        displayDescription == mainWeatherKey &&
+            !_weatherDescriptionMap.containsValue(mainWeatherKey)) {
+      displayDescription =
+          _weatherDescriptionMap[mainWeatherKey] ?? "날씨 정보"; // 가장 기본적인 fallback
+    }
+
     return CurrentWeather(
       location: '${regionInfo?.gu ?? ""} ${regionInfo?.region ?? "위치 정보 없음"}',
       // '맑음' 대신 API에서 제공하는 상세 설명을 그대로 사용하거나, main 값을 사용할 수 있음
       // 여기서는 API의 상세 설명을 우선 사용
-      description:
-          apiData.weatherCondition?.description ??
-          mainWeather, // description이 없으면 main 값 표시
+      description: displayDescription, // description이 없으면 main 값 표시
       recommendation: recommendation,
       weatherIcon: iconInfo.icon, // Map에서 가져온 아이콘
       weatherIconColor: iconInfo.color, // Map에서 가져온 색상

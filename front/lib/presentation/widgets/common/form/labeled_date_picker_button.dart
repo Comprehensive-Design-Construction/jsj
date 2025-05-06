@@ -28,11 +28,14 @@ class LabeledDatePickerButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 버튼에 표시될 텍스트 포맷 정의
+    // --- 수정 시작: 버튼에 표시될 텍스트 포맷 정의 (힌트에서 "(선택)" 제거) ---
     final String buttonText =
         selectedDate == null
-            ? '$label${isRequired ? ' *' : ''} (선택)' // 기본 힌트
+            ? label // 날짜가 선택되지 않았을 때 레이블 텍스트만 표시 (예: '생년월일')
             : '$label: ${DateFormat('yyyy.MM.dd').format(selectedDate!)}'; // 선택된 날짜 표시
+    // --- 수정 종료 ---
+
+    // 힌트 텍스트 색상 로직은 그대로 유지 (selectedDate == null 일 때 회색)
     final Color textColor =
         selectedDate == null ? Colors.grey[600]! : Colors.black87;
 
@@ -40,13 +43,13 @@ class LabeledDatePickerButton extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 레이블 (버튼 텍스트에 포함되므로 별도 Text 위젯은 제거 가능하나, 일관성을 위해 남겨둘 수 있음)
-        // Text.rich(...)
+        // Text.rich(...) // 현재 코드는 이 부분 주석 처리되어 있음. 그대로 둡니다.
 
         // 날짜 선택 버튼
         TextButton.icon(
           icon: Icon(Icons.calendar_today, size: 18, color: Colors.grey[700]),
           label: Text(
-            buttonText,
+            buttonText, // 수정된 buttonText 사용
             style: TextStyle(color: textColor, fontSize: 16),
           ),
           style: TextButton.styleFrom(

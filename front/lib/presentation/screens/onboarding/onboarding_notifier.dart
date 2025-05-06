@@ -32,8 +32,18 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   }
 
   void setGender(String? gender) {
-    // if (!mounted) return;
-    state = state.copyWith(selectedGender: gender);
+    if (!mounted) return;
+    // --- 수정 시작 ---
+    // 성별 상태를 업데이트합니다.
+    // 만약 새로 선택된 성별이 남성이면, 임산부 상태를 false로 재설정합니다.
+    state = state.copyWith(
+      selectedGender: gender,
+      selectedIsPregnant:
+          gender == Gender.male
+              ? false
+              : state.selectedIsPregnant, // 남성이면 false, 아니면 기존 값 유지
+    );
+    // --- 수정 종료 ---
   }
 
   void setIsPregnant(bool? value) {
@@ -204,8 +214,8 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
         _prefsService.saveIsPregnant(
           state.selectedIsPregnant,
         ), // 이 호출에서 saveIsPregnant 로그가 찍힐 것입니다.
-        // AddedPerson 객체 저장은 AddPersonNotifier에만 있고 OnboardingNotifier에는 없으므로 여기서는 제외
       ]);
+      await _prefsService.setOnboardingComplete();
 
       print(
         '[OnboardingNotifier] startApp: All PreferenceService save calls awaited.',
@@ -235,6 +245,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
     try {
       // 저장 로직 (기존과 동일, await Future.wait 사용)
+      await _prefsService.setOnboardingComplete();
       await Future.wait([/* ... SharedPreferences 저장 (기본값) ... */]);
 
       // if (!mounted) return;

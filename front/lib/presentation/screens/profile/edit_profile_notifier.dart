@@ -132,10 +132,18 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
 
   // 성별 설정 (동기 작업)
   void setGender(String? gender) {
-    if (gender != null && gender != state.selectedGender) {
-      if (!mounted) return;
-      state = state.copyWith(selectedGender: gender);
-    }
+    if (!mounted) return;
+    // --- 수정 시작 ---
+    // 성별 상태를 업데이트합니다.
+    // 만약 새로 선택된 성별이 남성이면, 임산부 상태를 false로 재설정합니다.
+    state = state.copyWith(
+      selectedGender: gender,
+      selectedIsPregnant:
+          gender == Gender.male
+              ? false
+              : state.selectedIsPregnant, // 남성이면 false, 아니면 기존 값 유지
+    );
+    // --- 수정 종료 ---
   }
 
   // 임신 여부 설정 (동기 작업)
