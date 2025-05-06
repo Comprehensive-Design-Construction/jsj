@@ -131,6 +131,16 @@ def fetch_air_quality_map(
     # 6. 레이어 컨트롤 추가 및 HTML 반환
     folium.LayerControl().add_to(m)
 
+    # <<< fit_bounds 코드 추가 시작 >>>
+    if gdf is not None and not gdf.empty:
+        # GeoDataFrame의 전체 경계를 가져옵니다.
+        min_lon, min_lat, max_lon, max_lat = gdf.total_bounds
+        # fit_bounds에 전달할 경계 좌표를 생성합니다: [[남서쪽_lat, 남서쪽_lon], [북동쪽_lat, 북동쪽_lon]]
+        bounds = [[min_lat, min_lon], [max_lat, max_lon]]
+        m.fit_bounds(bounds)
+        # 필요하다면 경계에 약간의 여백(padding)을 줄 수 있습니다.
+        # 예: m.fit_bounds(bounds, padding=(0.01, 0.01)) # 상하좌우 1% 여백
+
     try:
         map_html_content = m._repr_html_()
         html_size_bytes = len(map_html_content.encode("utf-8"))
