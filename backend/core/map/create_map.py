@@ -60,14 +60,32 @@ def fetch_air_quality_map(
 ) -> str | None:
     """서울시 대기질 현황 지도를 생성합니다."""
 
-    # geojson_path 기본값 설정 (None일 경우 기본 경로 사용 시도)
     if geojson_path is None:
-        geojson_path = "./backend/datasets/map/seoul_municipalities_geo.json"  # 기본 경로 (필요시 수정)
+        geojson_path = "./backend/datasets/map/seoul_municipalities_geo.json"
 
-    # 1. GeoJSON 로드 및 중심점 계산
+    # 1. GeoJSON 로드 및 중심점 계산 (gdf 가져오기)
     gdf = _load_geojson_and_calculate_centroids(geojson_path)
     if gdf is None:
         return "Error: Failed to load or process GeoJSON."
+
+    # <<< 지도 생성 로직 수정 시작 >>>
+    # 데이터 경계에서 중심점 계산
+    try:
+        min_lon, min_lat, max_lon, max_lat = gdf.total_bounds
+        center_lat = (min_lat + max_lat) / 2
+        center_lon = (min_lon + max_lon) / 2
+        map_center = [center_lat, center_lon]
+    except Exception:
+        logger.warning(
+            "Could not calculate center from gdf bounds, using default center."
+        )
+        map_center = [37.566826, 126.9786567]  # 기본값 (서울시청 근처)
+
+    # 적절한 고정 zoom 값 설정 (11 또는 12 정도에서 시작하여 조정)
+    zoom_level = 11  # <--- 이 값을 조정하여 최적의 확대/축소 레벨을 찾으세요
+
+    # folium.Map 직접 생성
+    m = folium.Map(location=map_center, zoom_start=zoom_level, tiles="CartoDB positron")
 
     # 2. 데이터 전처리
     processed_data = {}
@@ -104,7 +122,7 @@ def fetch_air_quality_map(
         # return _create_base_map()._repr_html_() # 예: 기본 지도만 반환
 
     # 3. 기본 지도 생성
-    m = _create_base_map()
+    # m = _create_base_map()
 
     # 4. Choropleth 추가
     _add_choropleth(
@@ -131,22 +149,6 @@ def fetch_air_quality_map(
     # 6. 레이어 컨트롤 추가 및 HTML 반환
     folium.LayerControl().add_to(m)
 
-    # <<< fit_bounds 코드 및 로깅 추가 시작 >>>
-    if gdf is not None and not gdf.empty:
-        # --- 추가 로그 ---
-        logger.info(f"GDF for fit_bounds (head): \n{gdf.head()}")
-        logger.info(f"GDF CRS for fit_bounds: {gdf.crs}")
-        # --- 추가 로그 끝 ---
-
-        min_lon, min_lat, max_lon, max_lat = gdf.total_bounds
-        bounds = [[min_lat, min_lon], [max_lat, max_lon]]
-        logger.info(
-            f"Using bounds for fit_bounds: {bounds}"
-        )  # 기존에 제공해주신 로그와 유사
-        m.fit_bounds(bounds)
-        # 예: m.fit_bounds(bounds, padding=(0.01, 0.01))
-    # <<< fit_bounds 코드 및 로깅 추가 끝 >>>
-
     try:
         map_html_content = m._repr_html_()
         html_size_bytes = len(map_html_content.encode("utf-8"))
@@ -163,14 +165,29 @@ def fetch_air_quality_map(
 def fetch_uv_map(uv_data: dict, geojson_path: str = None) -> str | None:
     """서울시 자외선 지수 현황 지도를 생성합니다."""
 
-    # geojson_path 기본값 설정
     if geojson_path is None:
-        geojson_path = "./backend/datasets/map/seoul_municipalities_geo.json"  # 기본 경로 (필요시 수정)
+        geojson_path = "./backend/datasets/map/seoul_municipalities_geo.json"
 
-    # 1. GeoJSON 로드 및 중심점 계산
+    # 1. GeoJSON 로드 (gdf 가져오기)
     gdf = _load_geojson_and_calculate_centroids(geojson_path)
     if gdf is None:
         return "Error: Failed to load or process GeoJSON."
+
+    # <<< 지도 생성 로직 수정 시작 >>>
+    try:
+        min_lon, min_lat, max_lon, max_lat = gdf.total_bounds
+        center_lat = (min_lat + max_lat) / 2
+        center_lon = (min_lon + max_lon) / 2
+        map_center = [center_lat, center_lon]
+    except Exception:
+        logger.warning(
+            "Could not calculate center from gdf bounds, using default center."
+        )
+        map_center = [37.566826, 126.9786567]
+
+    zoom_level = 11  # <--- 이 값을 조정하여 최적의 확대/축소 레벨을 찾으세요
+
+    m = folium.Map(location=map_center, zoom_start=zoom_level, tiles="CartoDB positron")
 
     # 2. 데이터 전처리
     processed_data = {}
@@ -193,7 +210,7 @@ def fetch_uv_map(uv_data: dict, geojson_path: str = None) -> str | None:
         print("Warning: No valid UV data processed for Choropleth.")
 
     # 3. 기본 지도 생성
-    m = _create_base_map()
+    # m = _create_base_map()
 
     # 4. Choropleth 추가
     # 값 변경 필요.
@@ -228,17 +245,6 @@ def fetch_uv_map(uv_data: dict, geojson_path: str = None) -> str | None:
 
     # 6. 레이어 컨트롤 추가 및 HTML 반환
     folium.LayerControl().add_to(m)
-
-    # <<< fit_bounds 코드 추가 시작 >>>
-
-    if gdf is not None and not gdf.empty:
-        # GeoDataFrame의 전체 경계를 가져옵니다.
-        min_lon, min_lat, max_lon, max_lat = gdf.total_bounds
-        # fit_bounds에 전달할 경계 좌표를 생성합니다: [[남서쪽_lat, 남서쪽_lon], [북동쪽_lat, 북동쪽_lon]]
-        bounds = [[min_lat, min_lon], [max_lat, max_lon]]
-        m.fit_bounds(bounds)
-        # 필요하다면 경계에 약간의 여백(padding)을 줄 수 있습니다.
-        # 예: m.fit_bounds(bounds, padding=(0.01, 0.01)) # 상하좌우 1% 여백
 
     try:
         map_html_content = m._repr_html_()
