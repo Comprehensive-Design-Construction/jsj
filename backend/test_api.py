@@ -407,8 +407,8 @@ if __name__ == "__main__":
 
     # 실행할 테스트 목록
     available_tests = {
-        "index": test_index_api,
-        # "env_map": test_env_map_api,  # 기존 환경 지도 테스트
+        # "index": test_index_api,
+        "env_map": test_env_map_api,  # 기존 환경 지도 테스트
         # "map": test_map_api,
         # "weather": test_weather_api,  # 신규 상세 날씨 테스트
         # "uv": test_environment_uv_api,  # 신규 UV 테스트
