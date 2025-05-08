@@ -5,7 +5,7 @@ import sys
 import html
 
 # 기본 API URL
-BASE_URL = "http://34.22.91.180:5000/api"
+BASE_URL = "http://localhost:5000/api"
 # 요청 타임아웃 설정 (초)
 REQUEST_TIMEOUT = 15
 
@@ -151,8 +151,13 @@ def test_index_api():
     params = {
         "latitude": 37.498095,
         "longitude": 127.027610,
+<<<<<<< Updated upstream
         "age": "100",
         "user_type": ["비닐하우스", "실외작업자_도로"],
+=======
+        "age": 13,
+        "user_type": ["실외작업자_건설현장"],
+>>>>>>> Stashed changes
     }
 
     url = f"{BASE_URL}/index"
@@ -408,9 +413,13 @@ if __name__ == "__main__":
     # 실행할 테스트 목록
     available_tests = {
         # "index": test_index_api,
+<<<<<<< Updated upstream
         "env_map": test_env_map_api,  # 기존 환경 지도 테스트
+=======
+        # "env_map": test_env_map_api,  # 기존 환경 지도 테스트
+>>>>>>> Stashed changes
         # "map": test_map_api,
-        # "weather": test_weather_api,  # 신규 상세 날씨 테스트
+        "weather": test_weather_api,  # 신규 상세 날씨 테스트
         # "uv": test_environment_uv_api,  # 신규 UV 테스트
         # "dust": test_environment_fine_dust_api,  # 신규 미세먼지 테스트
         # "district": test_districts_api,

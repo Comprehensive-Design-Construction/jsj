@@ -2,6 +2,7 @@
 import asyncio
 import aiohttp  # 변경: aiohttp 임포트
 from typing import Optional
+from datetime import datetime
 
 # import requests # 제거: requests 대신 aiohttp 사용
 from config.settings import settings
@@ -9,6 +10,8 @@ import logging  # 로깅 추가
 
 logger = logging.getLogger(__name__)  # 로거 추가
 url = "https://api.openweathermap.org/data/3.0/onecall"
+
+TIMEZONE_OFFSET = 32870
 
 
 async def fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
@@ -53,6 +56,12 @@ async def fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
                 daily_list = data.get("daily", {})
                 daily_dict = daily_list[0] if daily_list else {}
 
+                hourly_list = data.get("hourly", {})[1:13]
+                for hourly_data in hourly_list:
+                    hourly_data["date"] = datetime.utcfromtimestamp(
+                        hourly_data["dt"] + TIMEZONE_OFFSET
+                    ).strftime("%Y%m%d%H")
+
                 results = {
                     # 참고: 원본 코드와 동일한 구조 유지. 필요시 response_models.py 스키마 활용 가능
                     "weather": {
@@ -74,6 +83,15 @@ async def fetch_weather_data(lat: float, lon: float) -> Optional[dict]:
                             "wind_deg"
                         ),  # 풍향 정보 추가 (선택 사항)
                     },
+                    "hourly": [
+                        {
+                            "date": hourly_data.get("date"),
+                            "temp": hourly_data.get("temp"),
+                            "pop": hourly_data.get("pop"),
+                            "main": hourly_data.get("weather")[0].get("main"),
+                        }
+                        for hourly_data in hourly_list
+                    ],
                 }
 
                 # 필수 값 존재 여부 확인 (예시)

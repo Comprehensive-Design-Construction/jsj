@@ -10,6 +10,8 @@ from app.schemas.response_models import (
     WeatherDetailResponse,
     WeatherCondition,
     WeatherMainInfo,
+    WeatherHourInfo,
+    WeatherHourInfoList,
 )
 from core.indexing.get_data import fetch_weather_data
 
@@ -47,11 +49,18 @@ async def get_detailed_weather(location: LocationInput = Depends(get_location_pa
         if weather_data:
             weather_cond_data = weather_data.get("weather", {})
             measurements_data = weather_data.get("main", {})
+            weather_hour_data = weather_data.get("hourly", {})
             weather_condition = (
                 WeatherCondition(**weather_cond_data) if weather_cond_data else None
             )
             measurements = (
                 WeatherMainInfo(**measurements_data) if measurements_data else None
+            )
+            weather_hour_list = WeatherHourInfoList(
+                hourly=[
+                    WeatherHourInfo(**weather_hour)
+                    for weather_hour in weather_hour_data
+                ]
             )
             timestamp = weather_data.get("timestamp")
             timezone = weather_data.get("timezone")
@@ -70,6 +79,7 @@ async def get_detailed_weather(location: LocationInput = Depends(get_location_pa
     return WeatherDetailResponse(
         request_location=request_location_dict,
         weather_condition=weather_condition,
+        weather_hour_list=weather_hour_list,
         measurements=measurements,
         timestamp=timestamp,
         timezone=timezone,

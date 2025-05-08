@@ -20,6 +20,17 @@ class WeatherMainInfo(BaseModel):
     wind_deg: Optional[int] = None
 
 
+class WeatherHourInfo(BaseModel):
+    date: Optional[str] = None
+    temp: Optional[float] = None
+    pop: Optional[float] = None
+    main: Optional[str] = None
+
+
+class WeatherHourInfoList(BaseModel):
+    hourly: Optional[List[WeatherHourInfo]] = None
+
+
 class WeatherCondition(BaseModel):
     main: Optional[str] = None  # 예: Clouds, Rain
     description: Optional[str] = None  # 예: broken clouds
@@ -32,6 +43,7 @@ class WeatherDetailResponse(BaseModel):
     request_location: Dict[str, float]  # 요청 좌표, RegionInfo 스키마 재활용 고려
     weather_condition: Optional[WeatherCondition] = None
     measurements: Optional[WeatherMainInfo] = None
+    weather_hour_list: Optional[WeatherHourInfoList] = None
     timestamp: Optional[int] = None  # 데이터 시간 (Unix timestamp)
     timezone: Optional[int] = None  # 타임존 오프셋 (초)
     error: Optional[str] = None  # 오류 메시지
