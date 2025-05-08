@@ -1,19 +1,21 @@
+// lib/presentation/widgets/common/webview_map_widget.dart
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-/// WebView 지도를 표시하는 공용 위젯
 class WebViewMapWidget extends StatelessWidget {
-  final WebViewController? controller; // Nullable WebViewController
+  final WebViewController? controller;
   final IconData placeholderIcon;
   final String placeholderText;
-  final double aspectRatio; // 종횡비
+  final double aspectRatio;
 
   const WebViewMapWidget({
     super.key,
     required this.controller,
     required this.placeholderIcon,
     required this.placeholderText,
-    this.aspectRatio = 16 / 9, // 기본값 16:9
+    this.aspectRatio = 16 / 9,
   });
 
   @override
@@ -22,17 +24,36 @@ class WebViewMapWidget extends StatelessWidget {
       aspectRatio: aspectRatio,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey[200], // 플레이스홀더 배경색
+          color: Colors.grey[200],
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!), // 테두리
+          border: Border.all(color: Colors.grey[300]!),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child:
               controller != null
-                  // WebViewController가 있으면 WebView 표시
-                  ? WebViewWidget(controller: controller!)
-                  // 없으면 플레이스홀더 표시
+                  ? WebViewWidget(
+                    controller: controller!,
+                    // --- 제스처 인식기 설정 추가 ---
+                    gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+                      Factory<VerticalDragGestureRecognizer>(
+                        () => VerticalDragGestureRecognizer(),
+                      ),
+                      // Factory<HorizontalDragGestureRecognizer>( // 가로 이동이 필요하다면 추가
+                      //   () => HorizontalDragGestureRecognizer(),
+                      // ),
+                      Factory<ScaleGestureRecognizer>(
+                        // 확대/축소 제스처
+                        () => ScaleGestureRecognizer(),
+                      ),
+                      // 만약 WebView 내부 스크롤이 앱의 전체 스크롤과 충돌한다면,
+                      // EagerGestureRecognizer를 사용하여 WebView가 제스처를 우선적으로 처리하도록 할 수 있습니다.
+                      // Factory<EagerGestureRecognizer>(
+                      //   () => EagerGestureRecognizer(),
+                      // ),
+                    },
+                    // --- ---------------------- ---
+                  )
                   : Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -42,7 +63,7 @@ class WebViewMapWidget extends StatelessWidget {
                           color: Colors.grey[400],
                           size: 40,
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Text(
                           placeholderText,
                           style: TextStyle(

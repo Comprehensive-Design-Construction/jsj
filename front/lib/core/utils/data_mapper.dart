@@ -12,6 +12,8 @@ import '../../data/models/api/common_models.dart';
 import '../../data/models/ui/current_weather.dart';
 import '../../data/models/ui/feels_like_data.dart';
 import '../../data/models/ui/health_index.dart';
+import '../../data/models/ui/hourly_weather_ui.dart'; // <<< 추가
+import 'package:intl/intl.dart'; // <<< 날짜/시간 포매팅 위해 추가
 
 // 통합 상태 및 색상 정의 (기존과 동일)
 class UnifiedStatus {
@@ -570,5 +572,71 @@ class DataMapper {
         status: UnifiedStatus.unknown,
         color: UnifiedStatus.colors[UnifiedStatus.unknown]!,
       );
+  }
+
+  static List<HourlyWeatherUI> mapHourlyWeatherToUI(
+    WeatherDetailResponse? apiData,
+  ) {
+    if (apiData?.weatherHourList?.hourly == null ||
+        apiData!.weatherHourList!.hourly.isEmpty) {
+      return [];
+    }
+
+    final List<HourlyWeatherUI> hourlyWeatherList = [];
+    // API 응답에서 최대 12개 항목만 사용
+    final itemsToProcess = apiData.weatherHourList!.hourly.take(12).toList();
+
+    for (var item in itemsToProcess) {
+      String displayTime;
+      try {
+        final dateTime = DateFormat('yyyyMMddHH').parse(item.date);
+        displayTime = DateFormat('HH시').format(dateTime);
+        if (dateTime.hour == 0) {
+          displayTime = '자정';
+        } else if (dateTime.hour == 12) {
+          displayTime = '정오';
+        }
+      } catch (e) {
+        displayTime = item.date.substring(8) + '시';
+        print("Error parsing date from hourly weather: ${item.date} - $e");
+      }
+
+      String mainWeatherApi = item.main; // API에서 받은 main 값 (예: "Clouds")
+      String lookupKey = "Default";
+      String statusText = "정보 없음"; // 기본 상태 텍스트
+
+      if (mainWeatherApi.isNotEmpty) {
+        // 아이콘 및 색상 매핑용 키 (첫 글자 대문자)
+        String capitalizedMainWeather =
+            mainWeatherApi[0].toUpperCase() +
+            mainWeatherApi.substring(1).toLowerCase();
+        if (_weatherIconMap.containsKey(capitalizedMainWeather)) {
+          lookupKey = capitalizedMainWeather;
+        }
+        // 상태 텍스트 매핑 (이미 첫 글자 대문자로 되어 있는 _weatherDescriptionMap 키 사용)
+        statusText =
+            _weatherDescriptionMap[capitalizedMainWeather] ??
+            capitalizedMainWeather;
+      }
+      final iconInfo =
+          _weatherIconMap[lookupKey] ?? _weatherIconMap['Default']!;
+
+      String? precipitationProbability;
+      if (item.main.toLowerCase() == 'rain' && item.pop > 0) {
+        precipitationProbability = '${(item.pop * 100).toStringAsFixed(0)}%';
+      }
+
+      hourlyWeatherList.add(
+        HourlyWeatherUI(
+          time: displayTime,
+          // statusText: statusText, // <<< 한글 상태 텍스트 전달
+          weatherIcon: iconInfo.icon,
+          weatherIconColor: iconInfo.color,
+          temperature: '${item.temp.toStringAsFixed(0)}°',
+          precipitationProbability: precipitationProbability,
+        ),
+      );
+    }
+    return hourlyWeatherList;
   }
 }

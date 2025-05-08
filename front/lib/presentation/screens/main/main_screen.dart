@@ -19,6 +19,7 @@ import 'widgets/all_health_indices_widget.dart';
 import 'widgets/env_map_section_widget.dart';
 import 'widgets/shelter_map_section_widget.dart';
 import 'widgets/partial_error_widget.dart';
+import 'widgets/hourly_weather_section_widget.dart';
 
 // 기존 위젯 및 화면 import
 import '../../widgets/main_screen/person_selection_dialog.dart';
@@ -468,6 +469,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               children: [
                 const LocationInfoWidget(), // 내부에서 필요한 상태 watch
                 const WeatherSectionWidget(), // 내부에서 필요한 상태 watch
+                const HourlyWeatherSectionWidget(),
                 const FeelsLikeSectionWidget(), // 내부에서 필요한 상태 watch
                 Container(
                   key: _majorHealthSectionKey,

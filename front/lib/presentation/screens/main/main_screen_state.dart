@@ -8,6 +8,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../data/models/ui/current_weather.dart';
 import '../../../data/models/ui/feels_like_data.dart';
 import '../../../data/models/ui/health_index.dart';
+import '../../../data/models/ui/hourly_weather_ui.dart'; // <<< 추가
 import '../../../data/models/added_person.dart';
 
 // 상태 클래스 (Equatable 상속하여 상태 변경 감지 용이하게)
@@ -31,6 +32,7 @@ class MainScreenState extends Equatable {
   final CurrentWeather? weatherDataUI;
   final FeelsLikeData? feelsLikeDataUI;
   final List<HealthIndex> healthIndicesUI;
+  final List<HourlyWeatherUI> hourlyWeatherDataUI; // <<< 추가
 
   // 지도 관련 상태
   final Map<String, WebViewController?> envMapControllers;
@@ -52,6 +54,7 @@ class MainScreenState extends Equatable {
     this.weatherDataUI,
     this.feelsLikeDataUI,
     this.healthIndicesUI = const [],
+    this.hourlyWeatherDataUI = const [],
     this.envMapControllers = const {},
     this.shelterMapControllers = const {},
     this.selectedEnvMapType = 'fine_dust',
@@ -73,6 +76,7 @@ class MainScreenState extends Equatable {
     CurrentWeather? weatherDataUI,
     FeelsLikeData? feelsLikeDataUI,
     List<HealthIndex>? healthIndicesUI,
+    List<HourlyWeatherUI>? hourlyWeatherDataUI,
     Map<String, WebViewController?>? envMapControllers,
     Map<String, WebViewController?>? shelterMapControllers,
     String? selectedEnvMapType,
@@ -92,6 +96,8 @@ class MainScreenState extends Equatable {
       weatherDataUI: weatherDataUI ?? this.weatherDataUI,
       feelsLikeDataUI: feelsLikeDataUI ?? this.feelsLikeDataUI,
       healthIndicesUI: healthIndicesUI ?? this.healthIndicesUI,
+      hourlyWeatherDataUI:
+          hourlyWeatherDataUI ?? this.hourlyWeatherDataUI, // <<< 추가
       envMapControllers: envMapControllers ?? this.envMapControllers,
       shelterMapControllers:
           shelterMapControllers ?? this.shelterMapControllers,
@@ -116,6 +122,7 @@ class MainScreenState extends Equatable {
     weatherDataUI,
     feelsLikeDataUI,
     healthIndicesUI,
+    hourlyWeatherDataUI,
     envMapControllers,
     shelterMapControllers,
     selectedEnvMapType,

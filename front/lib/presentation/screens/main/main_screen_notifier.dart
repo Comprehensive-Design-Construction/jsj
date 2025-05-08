@@ -22,6 +22,7 @@ import '../../../data/models/api/weather_response.dart';
 import '../../../data/models/ui/current_weather.dart';
 import '../../../data/models/ui/feels_like_data.dart';
 import '../../../data/models/ui/health_index.dart';
+import '../../../data/models/ui/hourly_weather_ui.dart';
 import '../../../data/services/api_service.dart';
 // import '../../../data/services/location_service.dart'; // 이제 직접 사용 안 함
 
@@ -53,6 +54,7 @@ typedef _ProcessedData =
       CurrentWeather? weatherUI,
       FeelsLikeData? feelsLikeUI,
       List<HealthIndex> healthIndicesUI,
+      List<HourlyWeatherUI> hourlyWeatherDataUI,
       Map<String, WebViewController?> envMapControllers,
       Map<String, WebViewController?> shelterMapControllers,
       String? errorMessage,
@@ -272,6 +274,8 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
         weatherDataUI: processedData.weatherUI,
         feelsLikeDataUI: processedData.feelsLikeUI,
         healthIndicesUI: processedData.healthIndicesUI,
+        hourlyWeatherDataUI:
+            processedData.hourlyWeatherDataUI, // <<< UI 데이터 업데이트
         envMapControllers: processedData.envMapControllers,
         shelterMapControllers: processedData.shelterMapControllers,
         lastLoadedLatitude: params.latitude,
@@ -565,6 +569,7 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
     CurrentWeather? weatherDataUI;
     FeelsLikeData? feelsLikeDataUI;
     List<HealthIndex> healthIndicesUI = [];
+    List<HourlyWeatherUI> hourlyWeatherDataUI = [];
     String? processingErrorMessage;
 
     String? selectedGender;
@@ -601,6 +606,20 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
         print("Error mapping weather data: $e");
         processingErrorMessage =
             (processingErrorMessage ?? "") + "날씨 정보 처리 오류\n";
+      }
+      try {
+        if (rawResults.weather != null) {
+          // weather 데이터가 있을 때만 매핑 시도
+          hourlyWeatherDataUI = DataMapper.mapHourlyWeatherToUI(
+            rawResults.weather,
+          );
+        } else {
+          print("Warning: Weather data is null, cannot map hourly weather.");
+          // 필요시 processingErrorMessage에 관련 내용 추가
+        }
+      } catch (e) {
+        print("Error mapping hourly weather data: $e");
+        // processingErrorMessage = (processingErrorMessage ?? "") + "시간별 날씨 정보 처리 오류\n";
       }
       try {
         feelsLikeDataUI = DataMapper.mapFeelsLikeResponseToUI(
@@ -669,6 +688,7 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
       weatherUI: weatherDataUI,
       feelsLikeUI: feelsLikeDataUI,
       healthIndicesUI: healthIndicesUI,
+      hourlyWeatherDataUI: hourlyWeatherDataUI,
       envMapControllers: newEnvMapControllers,
       shelterMapControllers: newShelterMapControllers,
       errorMessage: finalErrorMessage?.trim(),
@@ -689,14 +709,45 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
     Map<String, WebViewController?> envControllersTarget,
     Map<String, WebViewController?> shelterControllersTarget,
   ) {
-    // 이 함수는 동기적이므로 mounted 체크 불필요
+    String _modifyHtmlViewport(String htmlContent) {
+      // 기존 viewport 메타 태그를 찾아서 교체하거나, 없으면 새로 추가합니다.
+      // 좀 더 견고하게 하려면 정규식 사용을 권장합니다.
+      String modifiedHtml = htmlContent;
+      RegExp viewportRegex = RegExp(
+        r'<meta[^>]*name=["'
+        ']viewport["'
+        '][^>]*>',
+      );
+      const String newViewportTag =
+          '<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=5.0, user-scalable=yes">';
+
+      if (viewportRegex.hasMatch(modifiedHtml)) {
+        modifiedHtml = modifiedHtml.replaceAll(viewportRegex, newViewportTag);
+        print("[WebView] Replaced existing viewport meta tag.");
+      } else {
+        // <head> 태그를 찾아서 그 안에 추가 (간단한 방식)
+        modifiedHtml = modifiedHtml.replaceFirst(
+          '</head>',
+          '$newViewportTag</head>',
+        );
+        print("[WebView] Added new viewport meta tag.");
+      }
+      return modifiedHtml;
+    }
+
     apiEnvMapData.forEach((type, mapData) {
       if (mapData?.envMapHtml != null && mapData!.envMapHtml!.isNotEmpty) {
         try {
+          final modifiedHtml = _modifyHtmlViewport(
+            mapData.envMapHtml!,
+          ); // <<< HTML 수정
           envControllersTarget[type] =
               WebViewController()
                 ..setJavaScriptMode(JavaScriptMode.unrestricted)
-                ..loadHtmlString(mapData.envMapHtml!, baseUrl: null);
+                ..loadHtmlString(
+                  modifiedHtml,
+                  baseUrl: null,
+                ); // <<< 수정된 HTML 로드
         } catch (e) {
           print("Error initializing Env WebView for $type: $e");
           envControllersTarget[type] = null;
@@ -706,14 +757,21 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
         envControllersTarget[type] = null;
       }
     });
+
     apiShelterMapDataMap.forEach((type, mapData) {
       if (mapData?.shelterMapHtml != null &&
           mapData!.shelterMapHtml!.isNotEmpty) {
         try {
+          final modifiedHtml = _modifyHtmlViewport(
+            mapData.shelterMapHtml!,
+          ); // <<< HTML 수정
           shelterControllersTarget[type] =
               WebViewController()
                 ..setJavaScriptMode(JavaScriptMode.unrestricted)
-                ..loadHtmlString(mapData.shelterMapHtml!, baseUrl: null);
+                ..loadHtmlString(
+                  modifiedHtml,
+                  baseUrl: null,
+                ); // <<< 수정된 HTML 로드
         } catch (e) {
           print("Error initializing Shelter WebView for $type: $e");
           shelterControllersTarget[type] = null;

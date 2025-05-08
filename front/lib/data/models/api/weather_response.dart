@@ -52,12 +52,50 @@ class WeatherCondition {
   }
 }
 
+class HourlyWeatherItem {
+  final String date;
+  final double temp;
+  final double pop;
+  final String main;
+
+  HourlyWeatherItem({
+    required this.date,
+    required this.temp,
+    required this.pop,
+    required this.main,
+  });
+
+  factory HourlyWeatherItem.fromJson(Map<String, dynamic> json) {
+    return HourlyWeatherItem(
+      date: json['date'] as String,
+      temp: (json['temp'] as num).toDouble(),
+      pop: (json['pop'] as num).toDouble(),
+      main: json['main'] as String,
+    );
+  }
+}
+
+/// 시간별 날씨 리스트
+class WeatherHourList {
+  final List<HourlyWeatherItem> hourly;
+
+  WeatherHourList({required this.hourly});
+
+  factory WeatherHourList.fromJson(Map<String, dynamic> json) {
+    var list = json['hourly'] as List;
+    List<HourlyWeatherItem> hourlyList =
+        list.map((i) => HourlyWeatherItem.fromJson(i)).toList();
+    return WeatherHourList(hourly: hourlyList);
+  }
+}
+
 /// 상세 날씨 API 응답 모델 (/api/weather)
 class WeatherDetailResponse {
   // 요청 좌표 (키: 'latitude', 'longitude', 값: double)
   final Map<String, double>? requestLocation;
   final WeatherCondition? weatherCondition; // 날씨 상태
   final WeatherMeasurements? measurements; // 측정값
+  final WeatherHourList? weatherHourList; // <<< 추가된 필드
   final int? timestamp; // 데이터 시간 (Unix timestamp)
   final int? timezone; // 타임존 오프셋 (초)
   final String? error; // 오류 메시지
@@ -66,6 +104,7 @@ class WeatherDetailResponse {
     this.requestLocation,
     this.weatherCondition,
     this.measurements,
+    this.weatherHourList, // <<< 생성자에 추가
     this.timestamp,
     this.timezone,
     this.error,
@@ -73,11 +112,9 @@ class WeatherDetailResponse {
 
   factory WeatherDetailResponse.fromJson(Map<String, dynamic> json) {
     return WeatherDetailResponse(
-      // Map<String, dynamic>을 Map<String, double>로 변환
       requestLocation: (json['request_location'] as Map<String, dynamic>?)?.map(
         (key, value) => MapEntry(key, (value as num).toDouble()),
       ),
-      // 중첩된 객체는 해당 객체의 fromJson 생성자 호출
       weatherCondition:
           json['weather_condition'] != null
               ? WeatherCondition.fromJson(json['weather_condition'])
@@ -85,6 +122,11 @@ class WeatherDetailResponse {
       measurements:
           json['measurements'] != null
               ? WeatherMeasurements.fromJson(json['measurements'])
+              : null,
+      weatherHourList:
+          json['weather_hour_list'] !=
+                  null // <<< 추가된 필드 파싱
+              ? WeatherHourList.fromJson(json['weather_hour_list'])
               : null,
       timestamp: json['timestamp'] as int?,
       timezone: json['timezone'] as int?,
