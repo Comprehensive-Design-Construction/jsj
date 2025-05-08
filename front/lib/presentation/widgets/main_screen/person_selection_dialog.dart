@@ -6,11 +6,13 @@ import '../../../data/models/added_person.dart';
 class PersonSelectionDialogContent extends StatelessWidget {
   final String currentSelectedPersonId;
   final List<AddedPerson> addedPeople;
+  final bool allowAddUser; // <<< 파라미터 추가
 
   const PersonSelectionDialogContent({
     super.key,
     required this.currentSelectedPersonId,
     required this.addedPeople,
+    required this.allowAddUser, // <<< 생성자에 추가
   });
 
   // --- 삭제 확인 다이얼로그 (기존과 동일) ---
@@ -310,7 +312,10 @@ class PersonSelectionDialogContent extends StatelessWidget {
             // Divider(height: 1, thickness: 1, indent: 16, endIndent: 16), // 필요시 구분선
 
             // --- 3. 추가 버튼 (추가 버튼 빌더 사용) ---
-            _buildAddItem(context),
+            if (allowAddUser) // <<< 조건 추가
+              _buildAddItem(context),
+            // 필요시 else 블록에 빈 SizedBox 등을 추가하여 공간 유지 가능
+            // else const SizedBox(height: 8), // 예시
           ],
         ),
       ),

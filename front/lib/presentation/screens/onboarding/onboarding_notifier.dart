@@ -177,11 +177,11 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     print('  - selectedDiseases: ${state.selectedDiseases}');
 
     // 유효성 검사: 실패 시 errorMessage 설정 (SnackBar 용도)
-    if (state.selectedBirthDate == null) {
-      // if (!mounted) return;
-      state = state.copyWith(errorMessage: '생년월일을 선택해주세요.');
-      return;
-    }
+    // if (state.selectedBirthDate == null) {
+    //   // if (!mounted) return;
+    //   state = state.copyWith(errorMessage: '생년월일을 선택해주세요.');
+    //   return;
+    // }
 
     // 저장 시작 상태 (errorMessage 초기화)
     // if (!mounted) return;
@@ -215,8 +215,11 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
           state.selectedIsPregnant,
         ), // 이 호출에서 saveIsPregnant 로그가 찍힐 것입니다.
       ]);
-      await _prefsService.setOnboardingComplete();
-
+      await Future.wait([
+        _prefsService.setOnboardingComplete(),
+        _prefsService.setUsedSimpleStart(false), // 시작하기를 눌렀으므로 간편시작 아님
+        // _prefsService.setConsentGiven(true)는 ConsentScreen에서 처리했으므로 여기서 호출 불필요
+      ]);
       print(
         '[OnboardingNotifier] startApp: All PreferenceService save calls awaited.',
       );
@@ -245,8 +248,17 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
     try {
       // 저장 로직 (기존과 동일, await Future.wait 사용)
-      await _prefsService.setOnboardingComplete();
-      await Future.wait([/* ... SharedPreferences 저장 (기본값) ... */]);
+      await Future.wait([
+        _prefsService.saveUserInfo(age: null, userType: null, gender: null),
+        _prefsService.saveMyGuDong(null, null),
+        _prefsService.saveUserDiseases(null),
+        _prefsService.saveIsPregnant(null),
+        // 간편 시작은 개인정보 동의를 받지 않으므로 consent는 false 또는 저장 안 함
+        _prefsService.setConsentGiven(false),
+        // 온보딩 완료 및 간편시작 사용 기록
+        _prefsService.setOnboardingComplete(),
+        _prefsService.setUsedSimpleStart(true),
+      ]);
 
       // if (!mounted) return;
       print(

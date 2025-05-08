@@ -90,10 +90,30 @@ class MainScreenNotifier extends StateNotifier<MainScreenState> {
 
   Future<void> _initializeScreen() async {
     print('[MainScreenNotifier] Initializing screen...');
-    await Future.wait([_loadAddedPeople(), _loadVisibleIndicesFromPrefs()]);
-    if (!mounted) return;
+    // 여러 초기화 작업을 병렬로 실행
+    final results = await Future.wait([
+      _prefsService.getAddedPeople(),
+      _prefsService.getVisibleIndices(),
+      _prefsService.didUseSimpleStart(), // 간편시작 여부 로드 추가
+    ]);
+
+    if (!mounted) return; // 모든 비동기 작업 후 mounted 확인
+
+    final people = results[0] as List<AddedPerson>;
+    final savedIndices = results[1] as Set<String>?;
+    final usedSimpleStart = results[2] as bool; // 로드된 값 사용
+
+    final initialVisible = savedIndices ?? availableHealthIndices.toSet();
+
+    state = state.copyWith(
+      addedPeopleList: people,
+      isLoadingPeople: false, // 로드 완료
+      visibleIndices: initialVisible,
+      didUserUseSimpleStart: usedSimpleStart, // 상태에 저장
+    );
+
     print(
-      '[MainScreenNotifier] Initial setup complete. Loading data for selected person.',
+      '[MainScreenNotifier] Initial setup complete. Loading data for selected person. Used Simple Start: $usedSimpleStart',
     );
     await loadDataForSelectedPerson(); // 이 호출 전후에 로그 추가
     print('[MainScreenNotifier] Initial data load complete.');

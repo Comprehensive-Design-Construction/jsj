@@ -207,6 +207,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     ); // 탭 가능 여부 결정용
     final isLoadingPeople = ref.watch(
       mainScreenNotifierProvider.select((s) => s.isLoadingPeople),
+    );
+    final didUserUseSimpleStart = ref.watch(
+      // <<< 상태 읽기
+      mainScreenNotifierProvider.select((s) => s.didUserUseSimpleStart),
     ); // 탭 가능 여부 결정용
     // --------------------------------------
 
@@ -234,14 +238,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               : () async {
                 // --- 콜백 내에서는 ref.read 사용 ---
                 final notifier = ref.read(mainScreenNotifierProvider.notifier);
-                final currentSelectedPersonId =
-                    ref
-                        .read(mainScreenNotifierProvider)
-                        .selectedPersonId; // 현재 선택 ID 읽기
-                final currentAddedPeople =
-                    ref
-                        .read(mainScreenNotifierProvider)
-                        .addedPeopleList; // 현재 목록 읽기
+                final currentSelectedPersonId = selectedPersonId;
+                final currentAddedPeople = addedPeopleList;
                 // ----------------------------------
 
                 final result = await showGeneralDialog<String>(
@@ -267,6 +265,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                               // 읽어온 상태 전달
                               currentSelectedPersonId: currentSelectedPersonId,
                               addedPeople: currentAddedPeople,
+                              allowAddUser: !didUserUseSimpleStart,
                             ),
                           ),
                           Expanded(

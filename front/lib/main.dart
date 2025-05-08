@@ -7,7 +7,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final prefsService = PreferencesService();
-  await prefsService.clearAllPreferences();
+  // await prefsService.clearAllPreferences();
   final bool onboardingComplete = await prefsService.isOnboardingComplete();
 
   runApp(ProviderScope(child: MyApp(onboardingComplete: onboardingComplete)));

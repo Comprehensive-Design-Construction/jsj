@@ -170,7 +170,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 LabeledDatePickerButton(
                   label: '생년월일',
                   selectedDate: state.selectedBirthDate,
-                  isRequired: true,
+                  isRequired: false,
                   isEnabled: !state.isSaving, // 저장 중 아닐 때만 활성화
                   onConfirm: (date) => notifier.setBirthDate(date),
                 ),

@@ -14,6 +14,8 @@ class PreferencesService {
   static const String _myDongKey = 'my_dong';
   static const String _userDiseasesKey = 'user_diseases';
   static const String _userIsPregnantKey = 'user_is_pregnant';
+  static const String _consentGivenKey = 'consent_given'; // 개인정보 동의 여부
+  static const String _usedSimpleStartKey = 'used_simple_start'; // 간편시작 사용 여부
 
   Future<SharedPreferences> _getPrefs() async {
     return await SharedPreferences.getInstance();
@@ -145,8 +147,47 @@ class PreferencesService {
   // (참고) 모든 저장된 정보 삭제 (테스트용)
   Future<void> clearAllPreferences() async {
     final prefs = await _getPrefs();
-    await prefs.clear();
-    print("All preferences cleared.");
+    // 앱에서 사용하는 모든 SharedPreferences 키 목록을 정확히 명시합니다.
+    const List<String> allUsedKeys = [
+      _onboardingCompleteKey,
+      _userAgeKey,
+      _userTypeKey,
+      _userGenderKey,
+      _visibleIndicesKey,
+      _addedPeopleKey, // <<< 추가된 사용자 목록 키 포함!
+      _myGuKey,
+      _myDongKey,
+      _userDiseasesKey,
+      _userIsPregnantKey,
+      _consentGivenKey,
+      // 이전에 사용했던 키나 숨겨진 다른 키가 있다면 모두 추가해야 합니다.
+    ];
+
+    print("[PrefsService] Clearing preferences by removing individual keys...");
+    int removedCount = 0;
+    for (final key in allUsedKeys) {
+      if (await prefs.containsKey(key)) {
+        final success = await prefs.remove(key);
+        if (success) {
+          print("[PrefsService] Successfully removed key: $key");
+          removedCount++;
+        } else {
+          print("[PrefsService] Failed to remove key: $key");
+        }
+      } else {
+        print("[PrefsService] Key not found, skipping removal: $key");
+      }
+    }
+    // 또는 모든 키를 가져와서 삭제하는 방식 (앱 외부에서 설정된 키도 삭제될 수 있음)
+    final allKeysInPrefs = prefs.getKeys();
+    print("[PrefsService] Clearing all found keys: ${allKeysInPrefs}");
+    for (final key in allKeysInPrefs) {
+      await prefs.remove(key);
+    }
+
+    print(
+      "[PrefsService] Finished attempting to clear keys. Removed $removedCount keys.",
+    );
   }
 
   // 보이는 건강 지수 목록 저장/로드
@@ -281,4 +322,33 @@ class PreferencesService {
   }
 
   // --------------------------------------
+  /// 개인정보 활용 동의 여부를 저장합니다.
+  Future<void> setConsentGiven(bool consented) async {
+    final prefs = await _getPrefs();
+    await prefs.setBool(_consentGivenKey, consented);
+    print("[PrefsService] Consent given status saved: $consented");
+  }
+
+  /// 저장된 개인정보 활용 동의 여부를 불러옵니다. 동의한 적 없으면 false를 반환합니다.
+  Future<bool> hasConsent() async {
+    final prefs = await _getPrefs();
+    final result = prefs.getBool(_consentGivenKey) ?? false;
+    print("[PrefsService] Read consent given status: $result");
+    return result;
+  }
+
+  /// 간편시작 사용 여부를 저장합니다.
+  Future<void> setUsedSimpleStart(bool used) async {
+    final prefs = await _getPrefs();
+    await prefs.setBool(_usedSimpleStartKey, used);
+    print("[PrefsService] Used simple start status saved: $used");
+  }
+
+  /// 간편시작 사용 여부를 불러옵니다. 사용한 적 없으면 false를 반환합니다.
+  Future<bool> didUseSimpleStart() async {
+    final prefs = await _getPrefs();
+    final result = prefs.getBool(_usedSimpleStartKey) ?? false;
+    print("[PrefsService] Read used simple start status: $result");
+    return result;
+  }
 }

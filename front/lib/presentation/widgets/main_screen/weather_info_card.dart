@@ -62,7 +62,7 @@ class WeatherInfoCard extends StatelessWidget {
                         context,
                       ).textTheme.bodyMedium?.copyWith(height: 1.3),
                       textAlign: TextAlign.center,
-                      maxLines: 2,
+                      maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

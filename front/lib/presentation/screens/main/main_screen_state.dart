@@ -37,6 +37,7 @@ class MainScreenState extends Equatable {
   final Map<String, WebViewController?> shelterMapControllers;
   final String selectedEnvMapType;
   final String selectedDisasterType;
+  final bool didUserUseSimpleStart;
 
   // 생성자
   const MainScreenState({
@@ -55,6 +56,7 @@ class MainScreenState extends Equatable {
     this.shelterMapControllers = const {},
     this.selectedEnvMapType = 'fine_dust',
     this.selectedDisasterType = 'EARTHQUAKE',
+    this.didUserUseSimpleStart = false, // 기본값 false
   });
 
   // 상태 복사 및 일부 값 변경을 위한 copyWith 메소드
@@ -75,6 +77,7 @@ class MainScreenState extends Equatable {
     Map<String, WebViewController?>? shelterMapControllers,
     String? selectedEnvMapType,
     String? selectedDisasterType,
+    bool? didUserUseSimpleStart, // 추가
   }) {
     return MainScreenState(
       isLoading: isLoading ?? this.isLoading,
@@ -94,6 +97,8 @@ class MainScreenState extends Equatable {
           shelterMapControllers ?? this.shelterMapControllers,
       selectedEnvMapType: selectedEnvMapType ?? this.selectedEnvMapType,
       selectedDisasterType: selectedDisasterType ?? this.selectedDisasterType,
+      didUserUseSimpleStart:
+          didUserUseSimpleStart ?? this.didUserUseSimpleStart, // 추가
     );
   }
 
@@ -115,5 +120,6 @@ class MainScreenState extends Equatable {
     shelterMapControllers,
     selectedEnvMapType,
     selectedDisasterType,
+    didUserUseSimpleStart, // 추가
   ];
 }
