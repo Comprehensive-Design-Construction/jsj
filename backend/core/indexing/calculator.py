@@ -101,7 +101,7 @@ def _check_risk(user_types: List[str], eftem: Optional[float]) -> Optional[str]:
     # 사용자 유형 그룹 정의
     group1 = {"노인", "어린이", "취약거주환경"}
     group2 = {"농촌", "비닐하우스"}
-    group3 = {"실외작업자_도로", "실외작업자_건설현장", "실외작업자_조선소", "일반인"}
+    group3 = {"실외작업자_도로", "실외작업자_건설현장", "실외작업자_조선소"}
 
     risk_level = "안전"  # 기본값
 
@@ -132,6 +132,8 @@ def _check_risk(user_types: List[str], eftem: Optional[float]) -> Optional[str]:
             risk_level = "주의"
         elif 31 <= eftem < 33:
             risk_level = "관심"
+    else:
+        risk_level = "일반인"
 
     return risk_level
 
