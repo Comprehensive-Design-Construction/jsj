@@ -7,9 +7,7 @@ import os
 class Shelter:
     """대피소 데이터를 처리하는 기본 클래스"""
 
-    def __init__(
-        self, data_file_name: str, root_path: str = "./datasets/shelter"
-    ) -> None:
+    def __init__(self, data_file_name: str, root_path: str = "./shelter") -> None:
         self.data_file_name = data_file_name
         self.root_path = root_path
         self.data_path = os.path.join(root_path, data_file_name).replace("\\", "/")
