@@ -123,7 +123,7 @@ def _check_risk(user_types: List[str], eftem: Optional[float]) -> Optional[str]:
             risk_level = "주의"
         elif 29 <= eftem < 33:
             risk_level = "관심"
-    elif any(ut in group3 for ut in user_types):
+    elif any(ut in group3 for ut in user_types) or (user_types == []):
         if eftem >= 38:
             risk_level = "위험"
         elif 35 <= eftem < 38:
