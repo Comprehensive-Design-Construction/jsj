@@ -11,8 +11,8 @@ front/      Flutter 애플리케이션
 
 ## 백엔드
 
-- `main.py`에서 FastAPI 앱과 APScheduler를 초기화하여 주기적으로 데이터를 갱신합니다.【F:backend/main.py†L1-L40】【F:backend/main.py†L100-L160】
-- 외부 API 키와 경로 등 주요 설정은 `config/settings.py`에서 관리하며 `.env` 파일을 통해 주입합니다.【F:backend/config/settings.py†L10-L41】
+- `main.py`에서 FastAPI 앱과 APScheduler를 초기화하여 주기적으로 데이터를 갱신합니다.
+- 외부 API 키와 경로 등 주요 설정은 `config/settings.py`에서 관리하며 `.env` 파일을 통해 주입합니다.
 - `/api/index`, `/api/environment/*`, `/api/map` 등의 엔드포인트를 제공하여 날씨, 건강 지수, 환경 지도, 대피소 지도 데이터를 반환합니다.
 
 백엔드 실행 예시:
@@ -24,8 +24,8 @@ uvicorn main:app --reload
 ## 프론트엔드
 
 - Flutter로 작성되었으며 `front/lib` 이하에 앱 코드가 위치합니다.
-- API 기본 URL과 주요 엔드포인트는 `app_constants.dart`에 정의되어 있습니다.【F:front/lib/core/constants/app_constants.dart†L3-L23】
-- `main.dart`에서 사용자 온보딩 여부를 확인한 뒤 `MyApp`을 실행합니다.【F:front/lib/main.dart†L1-L14】
+- API 기본 URL과 주요 엔드포인트는 `app_constants.dart`에 정의되어 있습니다.
+- `main.dart`에서 사용자 온보딩 여부를 확인한 뒤 `MyApp`을 실행합니다.
 
 프론트 실행 예시:
 ```bash
